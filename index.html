@@ -568,9 +568,34 @@ const SEASONS = [
       { at: 175, icon: '✦', name: 'The Peerless Scarred', lore: 'Golds who survive the Institute earn a scar on their face and the title Peerless Scarred. It means they finished something hard. Every Active Day this season is a small scar of our own.' },
       { at: 200, icon: '🌱', name: 'First Day of Spring · Iron Rain', by: '2027-03-20', lore: 'The Iron Rain is a giant mission where everyone drops in together. It only works if the whole team lands. We just did that, together. Welcome to spring, Howlers.' },
     ] } },
-  { id: 's2', name: 'Season 2', sub: 'The Institute', start: '2027-04-01', end: '2027-06-30', race: { name: 'Race to Summer', unit: 'Pack Steps', goal: 200, stations: [] } },
-  { id: 's3', name: 'Season 3', sub: 'Mars Rising', start: '2027-07-01', end: '2027-09-30', race: { name: 'Race to Fall', unit: 'Pack Steps', goal: 200, stations: [] } },
-  { id: 's4', name: 'Season 4', sub: 'Siege of Luna', start: '2027-10-01', end: '2027-12-31', race: { name: 'Race to the New Year', unit: 'Pack Steps', goal: 200, stations: [] } },
+  // Seasons 2–4: first drafts. loreDraft = the family is still shaping these; add or rewrite stations freely.
+  { id: 's2', name: 'Season 2', sub: 'The Institute', start: '2027-04-01', end: '2027-06-30', loreDraft: true,
+    race: { name: 'Race to Summer', unit: 'Pack Steps', goal: 200, stations: [
+      { at: 25, icon: '🏛', name: 'The Twelve Houses', lore: 'At the Institute, students are split into twelve Houses, each named after a Roman god: Mars, Minerva, Apollo, Ceres, Jupiter and more. Your House becomes your team, and a team only wins if it learns to work together.' },
+      { at: 55, icon: '🦉', name: 'Minerva, the Wise', lore: 'Minerva was the Roman goddess of wisdom and strategy. Her House is known for thinking before it acts. Planning your week (which days you will move) is a little bit of Minerva.' },
+      { at: 90, icon: '💐', name: "Mother's Day", by: '2027-05-09', lore: 'Every pack has someone who keeps it together. Today we celebrate the moms. Red Rising is full of strong mothers, starting with Darrow\'s mom, who taught him to keep going no matter what.' },
+      { at: 125, icon: '🐎', name: 'Mustang Rides', lore: 'Mustang earns her nickname because she is a fearless rider who shows up when she is needed. She reminds Darrow that a leader\'s job is to make the people around them better.' },
+      { at: 160, icon: '⛰️', name: 'Olympus and the Proctors', lore: 'The Proctors watch the Institute from a mountain fortress called Olympus, named after the home of the gods. They are supposed to keep the game fair. In our pack, the Proctors are Mom and Dad.' },
+      { at: 200, icon: '☀️', name: "Father's Day · First Day of Summer", by: '2027-06-20', lore: 'Halfway through the year, together. Darrow\'s father taught him that real strength is quiet and patient. Happy Father\'s Day, and welcome to summer, Howlers.' },
+    ] } },
+  { id: 's3', name: 'Season 3', sub: 'Mars Rising', start: '2027-07-01', end: '2027-09-30', loreDraft: true,
+    race: { name: 'Race to Fall', unit: 'Pack Steps', goal: 200, stations: [
+      { at: 25, icon: '🔴', name: 'The Red Planet', lore: 'Real Mars fact: Mars is about half as wide as Earth, and a day there lasts 24 hours and 37 minutes. It is red because its dust is full of iron that has rusted. In Red Rising, people have learned to live there.' },
+      { at: 60, icon: '🌋', name: 'Olympus Mons', lore: 'Real Mars fact: Olympus Mons is the tallest volcano in the whole solar system, about two and a half times taller than Mount Everest. Some climbs take more than one day. So do some goals.' },
+      { at: 95, icon: '🌘', name: 'Two Moons', lore: 'Real Mars fact: Mars has two small moons, Phobos and Deimos. Their names mean "fear" and "dread" in Greek, the sons of the war god Ares. Fear is real, but you can still move with it.' },
+      { at: 130, icon: '🦘', name: 'Low Gravity', lore: 'Real Mars fact: gravity on Mars is only about 38% of Earth\'s, so you could jump almost three times as high. Every workout here on Earth is training for Mars.' },
+      { at: 165, icon: '⛏️', name: 'Labor Day · The Reds', by: '2027-09-06', lore: 'Reds do the hardest work in the Society, deep in the mines, and they take pride in it. Labor Day honors everyone who works hard, especially the work nobody sees.' },
+      { at: 200, icon: '🍂', name: 'First Day of Fall · Mars Rising', by: '2027-09-23', lore: 'Mars rises when its people stand up together. Three seasons of showing up, side by side. Welcome to fall, Howlers.' },
+    ] } },
+  { id: 's4', name: 'Season 4', sub: 'Siege of Luna', start: '2027-10-01', end: '2027-12-31', loreDraft: true,
+    race: { name: 'Race to the New Year', unit: 'Pack Steps', goal: 200, stations: [
+      { at: 25, icon: '🌕', name: 'Luna', lore: 'Real Moon fact: our Moon is about a quarter as wide as Earth, and its gravity is one sixth of ours. In Red Rising, Luna is the capital of the whole Society, where the most powerful Golds live.' },
+      { at: 70, icon: '🎃', name: 'Halloween · Masks', by: '2027-10-31', lore: 'Darrow spends years in disguise, living as a Gold while remembering he is a Red. Costumes are fun, but the best part is taking off the mask and being who you really are.' },
+      { at: 100, icon: '👣', name: 'Footprints Last Forever', lore: 'Real Moon fact: the Moon has no wind or rain, so astronauts\' footprints from 1969 are probably still there. Every Active Day you log is a footprint the pack keeps.' },
+      { at: 130, icon: '🦃', name: 'Thanksgiving · The Pack', by: '2027-11-25', lore: 'Darrow never wins alone: Sevro, Mustang, Ragnar and the Howlers carry him as much as he carries them. Today we say thank you to the people who carry us.' },
+      { at: 175, icon: '🎄', name: 'Christmas Eve', by: '2027-12-24', lore: 'A whole year of moving together. Take a moment tonight to look back at your Hall of Honors. Every color in it, you earned.' },
+      { at: 200, icon: '🎆', name: "New Year's Eve · A Year of Howling", by: '2027-12-31', lore: 'From the trial run in The Passage to the end of the year: the pack made it. Rest, celebrate, and get ready to set next year\'s goals together. Hail, Howlers!' },
+    ] } },
 ];
 function seasonFor(day) { return SEASONS.find(x => x.start <= day && day <= x.end) || null; }
 function currentSeason() { const t = AZ.today(); return seasonFor(t) || (t < SEASONS[0].start ? SEASONS[0] : SEASONS[SEASONS.length - 1]); }
@@ -1520,6 +1545,7 @@ function openLoreLibrary() {
   const se = currentSeason(), rs = raceState(se);
   body.appendChild(h('div', { class: 'fld' }, se.race.name + ' stations'));
   se.race.stations.forEach(st => body.appendChild(h('button', { class: 'lore-row' + (rs.steps >= st.at ? '' : ' locked'), type: 'button', onclick: () => openLore(se, st) }, h('span', { class: 'li' }, rs.steps >= st.at ? st.icon : '🔒'), h('span', { class: 'll' }, st.name))));
+  if (se.loreDraft) body.appendChild(h('p', { class: 'hint', style: 'margin-top:8px' }, 'These stories are a first draft. More will be added as the season gets closer.'));
   body.appendChild(h('p', { class: 'hint', style: 'margin-top:12px' }, 'From the Red Rising books by Pierce Brown, retold kid-friendly.'));
   openModal('📜 The Lore of the Pack', body);
 }
