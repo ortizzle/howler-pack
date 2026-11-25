@@ -126,6 +126,8 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .crew-note { font-size: 14px; color: var(--ink2); background: var(--accent-soft); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
 .newfor-list { background: rgba(46,125,50,.07); border-color: rgba(46,125,50,.3); } .newfor-list .card-t .chip-btn { min-height: 44px; font-size: 13px; }
 .newfor-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid rgba(46,125,50,.2); font-size: 14px; } .newfor-row .ll { flex: 1; } .newfor-row small { display: block; color: var(--muted); font-size: 12px; }
+.where-row { display: grid; grid-template-columns: 1fr 104px; gap: 8px; } .where-row.one { grid-template-columns: 1fr; } .where-row .edited-in { border-color: var(--accent); }
+.place-chips { margin-top: 8px; } .place-chips .chip-btn { font-size: 14px; }
 .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
 .num input[type=text] { display: block; width: 100%; margin-top: 4px; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); color: var(--ink); padding: 0 12px; font-size: 16px; font-family: var(--fb); }
 .icon-btn { width: 44px; height: 44px; border-radius: 10px; color: var(--muted); font-size: 16px; flex: 0 0 auto; }
@@ -1003,6 +1005,12 @@ function quickUsual(u) {
   render(); toast(ACT[u.act].icon + ' ' + gainText(g), 'Undo', () => undoLog(ids));
 }
 // openLog(preset): preset = { act, min } for a new entry, or { edit: workoutRecord } to change one
+// The places you've logged most recently, this activity first: one tap to answer "Where?"
+function recentPlaces(act) {
+  const mine = all('workout').filter(w => w.member === me() && w.title && w.title.trim()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const out = []; mine.filter(w => w.act === act).concat(mine).forEach(w => { const x = w.title.trim(); if (!out.includes(x)) out.push(x); });
+  return out.slice(0, 4);
+}
 function openLog(preset) {
   const mine = me(), pup = isPup(mine), today = AZ.today(), ed = preset && preset.edit;
   const f = ed ? { act: ed.act, min: ed.min, felt: ed.felt || 'normal', crew: [ed.member], detail: Object.assign({}, ed.detail || {}), open: !!(ed.detail || ed.note || ed.title), dogs: (ed.dogs || dogs().map(d => d.id)).slice(), date: ed.date, title: ed.title || '', note: ed.note || '', groupAll: true }
@@ -1036,6 +1044,17 @@ function openLog(preset) {
     body.appendChild(h('div', { class: 'fld' }, 'When'));
     const dIn = h('input', { class: 'txt num-sm', type: 'date', max: today, value: f.date, 'aria-label': 'Date', onchange: e => { if (e.target.value && e.target.value <= today) { f.date = e.target.value; redraw(); } } });
     body.appendChild(h('div', { class: 'chips' }, [[today, 'Today'], [addDays(today, -1), 'Yesterday']].map(x => h('button', { class: 'chip-btn' + (f.date === x[0] ? ' on' : ''), type: 'button', onclick: () => { f.date = x[0]; draw(); } }, x[1])), dIn));
+    // Where & how far: always shown, never required. Recent places are one tap away so it's easy to always answer.
+    const hasDist = statKeys(f.act).includes('miles'), pelo = ACT[f.act].group === 'Peloton';
+    const pdM = ed && ed.peloton ? (ed.peloton.detail || {}).miles : 0, editedM = pdM && (f.detail.miles || 0) !== pdM;
+    body.appendChild(h('div', { class: 'fld' }, hasDist ? 'Where & how far' : 'Where', h('small', null, ' optional, but it builds your history')));
+    body.appendChild(h('div', { class: 'where-row' + (hasDist ? '' : ' one') },
+      h('input', { class: 'txt', type: 'text', maxlength: '80', value: f.title, 'aria-label': 'Route or place', placeholder: pelo ? 'Class or place, e.g. Home' : f.act === 'tkd' ? 'e.g. TKD studio' : 'Route or place, e.g. Pinnacle Peak', oninput: e => { f.title = e.target.value; } }),
+      hasDist ? h('input', { class: 'txt' + (editedM ? ' edited-in' : ''), type: 'number', inputmode: 'decimal', step: '0.01', min: '0', 'aria-label': 'Distance in miles', placeholder: 'miles', value: f.detail.miles || '',
+        oninput: e => { const v = parseFloat(e.target.value); if (v > 0) f.detail.miles = v; else delete f.detail.miles; upd(); }, onchange: () => { if (pdM) redraw(); } }) : null));
+    if (editedM) body.appendChild(h('button', { class: 'restore', type: 'button', onclick: () => { f.detail.miles = pdM; draw(); } }, 'Distance edited · ↺ Peloton: ' + pdM + ' mi'));
+    const places = recentPlaces(f.act).filter(x => x !== f.title);
+    if (places.length) body.appendChild(h('div', { class: 'chips place-chips' }, places.map(x => h('button', { class: 'chip-btn', type: 'button', onclick: () => { f.title = x; draw(); } }, '📍 ' + x))));
     if (ed && ed.peloton) {
       const live = Object.assign({}, ed, { min: f.min, detail: f.detail }), diffs = pelotonDiffs(live);
       body.appendChild(h('div', { class: 'pel-banner' }, h('b', null, 'From Peloton ✓'), h('span', null, diffs.length ? ' You\'ve overridden ' + diffs.length + ' number' + (diffs.length > 1 ? 's' : '') + '. Your changes are kept, even if you import again.' : ' These are Peloton\'s numbers. Change any of them and your version is kept as an override.'),
@@ -1055,21 +1074,19 @@ function openLog(preset) {
     if (anyAdult) {
       body.appendChild(h('div', { class: 'fld' }, 'How did it feel? ', h('small', null, 'nudges effort points')));
       body.appendChild(h('div', { class: 'chips' }, Object.keys(FELT).map(k => h('button', { class: 'chip-btn' + (f.felt === k ? ' on' : ''), type: 'button', onclick: () => { f.felt = k; draw(); } }, FELT[k].ico + ' ' + FELT[k].label))));
-      const filled = statKeys(f.act).filter(k => f.detail[k]).length + (f.title ? 1 : 0) + (f.note ? 1 : 0);
+      const filled = statKeys(f.act).filter(k => k !== 'miles' && f.detail[k]).length + (f.note ? 1 : 0);
       body.appendChild(h('button', { class: 'more-btn', type: 'button', 'aria-expanded': f.open ? 'true' : 'false', onclick: () => { f.open = !f.open; draw(); } },
         (f.open ? '▾ ' : '▸ ') + 'More stats (optional)' + (filled && !f.open ? ' · ' + filled + ' filled in' : '')));
       if (f.open) {
         const grid2 = h('div', { class: 'stat-grid' });
         const pd = ed && ed.peloton ? (ed.peloton.detail || {}) : null;
-        statKeys(f.act).forEach(k => { const sf = STAT_FIELDS[k], edited = pd && pd[k] && (f.detail[k] || 0) !== pd[k];
+        statKeys(f.act).filter(k => k !== 'miles').forEach(k => { const sf = STAT_FIELDS[k], edited = pd && pd[k] && (f.detail[k] || 0) !== pd[k];
           grid2.appendChild(h('label', { class: 'num' + (edited ? ' edited' : '') }, sf[0] + ' (' + sf[1] + ')' + (edited ? ' · edited' : ''), h('input', { type: 'number', inputmode: 'decimal', step: sf[2], min: '0', value: f.detail[k] || '',
             oninput: e => { const v = parseFloat(e.target.value); if (v > 0) f.detail[k] = v; else delete f.detail[k]; upd(); }, onchange: () => { if (pd) redraw(); } }),
             edited ? h('button', { class: 'restore', type: 'button', onclick: e => { e.preventDefault(); f.detail[k] = pd[k]; draw(); } }, '↺ Peloton: ' + pd[k]) : null)); });
         body.appendChild(grid2);
-        body.appendChild(h('label', { class: 'num', style: 'display:block;margin-top:10px' }, ACT[f.act].group === 'Peloton' ? 'Class name' : 'Route or place',
-          h('input', { type: 'text', maxlength: '80', value: f.title, placeholder: ACT[f.act].group === 'Peloton' ? 'e.g. 30 min Hills Run' : 'e.g. Pinnacle Peak', oninput: e => { f.title = e.target.value; } })));
         body.appendChild(h('label', { class: 'num', style: 'display:block;margin-top:10px' }, 'Notes', h('input', { type: 'text', maxlength: '140', value: f.note, placeholder: 'How it went, PRs, anything', oninput: e => { f.note = e.target.value; } })));
-        body.appendChild(h('div', { class: 'hint' }, 'All optional; the Peloton summary screen has most of these. Speed, incline, output and distance sharpen your effort points. Heart rate and calories are saved for you but never scored, so it stays fair across bodies.'));
+        body.appendChild(h('div', { class: 'hint' }, 'All optional; the Peloton summary screen has most of these. Speed, incline and output (and distance, above) sharpen your effort points. Heart rate and calories are saved for you but never scored, so it stays fair across bodies.'));
       }
     }
     body.appendChild(preview);

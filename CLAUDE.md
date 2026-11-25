@@ -73,6 +73,7 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - Quick usuals marked `together` open the sheet rather than logging in one tap, so deselecting is always possible.
   - People something was logged for see "📬 Added for you" with **I wasn't there** (removes only their copy). The service worker also notifies them.
   - `migrateUsuals()` adds a family Walk usual once per parent; up to 6 usuals.
+- **Where & how far** (Chris, Nov 25, 2026): every log sheet, kids' included, shows a route/place box (`title`) and, for distance activities, miles (`detail.miles`) right after "When". They're visible, never required, and recent places (`recentPlaces`) are one-tap chips so they're nearly always answered. These fields are not in "More stats".
 - **Editing:** tapping an Annals entry calls `openLog({ edit: record })`, which updates that record in place.
   - For a group activity, **Apply to everyone who joined** (on by default) copies the shared facts to the others: activity, minutes, date, dogs, title, distance, elevation.
   - Heart rate, calories, felt and notes stay personal.
