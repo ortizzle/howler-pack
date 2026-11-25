@@ -50,7 +50,15 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - Speed, incline, watts (or kJ → watts) and distance refine MET.
   - Heart rate and device calories are stored and shown but never scored; keep it that way for fairness across bodies.
   - Kids never see the stats section.
-- **Editing:** tapping an Annals entry calls `openLog({ edit: record })`, which updates that one record in place. In a group activity, the others keep their own copies.
+- **Family activities:** the "Together" group is Dog Walk, Walk, Park, Hike, Bike Ride and Swim.
+  - Picking one in the log sheet pre-selects the whole family (`autoCrew`) until someone taps a name; people deselect whoever wasn't there.
+  - One entry becomes one `workout` per person, sharing a `group` id.
+  - Quick usuals marked `together` open the sheet rather than logging in one tap, so deselecting is always possible.
+  - People something was logged for see "📬 Added for you" with **I wasn't there** (removes only their copy). The service worker also notifies them.
+  - `migrateUsuals()` adds a family Walk usual once per parent; up to 6 usuals.
+- **Editing:** tapping an Annals entry calls `openLog({ edit: record })`, which updates that record in place.
+  - For a group activity, **Apply to everyone who joined** (on by default) copies the shared facts to the others: activity, minutes, date, dogs, title, distance, elevation.
+  - Heart rate, calories, felt and notes stay personal.
 - **Peloton CSV import** (`pelotonRows`):
   - Ids come from the row timestamp (`w_pel_…`).
   - A hand-logged entry on the same day, same activity and about the same length (±25% or 10 min) is **filled in** (`pelotonId` set) instead of duplicated.

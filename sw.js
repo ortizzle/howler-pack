@@ -63,6 +63,14 @@ async function check() {
     const fresh = cheers.filter(c => !seen.ids[c.id]).slice(-3);
     for (const c of fresh) await self.registration.showNotification((names[c.from] || 'Family') + ' cheered you ' + c.emoji, { body: c.text || 'Keep going!', icon: './icon-192.png', badge: './icon-192.png', tag: 'cheer-' + c.id });
   }
+  // Workouts someone else logged for you (a family walk, taekwondo): a heads-up so you can say "I wasn't there"
+  const forMe = recs.filter(r => r.type === 'workout' && r.member === cfg.me && r.by && r.by !== cfg.me);
+  forMe.forEach(w => { next.ids[w.id] = 1; });
+  if (!first) {
+    const freshW = forMe.filter(w => !seen.ids[w.id]);
+    if (freshW.length) { const w = freshW[freshW.length - 1];
+      await self.registration.showNotification((names[w.by] || 'Family') + ' logged ' + (freshW.length > 1 ? freshW.length + ' workouts' : 'a workout') + ' for you 🐺', { body: 'Open the Pack to check it. Tap "I wasn\'t there" if you missed it.', icon: './icon-192.png', badge: './icon-192.png', tag: 'forme' }); }
+  }
   // Evening nudge: after 5pm, nothing logged today, once a day
   const movedToday = recs.some(r => r.type === 'workout' && r.member === cfg.me && r.date === now.day);
   if (!movedToday && now.hour >= 17 && now.hour < 21 && next.nudged !== now.day) {

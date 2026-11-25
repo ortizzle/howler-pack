@@ -116,6 +116,9 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .pel-banner { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(46,125,50,.07); border: 1px solid rgba(46,125,50,.3); font-size: 14px; }
 .num.edited { color: var(--accent); } .restore { min-height: 44px; margin-top: 4px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); font-size: 12px; color: var(--muted); background: var(--panel); }
 .conflict { margin-top: 6px; } .conflict small { display: block; margin-bottom: 6px; }
+.crew-note { font-size: 14px; color: var(--ink2); background: var(--accent-soft); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
+.newfor-list { background: rgba(46,125,50,.07); border-color: rgba(46,125,50,.3); } .newfor-list .card-t .chip-btn { min-height: 44px; font-size: 13px; }
+.newfor-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid rgba(46,125,50,.2); font-size: 14px; } .newfor-row .ll { flex: 1; } .newfor-row small { display: block; color: var(--muted); font-size: 12px; }
 .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
 .num input[type=text] { display: block; width: 100%; margin-top: 4px; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); color: var(--ink); padding: 0 12px; font-size: 16px; font-family: var(--fb); }
 .icon-btn { width: 44px; height: 44px; border-radius: 10px; color: var(--muted); font-size: 16px; flex: 0 0 auto; }
@@ -486,9 +489,9 @@ function syncError(e) {
 const HOUSES = { Red: '#9a1010', Obsidian: '#1e3858', Violet: '#4a1878', Copper: '#8b4513', Gold: '#8a7000', Green: '#1a4818', Pink: '#9c2d6e', Blue: '#1a4a7a', Silver: '#4a5568' };
 const DEFAULT_ROSTER = [
   { id: 'chris', name: 'Chris', role: 'proctor', house: 'Red', coach: 'dancer', pronouns: '', goalPct: 10, share: false, order: 1,
-    usuals: [{ act: 'tread', min: 30 }, { act: 'bike', min: 45 }, { act: 'strength', min: 20 }, { act: 'dogwalk', min: 30, together: true }] },
+    usuals: [{ act: 'tread', min: 30 }, { act: 'bike', min: 45 }, { act: 'strength', min: 20 }, { act: 'dogwalk', min: 30, together: true }, { act: 'walk', min: 30, together: true }] },
   { id: 'kat', name: 'Kat', role: 'proctor', house: 'Obsidian', coach: 'matteo', pronouns: '', goalPct: 8, share: false, order: 2,
-    usuals: [{ act: 'bike', min: 30 }, { act: 'yoga', min: 20 }, { act: 'dogwalk', min: 30, together: true }, { act: 'park', min: 60, together: true }] },
+    usuals: [{ act: 'bike', min: 30 }, { act: 'yoga', min: 20 }, { act: 'dogwalk', min: 30, together: true }, { act: 'park', min: 60, together: true }, { act: 'walk', min: 30, together: true }] },
   { id: 'sedona', name: 'Sedona', role: 'pup', house: 'Violet', coach: 'mickey', pronouns: 'she/her', order: 3, usuals: [] },
   { id: 'river', name: 'River', role: 'pup', house: 'Copper', coach: 'dancer', pronouns: 'she/her', order: 4, usuals: [] },
 ];
@@ -527,13 +530,13 @@ const ACTIVITIES = [
   { id: 'yoga', name: 'Yoga', long: 'Yoga / Stretch', icon: '🧘', group: 'Peloton', met: [2.5, 3, 4] },
   { id: 'bootcamp', name: 'Bootcamp', long: 'Bootcamp', icon: '🔥', group: 'Peloton', met: [6, 8, 9] },
   { id: 'dogwalk', name: 'Dog Walk', long: 'Dog Walk', icon: '🐕', group: 'Together', met: [3, 3.5, 4.3], detail: 'dist' },
+  { id: 'walk', name: 'Walk', long: 'Walk', icon: '🚶', group: 'Together', met: [3, 3.5, 4.3], detail: 'dist' },
   { id: 'park', name: 'Park', long: 'Park', icon: '🛝', group: 'Together', met: [3.5, 4.5, 5.8] },
   { id: 'hike', name: 'Hike', long: 'Hike', icon: '⛰️', group: 'Together', met: [5.3, 6, 7.8], detail: 'dist' },
   { id: 'ride', name: 'Bike Ride', long: 'Bike Ride', icon: '🚵', group: 'Together', met: [6, 8, 10], detail: 'dist' },
   { id: 'swim', name: 'Swim', long: 'Swim', icon: '🏊', group: 'Together', met: [5.8, 7, 9.8] },
   { id: 'tkd', name: 'Taekwondo', long: 'Taekwondo', icon: '🥋', group: 'Classes & Outside', met: [5.3, 7.5, 10.3] },
   { id: 'run', name: 'Run', long: 'Run', icon: '👟', group: 'Classes & Outside', met: [8, 9.8, 11.5], detail: 'dist' },
-  { id: 'walk', name: 'Walk', long: 'Walk', icon: '🚶', group: 'Classes & Outside', met: [3, 3.5, 4.3], detail: 'dist' },
   { id: 'sport', name: 'Sport', long: 'Sport', icon: '🏓', group: 'Classes & Outside', met: [4, 5, 7] },
   { id: 'play', name: 'Active Play', long: 'Active Play', icon: '⚽', group: 'Classes & Outside', met: [3.5, 5, 6.5] },
 ];
@@ -936,7 +939,7 @@ function confirmModal(title, message, okText, onOk) {
 }
 function card(title, right, cls) { const c = h('div', { class: 'card' + (cls ? ' ' + cls : '') }); if (title) c.appendChild(h('div', { class: 'card-t' }, h('span', null, title), right ? h('span', { class: 'r' }, right) : null)); return c; }
 function gainFor(ids, fn) { const se = currentSeason(), b = {}; ids.forEach(i => b[i] = score(i, se).total); fn(); const o = {}; ids.forEach(i => o[i] = score(i, se).total - b[i]); return o; }
-function gainText(g) { return Object.keys(g).map(i => M(i).name + ' +' + g[i] + ' Merit').join(' · ') + (preseason() ? ' (scoring starts Dec 1)' : ''); }
+function gainText(g) { return (Object.keys(g).length > 1 ? 'Logged for ' + Object.keys(g).length + ' · ' : '') + Object.keys(g).map(i => M(i).name + ' +' + g[i]).join(' · ') + (Object.keys(g).length > 1 ? ' Merit' : ' Merit') + (preseason() ? ' (scoring starts Dec 1)' : ''); }
 
 // ───────────────────────── Logging
 function logGroup(ids, base) {
@@ -944,16 +947,21 @@ function logGroup(ids, base) {
   putMany(list); return list.map(x => x.id);
 }
 function undoLog(ids) { ids.forEach(del); render(); }
+function isTogether(act) { return ACT[act] && ACT[act].group === 'Together'; }
 function quickUsual(u) {
-  const crew = u.together ? [me()].concat(memberIds().filter(x => x !== me() && isPup(x))) : [me()];
+  if (u.together || isTogether(u.act)) { openLog({ act: u.act, min: u.min }); return; }   // everyone pre-selected; tap off whoever wasn't there
+  const crew = [me()];
   let ids; const g = gainFor(crew, () => { ids = logGroup(crew, { date: AZ.today(), act: u.act, min: u.min, felt: 'normal', by: me(), dogs: u.act === 'dogwalk' ? dogs().map(d => d.id) : null }); });
   render(); toast(ACT[u.act].icon + ' ' + gainText(g), 'Undo', () => undoLog(ids));
 }
 // openLog(preset): preset = { act, min } for a new entry, or { edit: workoutRecord } to change one
 function openLog(preset) {
   const mine = me(), pup = isPup(mine), today = AZ.today(), ed = preset && preset.edit;
-  const f = ed ? { act: ed.act, min: ed.min, felt: ed.felt || 'normal', crew: [ed.member], detail: Object.assign({}, ed.detail || {}), open: !!(ed.detail || ed.note || ed.title), dogs: (ed.dogs || dogs().map(d => d.id)).slice(), date: ed.date, title: ed.title || '', note: ed.note || '' }
-    : { act: (preset && preset.act) || (pup ? 'tkd' : 'tread'), min: (preset && preset.min) || 30, felt: 'normal', crew: [mine], detail: {}, open: false, dogs: dogs().map(d => d.id), date: today, title: '', note: '' };
+  const f = ed ? { act: ed.act, min: ed.min, felt: ed.felt || 'normal', crew: [ed.member], detail: Object.assign({}, ed.detail || {}), open: !!(ed.detail || ed.note || ed.title), dogs: (ed.dogs || dogs().map(d => d.id)).slice(), date: ed.date, title: ed.title || '', note: ed.note || '', groupAll: true }
+    : { act: (preset && preset.act) || (pup ? 'tkd' : 'tread'), min: (preset && preset.min) || 30, felt: 'normal', crew: [mine], detail: {}, open: false, dogs: dogs().map(d => d.id), date: today, title: '', note: '', crewTouched: false, groupAll: true };
+  // Together activities start with the whole family selected (until someone taps a name)
+  const autoCrew = () => { if (ed || f.crewTouched) return; f.crew = isTogether(f.act) ? [mine].concat(memberIds().filter(x => x !== mine)) : [mine]; };
+  autoCrew();
   const body = h('div', { class: 'log-body' }), preview = h('div', { class: 'log-preview' });
   // redraws caused by a field's change event wait a tick: change fires on blur, and rebuilding the sheet mid-blur breaks the DOM
   const redraw = () => setTimeout(draw, 0);
@@ -964,7 +972,7 @@ function openLog(preset) {
     const grid = h('div', { class: 'act-grid' }); let lastG = '';
     ACTIVITIES.filter(a => !(pup && (a.id === 'strength' || a.id === 'bootcamp'))).forEach(a => {
       if (a.group !== lastG) { lastG = a.group; grid.appendChild(h('div', { class: 'act-group' }, a.group)); }
-      grid.appendChild(h('button', { class: 'act-btn' + (f.act === a.id ? ' on' : ''), type: 'button', onclick: () => { if (f.act !== a.id) { const keep = {}; STATS_ALL.forEach(k => { if (f.detail[k]) keep[k] = f.detail[k]; }); f.detail = keep; } f.act = a.id; draw(); } }, h('span', { class: 'act-ico' }, a.icon), h('span', null, a.name)));
+      grid.appendChild(h('button', { class: 'act-btn' + (f.act === a.id ? ' on' : ''), type: 'button', onclick: () => { if (f.act !== a.id) { const keep = {}; STATS_ALL.forEach(k => { if (f.detail[k]) keep[k] = f.detail[k]; }); f.detail = keep; } f.act = a.id; autoCrew(); draw(); } }, h('span', { class: 'act-ico' }, a.icon), h('span', null, a.name)));
     });
     body.appendChild(h('div', { class: 'fld' }, 'What')); body.appendChild(grid);
     if (f.act === 'dogwalk') {
@@ -985,11 +993,16 @@ function openLog(preset) {
       body.appendChild(h('div', { class: 'pel-banner' }, h('b', null, 'From Peloton ✓'), h('span', null, diffs.length ? ' You\'ve overridden ' + diffs.length + ' number' + (diffs.length > 1 ? 's' : '') + '. Your changes are kept, even if you import again.' : ' These are Peloton\'s numbers. Change any of them and your version is kept as an override.'),
         diffs.length ? h('button', { class: 'more-btn', type: 'button', onclick: () => { f.min = ed.peloton.min || f.min; f.detail = Object.assign({}, ed.peloton.detail || {}); STATS_ALL.forEach(k => { if (ed.detail && ed.detail[k] && !(ed.peloton.detail || {})[k]) f.detail[k] = ed.detail[k]; }); draw(); } }, '↺ Restore all Peloton numbers') : null));
     }
-    if (ed) body.appendChild(h('p', { class: 'hint', style: 'font-size:14px;margin-top:12px' }, 'Editing ' + (ed.member === mine ? 'your' : M(ed.member).name + "'s") + ' entry' + (ed.group ? ' (the others who joined keep theirs as is)' : '') + '.'));
+    const others = ed && ed.group ? all('workout').filter(x => x.group === ed.group && x.id !== ed.id) : [];
+    if (others.length) body.appendChild(h('button', { class: 'toggle' + (f.groupAll ? ' on' : ''), type: 'button', role: 'switch', 'aria-checked': f.groupAll ? 'true' : 'false', style: 'margin-top:8px', onclick: () => { f.groupAll = !f.groupAll; draw(); } },
+      'Apply to everyone who joined (' + others.map(x => M(x.member).name).join(', ') + ')', h('span', { class: 'sw' })));
+    if (others.length && f.groupAll) body.appendChild(h('p', { class: 'hint' }, 'Activity, length, date, dogs, distance and elevation update for everyone. Heart rate, calories, feel and notes stay personal.'));
+    if (ed && !others.length) body.appendChild(h('p', { class: 'hint', style: 'font-size:14px;margin-top:12px' }, 'Editing ' + (ed.member === mine ? 'your' : M(ed.member).name + "'s") + ' entry' + (ed.group ? ' (the others who joined keep theirs as is)' : '') + '.'));
     else {
-      body.appendChild(h('div', { class: 'fld' }, 'Who moved? ', h('small', null, 'one entry logs for everyone')));
-      body.appendChild(h('div', { class: 'chips' }, members().map(m => h('button', { class: 'chip-btn who' + (f.crew.includes(m.mid) ? ' on' : ''), type: 'button', style: '--house:' + houseColor(m.mid),
-        onclick: () => { f.crew = f.crew.includes(m.mid) ? f.crew.filter(x => x !== m.mid) : f.crew.concat(m.mid); if (!f.crew.length) f.crew = [mine]; draw(); } }, (m.role === 'pup' ? '🐾 ' : '') + m.name))));
+      body.appendChild(h('div', { class: 'fld' }, 'Who moved? ', h('small', null, 'one entry logs for everyone selected')));
+      if (f.crew.length > 1) body.appendChild(h('p', { class: 'crew-note' }, isTogether(f.act) && !f.crewTouched ? '👨‍👩‍👧‍👧 Logging for the whole family. Tap anyone who wasn\'t there.' : 'Logging for ' + f.crew.length + ': ' + f.crew.map(i => M(i).name).join(', ') + '. Each gets it, plus +' + RULES.together + ' for doing it together.'));
+      body.appendChild(h('div', { class: 'chips' }, members().map(m => h('button', { class: 'chip-btn who' + (f.crew.includes(m.mid) ? ' on' : ''), type: 'button', style: '--house:' + houseColor(m.mid), 'aria-pressed': f.crew.includes(m.mid) ? 'true' : 'false',
+        onclick: () => { f.crewTouched = true; f.crew = f.crew.includes(m.mid) ? f.crew.filter(x => x !== m.mid) : f.crew.concat(m.mid); if (!f.crew.length) f.crew = [mine]; draw(); } }, (m.role === 'pup' ? '🐾 ' : '') + m.name))));
     }
     if (anyAdult) {
       body.appendChild(h('div', { class: 'fld' }, 'How did it feel? ', h('small', null, 'nudges effort points')));
@@ -1032,6 +1045,12 @@ function openLog(preset) {
     if (preseason()) preview.appendChild(h('div', { class: 'hint' }, 'Practice entry: Merit starts counting Dec 1.'));
   }
   function save() {
+    if (ed && f.groupAll) { const others = ed.group ? all('workout').filter(x => x.group === ed.group && x.id !== ed.id) : [];
+      if (others.length) { const b = base(), shared = {}; ['miles', 'elev'].forEach(k => { if (b.detail && b.detail[k]) shared[k] = b.detail[k]; });
+        const beforeOthers = others.map(x => Object.assign({}, x));
+        putMany(others.map(x => Object.assign({}, x, { act: b.act, min: b.min, date: b.date, dogs: b.dogs, title: b.title, detail: Object.keys(Object.assign({}, x.detail || {}, shared)).length ? Object.assign({}, x.detail || {}, shared) : null })));
+        const before = Object.assign({}, ed), next = Object.assign({}, ed, b); if (next.peloton) next.overrides = pelotonDiffs(next); put(next); close(); render();
+        toast('Saved for ' + (others.length + 1) + ' people', 'Undo', () => { putMany([before].concat(beforeOthers)); render(); }); return; } }
     if (ed) { const before = Object.assign({}, ed), next = Object.assign({}, ed, base()); if (next.peloton) next.overrides = pelotonDiffs(next); put(next); close(); render(); toast('Saved ' + ACT[f.act].icon + ' ' + actLabel(Object.assign({}, ed, base())), 'Undo', () => { put(before); render(); }); return; }
     const crew = f.crew.slice(); let ids; const g = gainFor(crew, () => { ids = logGroup(crew, base()); }); close(); render(); toast(ACT[f.act].icon + ' ' + gainText(g), 'Undo', () => undoLog(ids));
   }
@@ -1342,9 +1361,12 @@ function coachCard(id) {
 function newForYou() {
   const seen = Local.get('seen', {}), mine = all('workout').filter(w => w.member === me() && w.by && w.by !== me() && !seen[w.id] && w.date >= addDays(AZ.today(), -7));
   if (!mine.length) return null;
-  return h('div', { class: 'card newfor' }, h('span', { style: 'font-size:22px' }, '📬'),
-    h('span', null, M(mine[mine.length - 1].by).name + ' added ' + mine.map(w => ACT[w.act].icon + ' ' + ACT[w.act].name + ' (' + DOWS[dow(w.date)] + ')').join(', ') + ' for you.'),
-    h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Dismiss', onclick: () => { const s2 = Local.get('seen', {}); mine.forEach(w => s2[w.id] = 1); Local.set('seen', s2); render(); } }, '✓'));
+  const markSeen = ids => { const s2 = Local.get('seen', {}); ids.forEach(i => s2[i] = 1); Local.set('seen', s2); };
+  const c = h('div', { class: 'card newfor-list' }, h('div', { class: 'card-t' }, h('span', null, '📬 ADDED FOR YOU'), h('button', { class: 'chip-btn', type: 'button', onclick: () => { markSeen(mine.map(w => w.id)); render(); } }, 'All good ✓')));
+  mine.slice(-4).forEach(w => c.appendChild(h('div', { class: 'newfor-row' },
+    h('span', { class: 'll' }, M(w.by).name + ' added ' + ACT[w.act].icon + ' ' + actLabel(w) + ' · ' + w.min + ' min', h('small', null, fmtDow(w.date) + (w.group ? ' · with ' + all('workout').filter(x => x.group === w.group && x.member !== me()).map(x => M(x.member).name).join(' & ') : ''))),
+    h('button', { class: 'chip-btn', type: 'button', onclick: () => { markSeen([w.id]); del(w.id); render(); toast('Removed from your log', 'Undo', () => { put(Object.assign({}, w, { deleted: false })); render(); }); } }, 'I wasn\'t there'))));
+  return c;
 }
 function tkdPrompt() {
   const kidsIds = memberIds().filter(isPup), seen = Local.get('seen', {});
@@ -1419,7 +1441,7 @@ function renderToday(main) {
   if (!pup) {
     const us = h('div', { class: 'usuals' });
     (M(id).usuals || []).forEach(u => us.appendChild(h('button', { class: 'usual', type: 'button', onclick: () => quickUsual(u) }, h('span', { class: 'ic' }, ACT[u.act].icon),
-      h('span', null, (u.act === 'dogwalk' ? dogs().map(x => x.name).join(' & ') : ACT[u.act].name) + ' ' + u.min + 'm', h('small', null, u.together ? '+ the kids · one tap' : 'one tap')))));
+      h('span', null, (u.act === 'dogwalk' ? dogs().map(x => x.name).join(' & ') : ACT[u.act].name) + ' ' + u.min + 'm', h('small', null, u.together || isTogether(u.act) ? 'the whole family' : 'one tap')))));
     if ((M(id).usuals || []).length) lc.appendChild(us);
     lc.appendChild(h('button', { class: 'ai-btn', type: 'button', onclick: () => openReader() }, '✨ Paste or snap a Peloton summary'));
     lc.appendChild(weighRow());
@@ -1673,10 +1695,10 @@ function openSettings() {
         h('button', { type: 'button', 'aria-label': 'Less', onclick: () => { saveMember({ goalPct: Math.max(1, (m.goalPct || 10) - 1) }); draw(); render(); } }, '−'), h('b', null, '−' + (m.goalPct || 10) + '%'),
         h('button', { type: 'button', 'aria-label': 'More', onclick: () => { saveMember({ goalPct: Math.min(20, (m.goalPct || 10) + 1) }); draw(); render(); } }, '+'))));
       ws.appendChild(toggle('Share my % lost with the family', !!m.share, () => { saveMember({ share: !m.share }); syncProgressAwards(); draw(); render(); }));
-      const us = sec('MY USUALS', 'One-tap buttons on Today. Up to 4.'), usuals = (m.usuals || []).slice();
+      const us = sec('MY USUALS', 'Quick buttons on Today, up to 6. Family ones open with everyone selected so you can tap off whoever wasn\'t there.'), usuals = (m.usuals || []).slice();
       usuals.forEach((u, i) => us.appendChild(h('div', { class: 'edit-row' }, h('span', { class: 'gi' }, ACT[u.act].icon), h('span', { class: 'gl' }, ACT[u.act].name + ' · ' + u.min + ' min' + (u.together ? ' · with the kids' : '')),
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove', onclick: () => { usuals.splice(i, 1); saveMember({ usuals }); draw(); render(); } }, '✕'))));
-      if (usuals.length < 4) {
+      if (usuals.length < 6) {
         if (!pick) us.appendChild(h('button', { class: 'btn-ghost', type: 'button', onclick: () => { pick = { act: 'tread', min: 30, together: false }; draw(); } }, '＋ Add a usual'));
         else { us.appendChild(h('div', { class: 'chips', style: 'margin-top:8px' }, ACTIVITIES.map(a => h('button', { class: 'chip-btn' + (pick.act === a.id ? ' on' : ''), type: 'button', 'aria-label': a.name, onclick: () => { pick.act = a.id; draw(); } }, a.icon))));
           us.appendChild(h('div', { class: 'chips', style: 'margin-top:8px' }, [10, 20, 30, 45, 60].map(n => h('button', { class: 'chip-btn' + (pick.min === n ? ' on' : ''), type: 'button', onclick: () => { pick.min = n; draw(); } }, n + 'm'))));
@@ -1848,7 +1870,13 @@ async function boot() {
   }
   if (window.OrtizDrive) try { OrtizDrive.init({ app: 'Howler Pack', prefix: 'howler-pack', getData: () => DB, toast, allowed: () => !!me() && !isPup(me()) && !PREVIEW, onChange: () => {} }); OrtizDrive.check(); } catch (e) { /* drive optional */ }
 }
-function afterSync() { if (PREVIEW || !me()) return; syncProgressAwards(); syncGoalAndPrimusAwards(); if (!document.querySelector('.modal-back')) render(); swConfig(); if (window.OrtizDrive) try { OrtizDrive.check(); } catch (e) { /* optional */ } }
+function migrateUsuals() {
+  const id = me(); if (!id || isPup(id) || Local.get('mig_walk_usual', false)) return;
+  const m = M(id), us = (m.usuals || []).slice();
+  if (!us.some(u => u.act === 'walk') && us.length < 6) put(Object.assign({}, m, { usuals: us.concat({ act: 'walk', min: 30, together: true }) }));
+  Local.set('mig_walk_usual', true);
+}
+function afterSync() { if (PREVIEW || !me()) return; migrateUsuals(); syncProgressAwards(); syncGoalAndPrimusAwards(); if (!document.querySelector('.modal-back')) render(); swConfig(); if (window.OrtizDrive) try { OrtizDrive.check(); } catch (e) { /* optional */ } }
 const APP_VERSION = 'v1.0 · Nov 2026';
 boot();
 
