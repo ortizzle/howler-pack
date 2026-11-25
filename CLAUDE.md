@@ -63,6 +63,13 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - Seasons 2–4 have `loreDraft: true`. The family is still shaping that lore, so adding or rewriting stations is welcome.
   - Keep lore kid-friendly, accurate to the books, and short. "Real Mars/Moon fact" stations must be true.
   - Race goals assume about 2.5 Pack Steps a day when everyone meets their Standard. Holiday checkpoints (`by`) sit at or just under that pace.
+- **Peloton class types** (Chris, Nov 25, 2026): Tread and Bike carry `types` in `ACTIVITIES` (Tread: Run, Walk, Hike, Bootcamp; Bike: Ride, Low Impact, Bootcamp), stored as `detail.cls`.
+  - The type sets the effort baseline when no numbers are entered; speed/incline (Tread) or watts (Bike) still replace it. Walk and Hike use the ACSM walking equation up to 5 mph, Run the running one from 4 mph (`acsmMet(mph, grade, gait)`).
+  - Tread speed comes from distance ÷ time when only miles are entered. A Hike with no incline uses whichever is higher, the equation or the class baseline.
+  - Bootcamps count as half machine, half floor (MET 5). They ignore kJ, because total output covers only the machine half.
+  - The log sheet shows "Class type" chips under "What" (kids too), defaulting to your last type for that machine (`lastCls`). Usuals can carry `cls`.
+  - Older Tread entries without a type read it from their speed (`clsOf`). The CSV import sets the type from the discipline and title. Tread/Bike Bootcamp rows keep their old `_bootcamp` id suffix, so re-imports still match.
+  - A changed class type on an imported record is an override, with ↺ Peloton.
 - **Adult workout stats:** `STAT_FIELDS` / `STATS_FOR` / `STATS_ALL`.
   - Speed, incline, watts (or kJ → watts) and distance refine MET.
   - Heart rate and device calories are stored and shown but never scored; keep it that way for fairness across bodies.

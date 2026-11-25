@@ -538,8 +538,17 @@ function R(id) { return isPup(id) ? RULES.pup : RULES.proctor; }
 
 // MET values ≈ Compendium of Physical Activities [easy, normal, brutal]; Tread/run/walk use ACSM equations when pace is known.
 const ACTIVITIES = [
-  { id: 'tread', name: 'Tread', long: 'Peloton Tread', icon: '🏃', group: 'Peloton', met: [4.5, 8, 10.5], detail: 'tread' },
-  { id: 'bike', name: 'Bike', long: 'Peloton Bike', icon: '🚴', group: 'Peloton', met: [5, 7, 9], detail: 'bike' },
+  { id: 'tread', name: 'Tread', long: 'Peloton Tread', icon: '🏃', group: 'Peloton', met: [4.5, 8, 10.5], detail: 'tread', types: [
+    { id: 'run', name: 'Run', met: [8, 9.8, 11.5] },          // 5–7 mph
+    { id: 'walk', name: 'Walk', met: [3.5, 4.3, 5] },         // 3–4 mph, little incline
+    { id: 'hike', name: 'Hike', met: [5, 7, 9] },             // ~3 mph at 6–12% incline
+    { id: 'bootcamp', name: 'Bootcamp', met: [5.5, 7, 8.5] }, // about half on the tread, half strength on the floor
+  ] },
+  { id: 'bike', name: 'Bike', long: 'Peloton Bike', icon: '🚴', group: 'Peloton', met: [5, 7, 9], detail: 'bike', types: [
+    { id: 'ride', name: 'Ride', met: [5, 7, 9] },               // Power Zone, Climb, Intervals, Music…
+    { id: 'lowimpact', name: 'Low Impact', met: [3.5, 4.8, 6] },
+    { id: 'bootcamp', name: 'Bootcamp', met: [5.5, 7, 8.5] },
+  ] },
   { id: 'strength', name: 'Strength', long: 'Strength', icon: '🏋️', group: 'Peloton', met: [3.5, 5, 6] },
   { id: 'yoga', name: 'Yoga', long: 'Yoga', icon: '🧘', group: 'Peloton', met: [2.5, 3, 4] },
   { id: 'stretch', name: 'Stretch', long: 'Stretch', icon: '🤸', group: 'Peloton', met: [2.3, 2.3, 2.8] },           // Compendium 2024: stretching, mild 2.3
@@ -562,7 +571,12 @@ const PUP_BUTTONS = ['tkd', 'dogwalk', 'play', 'run', 'walk', 'hike', 'yoga', 'r
 // Minutes that count as movement (meditation is welcome, but it isn't movement)
 function moveMin(w) { return ACT[w.act] && ACT[w.act].mind ? 0 : w.min; }
 const FELT = { easy: { i: 0, label: 'Easy', ico: '🙂' }, normal: { i: 1, label: 'Normal', ico: '😤' }, brutal: { i: 2, label: 'Brutal', ico: '🥵' } };
-function actLabel(w) { if (w.act === 'dogwalk' && w.dogs && w.dogs.length) return 'Walked ' + w.dogs.map(dogName).join(' & '); return ACT[w.act] ? ACT[w.act].long : w.act; }
+// The class type of a Tread or Bike workout: stored in detail.cls; older Tread entries are read from their speed
+function clsOf(w) { const a = ACT[w.act], d = w.detail || {}; if (!a || !a.types) return null;
+  return a.types.find(t => t.id === d.cls) || (w.act === 'tread' && d.mph ? a.types.find(t => t.id === (d.mph >= 4.5 ? 'run' : 'walk')) : null); }
+function lastCls(act) { const w = all('workout').filter(x => x.member === me() && x.act === act && x.detail && x.detail.cls).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+  return w ? w.detail.cls : ACT[act] && ACT[act].types ? ACT[act].types[0].id : null; }
+function actLabel(w) { if (w.act === 'dogwalk' && w.dogs && w.dogs.length) return 'Walked ' + w.dogs.map(dogName).join(' & '); const T = w.detail && w.detail.cls && clsOf(w); return ACT[w.act] ? ACT[w.act].long + (T ? ' · ' + T.name : '') : w.act; }
 
 // Optional adult stats. Speed, incline, watts/output and distance refine effort (MET); heart rate and device
 // calories are kept and shown but never scored (device calories favor bigger bodies).
@@ -590,13 +604,23 @@ function statsLine(w) {
   if (d.elev) bits.push(d.elev + ' ft up'); if (d.hr) bits.push('♥ ' + d.hr + (d.hrMax ? '/' + d.hrMax : '') + ' bpm'); if (d.kcal) bits.push(d.kcal + ' kcal');
   return bits.join(' · ');
 }
-function acsmMet(mph, gradePct) { const v = mph * 26.8224, g = (gradePct || 0) / 100; const vo2 = mph >= 4.5 ? 3.5 + 0.2 * v + 0.9 * v * g : 3.5 + 0.1 * v + 1.8 * v * g; return vo2 / 3.5; }
+function acsmMet(mph, gradePct, gait) { const v = mph * 26.8224, g = (gradePct || 0) / 100, run = gait === 'run' ? mph >= 4 : gait === 'walk' ? mph > 5 : mph >= 4.5; const vo2 = run ? 3.5 + 0.2 * v + 0.9 * v * g : 3.5 + 0.1 * v + 1.8 * v * g; return vo2 / 3.5; }
 function bikeMet(w) { return w <= 50 ? 3.5 : w <= 89 ? 4.8 : w <= 100 ? 6.8 : w <= 160 ? 8.8 : w <= 200 ? 11 : 14; }
 function metFor(w) {
   const a = ACT[w.act] || ACT.walk, d = w.detail || {}, f = FELT[w.felt] || FELT.normal;
-  if (w.act === 'tread' && d.mph) return { met: acsmMet(d.mph, d.incline), how: d.mph + ' mph · ' + (d.incline || 0) + '% incline' };
+  const T = clsOf(w), FLOOR = 5;   // bootcamp floor work ≈ moderate circuit training
+  if (w.act === 'tread') {
+    const mph = d.mph || (d.miles && w.min ? Math.round(d.miles / (w.min / 60) * 10) / 10 : 0), from = d.mph ? '' : ' (from distance)', gait = T && T.id === 'run' ? 'run' : T ? 'walk' : null;
+    if (T && T.id === 'bootcamp') return mph ? { met: (acsmMet(mph, d.incline, 'run') + FLOOR) / 2, how: 'Bootcamp: half at ' + mph + ' mph' + from + ', half floor' } : { met: T.met[f.i], how: 'Bootcamp · ' + f.label };
+    if (mph) { const m = acsmMet(mph, d.incline, gait);
+      if (T && T.id === 'hike' && !d.incline) return { met: Math.max(m, T.met[f.i]), how: 'Hike · ' + mph + ' mph' + from + ' · add incline to make it exact' };
+      return { met: m, how: (T ? T.name + ' · ' : '') + mph + ' mph' + from + ' · ' + (d.incline || 0) + '% incline' }; }
+    if (T) return { met: T.met[f.i], how: T.name + ' · ' + f.label + ' · add speed to make it exact' };
+  }
   const watts = d.watts || (d.kj && w.min ? Math.round(d.kj * 1000 / (w.min * 60)) : 0);
-  if (w.act === 'bike' && watts) return { met: bikeMet(watts), how: watts + ' W avg' + (d.watts ? '' : ' (from ' + d.kj + ' kJ)') };
+  if (w.act === 'bike' && T && T.id === 'bootcamp') return d.watts ? { met: (bikeMet(d.watts) + FLOOR) / 2, how: 'Bootcamp: half at ' + d.watts + ' W, half floor' } : { met: T.met[f.i], how: 'Bootcamp · ' + f.label };
+  if (w.act === 'bike' && watts) return { met: bikeMet(watts), how: (T ? T.name + ' · ' : '') + watts + ' W avg' + (d.watts ? '' : ' (from ' + d.kj + ' kJ)') };
+  if (w.act === 'bike' && T) return { met: T.met[f.i], how: T.name + ' · ' + f.label + ' · add output to make it exact' };
   if (w.act === 'ride' && d.miles && w.min) { const mph = d.miles / (w.min / 60); return { met: mph < 10 ? 4 : mph < 12 ? 6.8 : mph < 14 ? 8 : mph < 16 ? 10 : 12, how: d.miles + ' mi · ' + mph.toFixed(1) + ' mph' }; }
   if (a.detail === 'dist' && d.miles && w.min && ['run', 'walk', 'dogwalk', 'hike'].includes(w.act)) { const mph = d.miles / (w.min / 60); return { met: acsmMet(mph, 0), how: d.miles + ' mi · ' + mph.toFixed(1) + ' mph' }; }
   return { met: a.met[f.i], how: f.label };
@@ -1009,7 +1033,7 @@ function lastCrew(act) { const w = all('workout').filter(x => x.member === me() 
 function quickUsual(u) {
   if (!isSolo(u.act)) { openLog({ act: u.act, min: u.min }); return; }   // opens on "With anyone?" (just you, or same as last time)
   const crew = [me()];
-  let ids; const g = gainFor(crew, () => { ids = logGroup(crew, { date: AZ.today(), act: u.act, min: u.min, felt: 'normal', by: me(), dogs: u.act === 'dogwalk' ? dogs().map(d => d.id) : null }); });
+  let ids; const g = gainFor(crew, () => { ids = logGroup(crew, { date: AZ.today(), act: u.act, min: u.min, felt: 'normal', by: me(), dogs: u.act === 'dogwalk' ? dogs().map(d => d.id) : null, detail: ACT[u.act].types ? { cls: u.cls || lastCls(u.act) } : null }); });
   render(); toast(ACT[u.act].icon + ' ' + gainText(g), 'Undo', () => undoLog(ids));
 }
 // openLog(preset): preset = { act, min } for a new entry, or { edit: workoutRecord } to change one
@@ -1021,11 +1045,12 @@ function recentPlaces(act) {
 }
 function openLog(preset) {
   const mine = me(), pup = isPup(mine), today = AZ.today(), ed = preset && preset.edit;
-  const f = ed ? { act: ed.act, min: ed.min, felt: ed.felt || 'normal', crew: [ed.member], detail: Object.assign({}, ed.detail || {}), open: !!(ed.detail || ed.note || ed.title), dogs: (ed.dogs || dogs().map(d => d.id)).slice(), date: ed.date, title: ed.title || '', note: ed.note || '', groupAll: true }
+  const f = ed ? { act: ed.act, min: ed.min, felt: ed.felt || 'normal', crew: [ed.member], detail: Object.assign({}, ed.detail || {}), open: !!(Object.keys(ed.detail || {}).some(k => k !== 'cls' && k !== 'miles') || ed.note), dogs: (ed.dogs || dogs().map(d => d.id)).slice(), date: ed.date, title: ed.title || '', note: ed.note || '', groupAll: true }
     : { act: (preset && preset.act) || (pup ? 'tkd' : 'tread'), min: (preset && preset.min) || 30, felt: 'normal', crew: [mine], detail: {}, open: false, dogs: dogs().map(d => d.id), date: (preset && preset.date) || today, title: '', note: '', crewTouched: false, groupAll: true };
   // Together activities start with the whole family selected (until someone taps a name)
   const autoCrew = () => { if (ed || f.crewTouched) return; f.crew = [mine]; };   // always starts with just you
   autoCrew();
+  if (!ed && ACT[f.act] && ACT[f.act].types) f.detail.cls = (preset && preset.cls) || lastCls(f.act);
   const body = h('div', { class: 'log-body' }), preview = h('div', { class: 'log-preview' });
   // redraws caused by a field's change event wait a tick: change fires on blur, and rebuilding the sheet mid-blur breaks the DOM
   const redraw = () => setTimeout(draw, 0);
@@ -1036,9 +1061,14 @@ function openLog(preset) {
     const grid = h('div', { class: 'act-grid' }); let lastG = '';
     ACTIVITIES.filter(a => !a.hidden && !(pup && (a.id === 'strength' || a.id === 'bootcamp'))).forEach(a => {
       if (a.group !== lastG) { lastG = a.group; grid.appendChild(h('div', { class: 'act-group' }, a.group)); }
-      grid.appendChild(h('button', { class: 'act-btn' + (f.act === a.id ? ' on' : ''), type: 'button', onclick: () => { if (f.act !== a.id) { const keep = {}; STATS_ALL.forEach(k => { if (f.detail[k]) keep[k] = f.detail[k]; }); f.detail = keep; } f.act = a.id; autoCrew(); draw(); } }, h('span', { class: 'act-ico' }, a.icon), h('span', null, a.name)));
+      grid.appendChild(h('button', { class: 'act-btn' + (f.act === a.id ? ' on' : ''), type: 'button', onclick: () => { if (f.act !== a.id) { const keep = {}; STATS_ALL.forEach(k => { if (f.detail[k]) keep[k] = f.detail[k]; }); f.detail = keep; } f.act = a.id; if (ACT[a.id].types && !f.detail.cls) f.detail.cls = lastCls(a.id); autoCrew(); draw(); } }, h('span', { class: 'act-ico' }, a.icon), h('span', null, a.name)));
     });
     body.appendChild(h('div', { class: 'fld' }, 'What')); body.appendChild(grid);
+    if (ACT[f.act].types) {
+      const pc = ed && ed.peloton && (ed.peloton.detail || {}).cls, editedC = pc && f.detail.cls !== pc;
+      body.appendChild(h('div', { class: 'fld' }, 'Class type', h('small', null, editedC ? ' · edited ' : ' sets the effort baseline'), editedC ? h('button', { class: 'restore', type: 'button', onclick: () => { f.detail.cls = pc; draw(); } }, '↺ Peloton') : null));
+      body.appendChild(h('div', { class: 'chips cls-chips' }, ACT[f.act].types.map(ty => h('button', { class: 'chip-btn' + (f.detail.cls === ty.id ? ' on' : ''), type: 'button', onclick: () => { f.detail.cls = ty.id; draw(); } }, ty.name))));
+    }
     if (f.act === 'dogwalk') {
       body.appendChild(h('div', { class: 'fld' }, 'Which dogs?'));
       body.appendChild(h('div', { class: 'chips' }, dogs().map(dg => h('button', { class: 'chip-btn' + (f.dogs.includes(dg.id) ? ' on' : ''), type: 'button',
@@ -1109,6 +1139,7 @@ function openLog(preset) {
   }
   function base() {
     const detail = {}; statKeys(f.act).forEach(k => { if (f.detail[k] > 0) detail[k] = f.detail[k]; });
+    if (ACT[f.act].types && ACT[f.act].types.some(ty => ty.id === f.detail.cls)) detail.cls = f.detail.cls;
     const b = { date: f.date, act: f.act, min: f.min, felt: f.felt, by: ed ? (ed.by || mine) : mine, dogs: f.act === 'dogwalk' ? f.dogs.slice() : null, detail: Object.keys(detail).length ? detail : null };
     b.title = f.title.trim() || null; b.note = f.note.trim() || null; return b;
   }
@@ -1175,10 +1206,11 @@ const WORKOUT_SCHEMA = { type: 'object', additionalProperties: false, required: 
     date: { type: 'string', description: 'YYYY-MM-DD if shown' }, mph: { type: 'number' }, incline: { type: 'number' }, watts: { type: 'number' }, miles: { type: 'number' },
     kj: { type: 'number', description: 'total output in kJ' }, cadence: { type: 'number' }, resistance: { type: 'number' }, elev: { type: 'number', description: 'elevation gain in feet' },
     hr: { type: 'number', description: 'average heart rate' }, hrMax: { type: 'number' }, kcal: { type: 'number', description: 'calories shown' },
+    cls: { type: 'string', enum: ['run', 'walk', 'hike', 'bootcamp', 'ride', 'lowimpact'], description: 'Peloton class type: tread = run, walk, hike or bootcamp; bike = ride, lowimpact or bootcamp' },
     felt: { type: 'string', enum: ['easy', 'normal', 'brutal'] } } } } } };
 function readerPrompt(text) {
   return 'Extract every workout from this ' + (text ? 'text' : 'screenshot') + ' (usually a Peloton or fitness-app summary). Map each to one activity id: ' +
-    ACTIVITIES.map(a => a.id + ' (' + a.long + ')').join(', ') + '. Peloton cycling = bike; Peloton running or walking = tread; stretching = stretch; meditation = meditate; anything that is not exercise = skip. ' +
+    ACTIVITIES.map(a => a.id + ' (' + a.long + ')').join(', ') + '. Peloton cycling = bike; Peloton running, walking or hiking = tread; Tread or Bike Bootcamp = tread or bike with cls bootcamp; also set cls for every tread or bike class (a Low Impact ride = lowimpact); stretching = stretch; meditation = meditate; anything that is not exercise = skip. ' +
     'Copy numbers exactly as shown: average speed in mph, average incline in %, average output in watts, total output in kJ, cadence, resistance, distance in miles, elevation gain in feet, average and max heart rate, calories. Leave out any number that is not shown rather than estimating it. Set felt only if the person says how it felt. Today is ' + AZ.today() + '.' +
     (text ? '\n\n<workout_text>\n' + text + '\n</workout_text>' : '');
 }
@@ -1189,9 +1221,10 @@ async function readWorkouts(text, image) {
 }
 function readSimple(text) {   // no-key fallback for pasted text
   const lo = text.toLowerCase(), num = re => { const m = lo.match(re); return m ? parseFloat(m[1]) : undefined; };
-  const kinds = [['tread', /\b(run|running|tread|hills)\b/], ['bike', /\b(ride|cycling|bike|climb|output)\b/], ['strength', /\b(strength|upper body|lower body|arms|core)\b/], ['yoga', /\b(yoga|stretch)\b/], ['bootcamp', /bootcamp/], ['dogwalk', /\b(dog|cookie|biscuit)\b/], ['hike', /\bhike\b/], ['tkd', /taekwondo/]];
+  const kinds = [['tread', /\b(run|running|tread|hills|hike|hiking|walking)\b/], ['bike', /\b(ride|cycling|bike|climb|output)\b/], ['strength', /\b(strength|upper body|lower body|arms|core)\b/], ['yoga', /\b(yoga|stretch)\b/], ['bootcamp', /bootcamp/], ['dogwalk', /\b(dog|cookie|biscuit)\b/], ['hike', /\bhike\b/], ['tkd', /taekwondo/]];
   const k = kinds.find(x => x[1].test(lo));
-  return [{ activity: k ? k[0] : 'walk', minutes: num(/(\d+)\s*(?:min|minute)/) || 30, title: text.split('\n')[0].slice(0, 60) || 'Workout',
+  const cls = k && k[0] === 'tread' ? (/hik/.test(lo) ? 'hike' : /bootcamp/.test(lo) ? 'bootcamp' : /walk/.test(lo) ? 'walk' : 'run') : k && k[0] === 'bike' ? (/low impact/.test(lo) ? 'lowimpact' : 'ride') : undefined;
+  return [{ activity: k ? k[0] : 'walk', cls, minutes: num(/(\d+)\s*(?:min|minute)/) || 30, title: text.split('\n')[0].slice(0, 60) || 'Workout',
     mph: num(/([\d.]+)\s*mph/), incline: num(/([\d.]+)\s*%\s*(?:avg\s*)?incline/) || num(/incline[^\d]{0,12}([\d.]+)/), watts: num(/([\d.]+)\s*(?:w\b|watts)/), miles: num(/([\d.]+)\s*(?:mi\b|miles)/), felt: /brutal|crushed|destroyed/.test(lo) ? 'brutal' : /easy|chill/.test(lo) ? 'easy' : undefined }];
 }
 function shrinkImage(blob) {
@@ -1216,7 +1249,7 @@ function openReader(shared) {
     clear(body);
     if (!list.length) { body.appendChild(h('p', null, 'No workouts found in that.')); return; }
     body.appendChild(h('p', { class: 'hint', style: 'font-size:14px;margin-bottom:6px' }, 'Check these, then add. Tap ✕ to drop one.'));
-    const today = AZ.today(), rows = list.map(w => { const detail = {}; Object.keys(STAT_FIELDS).forEach(k => { if (w[k] > 0) detail[k] = w[k]; });
+    const today = AZ.today(), rows = list.map(w => { const detail = {}; Object.keys(STAT_FIELDS).forEach(k => { if (w[k] > 0) detail[k] = w[k]; }); if (ACT[w.activity].types && ACT[w.activity].types.some(ty => ty.id === w.cls)) detail.cls = w.cls;
       return { act: w.activity, min: Math.round(w.minutes), felt: w.felt || 'normal', date: /^\d{4}-\d{2}-\d{2}$/.test(w.date || '') && w.date <= today ? w.date : today, title: w.title, detail: Object.keys(detail).length ? detail : null, keep: true }; });
     const listEl = h('div');
     const drawRows = () => { clear(listEl); rows.forEach(r => { const mm = metFor(r), dupe = all('workout').some(x => x.member === me() && x.date === r.date && x.act === r.act && x.min === r.min);
@@ -1252,13 +1285,18 @@ function parseCSV(text) {
 function pelotonRows(rows) {
   const map = { cycling: 'bike', running: 'tread', walking: 'tread', strength: 'strength', yoga: 'yoga', stretching: 'stretch', meditation: 'meditate', bootcamp: 'bootcamp', 'bike bootcamp': 'bootcamp', 'tread bootcamp': 'bootcamp', 'row bootcamp': 'bootcamp', outdoor: 'walk', cardio: 'bootcamp' };
   return rows.map(r => {
-    const disc = (r['Fitness Discipline'] || '').toLowerCase(), act = map[disc], date = (r['Workout Timestamp'] || '').slice(0, 10), min = parseFloat(r['Length (minutes)']);
+    const disc = (r['Fitness Discipline'] || '').toLowerCase(); let act = map[disc]; const date = (r['Workout Timestamp'] || '').slice(0, 10), min = parseFloat(r['Length (minutes)']);
     if (!act || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !(min > 0)) return { skip: true, title: r['Title'] || disc || 'Unknown', reason: act ? 'missing data' : 'not counted (' + (disc || '?') + ')' };
     const n = k => { const v = parseFloat(String(r[k] || '').replace(/[^0-9.]/g, '')); return v > 0 ? Math.round(v * 100) / 100 : 0; }, detail = {};
     const cols = { mph: 'Avg. Speed (mph)', incline: 'Avg. Incline', watts: 'Avg. Watts', kj: 'Total Output', cadence: 'Avg. Cadence (RPM)', resistance: 'Avg. Resistance', miles: 'Distance (mi)', hr: 'Avg. Heartrate', kcal: 'Calories Burned' };
     statKeys(act).forEach(k => { if (cols[k] && n(cols[k])) detail[k] = n(cols[k]); });
     if (act === 'tread' && detail.mph && !detail.incline) detail.incline = 0;
     const id = 'w_pel_' + me() + '_' + (r['Workout Timestamp'] || '').replace(/[^0-9]/g, '').slice(0, 12) + '_' + act;
+    const words = ((r['Title'] || '') + ' ' + (r['Type'] || '')).toLowerCase();
+    if (disc === 'tread bootcamp' || disc === 'bike bootcamp') { act = disc === 'tread bootcamp' ? 'tread' : 'bike'; detail.cls = 'bootcamp'; statKeys(act).forEach(k => { if (cols[k] && n(cols[k]) && !detail[k]) detail[k] = n(cols[k]); }); }
+    else if (disc === 'running') detail.cls = 'run';
+    else if (disc === 'walking') detail.cls = /hik/.test(words) ? 'hike' : 'walk';
+    else if (disc === 'cycling') detail.cls = /low impact/.test(words) ? 'lowimpact' : 'ride';
     const done = !!DB.records[id] || all('workout').some(x => x.pelotonId === id);
     // A workout logged by hand the same day, same activity, about the same length → fill it in rather than add a twin
     const match = done ? null : all('workout').find(x => x.member === me() && x.date === date && x.act === act && !x.pelotonId && x.source !== 'peloton' && Math.abs(x.min - min) <= Math.max(10, min * 0.25));
@@ -1586,7 +1624,7 @@ function renderToday(main) {
   if (!pup) {
     const us = h('div', { class: 'usuals' });
     (M(id).usuals || []).forEach(u => us.appendChild(h('button', { class: 'usual', type: 'button', onclick: () => quickUsual(u) }, h('span', { class: 'ic' }, ACT[u.act].icon),
-      h('span', null, (u.act === 'dogwalk' ? dogs().map(x => x.name).join(' & ') : ACT[u.act].name) + ' ' + u.min + 'm', h('small', null, isSolo(u.act) ? 'one tap' : 'with anyone?')))));
+      h('span', null, (u.act === 'dogwalk' ? dogs().map(x => x.name).join(' & ') : ACT[u.act].name + (u.cls ? ' ' + ACT[u.act].types.find(x => x.id === u.cls).name : '')) + ' ' + u.min + 'm', h('small', null, isSolo(u.act) ? 'one tap' : 'with anyone?')))));
     if ((M(id).usuals || []).length) lc.appendChild(us);
     lc.appendChild(h('button', { class: 'ai-btn', type: 'button', onclick: () => openReader() }, '✨ Paste or snap a Peloton summary'));
     lc.appendChild(weighRow());
@@ -1814,6 +1852,7 @@ function openCodex() {
     ['Chain: each week in a row you meet your Standard adds ' + Math.round(RULES.chainStep * 100) + '% to that week. A missed week drops one link.', 'up to ×' + (1 + RULES.chainStep * RULES.chainMax).toFixed(1)],
     ['Effort, Praetorians: activity intensity (MET) × minutes ÷ ' + P.effortDiv + '. Speed, incline, watts or distance make it exact.', 'up to ' + P.effortCap + '/day'],
     ['Effort, Pups: 1 point per ' + K.minPer + ' minutes of anything', 'up to ' + K.minCap + '/day'],
+    ...ACTIVITIES.filter(a => a.types).map(a => [a.long + ' class types (average-intensity MET): ' + a.types.map(ty => ty.name + ' ' + ty.met[1]).join(' · ') + (a.id === 'tread' ? '. Speed and incline replace the guess; a walk or hike uses the walking equation.' : '. Average watts replace the guess.') + ' Bootcamps count half machine, half floor.', '—']),
     ['Meditation (everyone): 1 point per 10 minutes; welcome, but it doesn\'t count toward an Active Day', 'low'],
     ['Who: Peloton classes are just you. Everything else asks "With anyone?" (just you by default, or tap whoever joined)', '—'],
     ['Together: 2+ of you log the same activity', '+' + RULES.together + ' (2/day)'],
@@ -1872,14 +1911,15 @@ function openSettings() {
         h('button', { type: 'button', 'aria-label': 'Less', onclick: () => { saveMember({ goalPct: Math.max(1, (m.goalPct || 10) - 1) }); draw(); render(); } }, '−'), h('b', null, '−' + (m.goalPct || 10) + '%'),
         h('button', { type: 'button', 'aria-label': 'More', onclick: () => { saveMember({ goalPct: Math.min(20, (m.goalPct || 10) + 1) }); draw(); render(); } }, '+'))));
       ws.appendChild(toggle('Share my % lost with the family', !!m.share, () => { saveMember({ share: !m.share }); syncProgressAwards(); draw(); render(); }));
-      const us = sec('MY USUALS', 'Quick buttons on Today, up to 6. Family ones open with everyone selected so you can tap off whoever wasn\'t there.'), usuals = (m.usuals || []).slice();
-      usuals.forEach((u, i) => us.appendChild(h('div', { class: 'edit-row' }, h('span', { class: 'gi' }, ACT[u.act].icon), h('span', { class: 'gl' }, ACT[u.act].name + ' · ' + u.min + ' min' + (u.together ? ' · with the kids' : '')),
+      const us = sec('MY USUALS', 'Quick buttons on Today, up to 6. Peloton ones log in one tap; the rest ask who joined.'), usuals = (m.usuals || []).slice();
+      usuals.forEach((u, i) => us.appendChild(h('div', { class: 'edit-row' }, h('span', { class: 'gi' }, ACT[u.act].icon), h('span', { class: 'gl' }, ACT[u.act].name + (u.cls ? ' ' + ACT[u.act].types.find(x => x.id === u.cls).name : '') + ' · ' + u.min + ' min'),
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove', onclick: () => { usuals.splice(i, 1); saveMember({ usuals }); draw(); render(); } }, '✕'))));
       if (usuals.length < 6) {
-        if (!pick) us.appendChild(h('button', { class: 'btn-ghost', type: 'button', onclick: () => { pick = { act: 'tread', min: 30, together: false }; draw(); } }, '＋ Add a usual'));
-        else { us.appendChild(h('div', { class: 'chips', style: 'margin-top:8px' }, ACTIVITIES.map(a => h('button', { class: 'chip-btn' + (pick.act === a.id ? ' on' : ''), type: 'button', 'aria-label': a.name, onclick: () => { pick.act = a.id; draw(); } }, a.icon))));
+        if (!pick) us.appendChild(h('button', { class: 'btn-ghost', type: 'button', onclick: () => { pick = { act: 'tread', cls: 'run', min: 30 }; draw(); } }, '＋ Add a usual'));
+        else { us.appendChild(h('div', { class: 'chips', style: 'margin-top:8px' }, ACTIVITIES.filter(a => !a.hidden).map(a => h('button', { class: 'chip-btn' + (pick.act === a.id ? ' on' : ''), type: 'button', 'aria-label': a.name, onclick: () => { pick.act = a.id; pick.cls = a.types ? a.types[0].id : undefined; draw(); } }, a.icon))));
+          if (ACT[pick.act].types) us.appendChild(h('div', { class: 'chips', style: 'margin-top:8px' }, ACT[pick.act].types.map(ty => h('button', { class: 'chip-btn' + (pick.cls === ty.id ? ' on' : ''), type: 'button', onclick: () => { pick.cls = ty.id; draw(); } }, ty.name))));
           us.appendChild(h('div', { class: 'chips', style: 'margin-top:8px' }, [10, 20, 30, 45, 60].map(n => h('button', { class: 'chip-btn' + (pick.min === n ? ' on' : ''), type: 'button', onclick: () => { pick.min = n; draw(); } }, n + 'm'))));
-                    us.appendChild(h('button', { class: 'btn-primary', type: 'button', onclick: () => { usuals.push(pick); pick = null; saveMember({ usuals }); draw(); render(); } }, 'Save ' + ACT[pick.act].name + ' ' + pick.min + 'm')); }
+                    us.appendChild(h('button', { class: 'btn-primary', type: 'button', onclick: () => { usuals.push(pick); pick = null; saveMember({ usuals }); draw(); render(); } }, 'Save ' + ACT[pick.act].name + (pick.cls ? ' ' + ACT[pick.act].types.find(x => x.id === pick.cls).name : '') + ' ' + pick.min + 'm')); }
       }
       const fam = sec('FAMILY', 'Parents set these once for everyone.');
       fam.appendChild(h('div', { class: 'fld', style: 'margin-top:0' }, 'Taekwondo days'));
