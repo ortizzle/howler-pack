@@ -128,6 +128,12 @@ body.pup .log-big { font-family: var(--fp); font-weight: 800; letter-spacing: 0;
 .wrow small { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
 .fab { position: fixed; right: 16px; bottom: calc(78px + env(safe-area-inset-bottom)); z-index: 40; min-height: 52px; padding: 0 20px; border-radius: 999px; background: var(--accent); color: #fff; font-family: var(--fh); font-weight: 700; font-size: 18px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
 body.pup .fab { font-family: var(--fp); font-weight: 800; }
+/* the app's wolf-shield icon on the log buttons */
+.log-big { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 64px; }
+.log-big img { width: 46px; height: 46px; border-radius: 10px; flex: 0 0 auto; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+.fab.icon-fab { width: 68px; height: 68px; min-height: 0; padding: 0; border-radius: 18px; background: none; box-shadow: 0 8px 22px rgba(0,0,0,.28); }
+.fab.icon-fab img { width: 100%; height: 100%; border-radius: 18px; display: block; }
+.fab.icon-fab .plus { position: absolute; right: -6px; top: -6px; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 18px; line-height: 26px; text-align: center; font-family: var(--fb); font-weight: 700; border: 2px solid var(--panel); }
 /* tab bar */
 .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(4, 1fr); background: rgba(250,246,236,.97); border-top: 1px solid var(--line); padding: 4px 8px calc(4px + env(safe-area-inset-bottom)); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .tabbar button { min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
@@ -1319,7 +1325,7 @@ function renderToday(main) {
   main.appendChild(seasonBanner());
   main.appendChild(packSection(false));
   const lc = h('div', { class: 'logbox' });
-  lc.appendChild(h('button', { class: 'log-big', type: 'button', onclick: () => pup ? openPupChooser() : openLog() }, pup ? '🐾 I moved!' : '＋ Log a workout'));
+  lc.appendChild(h('button', { class: 'log-big', type: 'button', onclick: () => pup ? openPupChooser() : openLog() }, h('img', { src: 'icon-192.png', alt: '', width: '46', height: '46' }), h('span', null, pup ? 'I moved!' : 'Log a workout')));
   if (!pup) {
     const us = h('div', { class: 'usuals' });
     (M(id).usuals || []).forEach(u => us.appendChild(h('button', { class: 'usual', type: 'button', onclick: () => quickUsual(u) }, h('span', { class: 'ic' }, ACT[u.act].icon),
@@ -1717,7 +1723,8 @@ function render() {
   const se = currentSeason();
   document.getElementById('season').textContent = (preseason() ? 'Starts ' + fmtShort(se.start) : se.name + ' · ' + se.sub) + ' · ' + M(id).name;
   [['today', '🏠', 'Today'], ['progress', '📈', 'Progress'], ['goals', '🎯', 'Goals'], ['pack', '🐺', 'Pack']].forEach(t => tb.appendChild(h('button', { class: TAB === t[0] ? 'on' : '', type: 'button', 'aria-current': TAB === t[0] ? 'page' : null, onclick: () => go(t[0]) }, h('span', { 'aria-hidden': 'true' }, t[1]), t[2])));
-  const fab = document.getElementById('fab'); fab.hidden = TAB === 'today'; fab.textContent = isPup(id) ? '🐾 I moved!' : '＋ Log';
+  const fab = document.getElementById('fab'); fab.hidden = TAB === 'today'; fab.className = 'fab icon-fab'; fab.setAttribute('aria-label', isPup(id) ? 'I moved! Log something' : 'Log a workout');
+  clear(fab).appendChild(h('img', { src: 'icon-192.png', alt: '' })); fab.appendChild(h('span', { class: 'plus', 'aria-hidden': 'true' }, '+'));
   try {
     if (TAB === 'progress') renderProgress(main); else if (TAB === 'goals') renderGoals(main); else if (TAB === 'pack') renderPack(main); else renderToday(main);
   } catch (e) { console.error(e); main.appendChild(card('SOMETHING WENT WRONG', null)).appendChild(h('p', null, 'This screen hit an error: ' + e.message + '. Your data is safe. Try another tab or reload.')); }
