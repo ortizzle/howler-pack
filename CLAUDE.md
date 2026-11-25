@@ -85,6 +85,9 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - `migrateUsuals()` adds a Walk usual once per parent; up to 6 usuals.
 - **Where & how far** (Chris, Nov 25, 2026): every log sheet, kids' included, shows a route/place box (`title`) and, for distance activities, miles (`detail.miles`) right after "When". They're visible, never required, and recent places (`recentPlaces`) are one-tap chips so they're nearly always answered. These fields are not in "More stats".
 - **Editing:** tapping an Annals entry calls `openLog({ edit: record })`, which updates that record in place.
+  - **Only the person who logged a workout (`by`) can change its shared facts** (activity, class type, minutes, date, place, distance, dogs) and use Apply to everyone (Chris, Nov 25, 2026). `canChange` / `canApplyAll`.
+  - Anyone else opening their copy gets a locked summary ("Logged by Chris…"). They can still set how it felt, heart rate, calories and notes, or tap **I wasn't there** to remove their copy.
+  - **Parents keep fix-up rights on the kids' entries.** When a parent fixes a kid's copy of a group someone else logged, the change stays on that copy.
   - For a group activity, **Apply to everyone who joined** (on by default) copies the shared facts to the others: activity, minutes, date, dogs, title, distance, elevation.
   - Heart rate, calories, felt and notes stay personal.
 - **Peloton CSV import** (`pelotonRows`):

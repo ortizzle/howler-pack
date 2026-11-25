@@ -127,6 +127,7 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .newfor-list { background: rgba(46,125,50,.07); border-color: rgba(46,125,50,.3); } .newfor-list .card-t .chip-btn { min-height: 44px; font-size: 13px; }
 .newfor-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid rgba(46,125,50,.2); font-size: 14px; } .newfor-row .ll { flex: 1; } .newfor-row small { display: block; color: var(--muted); font-size: 12px; }
 .chip-btn.same { border-style: dashed; }
+.locked-card { margin-top: 0; }
 .where-row { display: grid; grid-template-columns: 1fr 104px; gap: 8px; } .where-row.one { grid-template-columns: 1fr; } .where-row .edited-in { border-color: var(--accent); }
 .place-chips { margin-top: 8px; } .place-chips .chip-btn { font-size: 14px; }
 .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
@@ -1022,6 +1023,10 @@ function gainFor(ids, fn) { const se = currentSeason(), b = {}; ids.forEach(i =>
 function gainText(g) { return (Object.keys(g).length > 1 ? 'Logged for ' + Object.keys(g).length + ' · ' : '') + Object.keys(g).map(i => M(i).name + ' +' + g[i]).join(' · ') + (Object.keys(g).length > 1 ? ' Merit' : ' Merit') + (preseason() ? ' (scoring starts Dec 1)' : practice() ? ' (practice, resets Dec 1)' : ''); }
 
 // ───────────────────────── Logging
+// Who may change a workout's shared facts (activity, time, date, place, distance): whoever logged it.
+// Parents keep fix-up rights on the kids' entries. Everyone can add personal stats to their own copy or remove it.
+function canChange(w) { const by = w.by || w.member; return by === me() || (!isPup(me()) && isPup(w.member)); }
+function canApplyAll(w) { const by = w.by || w.member; return by === me() || (!isPup(me()) && isPup(by)); }
 function logGroup(ids, base) {
   const group = ids.length > 1 ? rid('g') : null, now = Date.now(), list = ids.map((id, i) => Object.assign({ id: rid('w') + i, type: 'workout', member: id, group, createdAt: now }, base));
   putMany(list); return list.map(x => x.id);
@@ -1050,6 +1055,8 @@ function openLog(preset) {
   // Together activities start with the whole family selected (until someone taps a name)
   const autoCrew = () => { if (ed || f.crewTouched) return; f.crew = [mine]; };   // always starts with just you
   autoCrew();
+  const lock = !!ed && !canChange(ed), byName = ed ? M(ed.by || ed.member).name : '';
+  if (ed && !canApplyAll(ed)) f.groupAll = false;
   if (!ed && ACT[f.act] && ACT[f.act].types) f.detail.cls = (preset && preset.cls) || lastCls(f.act);
   const body = h('div', { class: 'log-body' }), preview = h('div', { class: 'log-preview' });
   // redraws caused by a field's change event wait a tick: change fires on blur, and rebuilding the sheet mid-blur breaks the DOM
@@ -1057,6 +1064,7 @@ function openLog(preset) {
   function draw() {
     clear(body);
     const anyAdult = f.crew.some(i => !isPup(i));
+    if (lock) { drawLocked(anyAdult); return; }
     if (!pup && !ed) body.appendChild(h('button', { class: 'ai-btn', type: 'button', onclick: () => { close(); openReader(); } }, '✨ Paste or snap a workout instead'));
     const grid = h('div', { class: 'act-grid' }); let lastG = '';
     ACTIVITIES.filter(a => !a.hidden && !(pup && (a.id === 'strength' || a.id === 'bootcamp'))).forEach(a => {
@@ -1099,7 +1107,8 @@ function openLog(preset) {
         diffs.length ? h('button', { class: 'more-btn', type: 'button', onclick: () => { f.min = ed.peloton.min || f.min; f.detail = Object.assign({}, ed.peloton.detail || {}); STATS_ALL.forEach(k => { if (ed.detail && ed.detail[k] && !(ed.peloton.detail || {})[k]) f.detail[k] = ed.detail[k]; }); draw(); } }, '↺ Restore all Peloton numbers') : null));
     }
     const others = ed && ed.group ? all('workout').filter(x => x.group === ed.group && x.id !== ed.id) : [];
-    if (others.length) body.appendChild(h('button', { class: 'toggle' + (f.groupAll ? ' on' : ''), type: 'button', role: 'switch', 'aria-checked': f.groupAll ? 'true' : 'false', style: 'margin-top:8px', onclick: () => { f.groupAll = !f.groupAll; draw(); } },
+    if (others.length && !canApplyAll(ed)) body.appendChild(h('p', { class: 'hint', style: 'font-size:14px;margin-top:12px' }, byName + ' logged this, so your changes stay on this copy only.'));
+    else if (others.length) body.appendChild(h('button', { class: 'toggle' + (f.groupAll ? ' on' : ''), type: 'button', role: 'switch', 'aria-checked': f.groupAll ? 'true' : 'false', style: 'margin-top:8px', onclick: () => { f.groupAll = !f.groupAll; draw(); } },
       'Apply to everyone who joined (' + others.map(x => M(x.member).name).join(', ') + ')', h('span', { class: 'sw' })));
     if (others.length && f.groupAll) body.appendChild(h('p', { class: 'hint' }, 'Activity, length, date, dogs, distance and elevation update for everyone. Heart rate, calories, feel and notes stay personal.'));
     if (ed && !others.length) body.appendChild(h('p', { class: 'hint', style: 'font-size:14px;margin-top:12px' }, 'Editing ' + (ed.member === mine ? 'your' : M(ed.member).name + "'s") + ' entry' + (ed.group ? ' (the others who joined keep theirs as is)' : '') + '.'));
@@ -1136,6 +1145,25 @@ function openLog(preset) {
     body.appendChild(preview);
     body.appendChild(h('button', { class: 'btn-primary', type: 'button', onclick: save }, ed ? 'Save changes' : 'Log it'));
     upd();
+  }
+  // Someone else logged this for you: the shared facts are theirs to change; how it felt, HR, calories and notes are yours
+  function drawLocked(anyAdult) {
+    const d = ed.detail || {}, bits = [ed.min + ' min', fmtDow(ed.date)]; if (ed.title) bits.push(ed.title); if (d.miles) bits.push(d.miles + ' mi');
+    body.appendChild(h('div', { class: 'card locked-card' }, h('b', null, ACT[ed.act].icon + ' ' + actLabel(ed)), h('div', null, bits.join(' · ')),
+      h('p', { class: 'hint', style: 'margin:6px 0 0' }, 'Logged by ' + byName + '. Only ' + byName + ' can change the activity, time, date or distance' + (anyAdult ? '; how it felt, heart rate, calories and notes are yours.' : '.'))));
+    if (anyAdult) {
+      body.appendChild(h('div', { class: 'fld' }, 'How did it feel? ', h('small', null, 'nudges effort points')));
+      body.appendChild(h('div', { class: 'chips' }, Object.keys(FELT).map(k => h('button', { class: 'chip-btn' + (f.felt === k ? ' on' : ''), type: 'button', onclick: () => { f.felt = k; draw(); } }, FELT[k].ico + ' ' + FELT[k].label))));
+      const grid2 = h('div', { class: 'stat-grid' });
+      STATS_ALL.forEach(k => { const sf = STAT_FIELDS[k]; grid2.appendChild(h('label', { class: 'num' }, sf[0] + ' (' + sf[1] + ')', h('input', { type: 'number', inputmode: 'decimal', step: sf[2], min: '0', value: f.detail[k] || '',
+        oninput: e => { const v = parseFloat(e.target.value); if (v > 0) f.detail[k] = v; else delete f.detail[k]; upd(); } }))); });
+      body.appendChild(grid2);
+      body.appendChild(h('label', { class: 'num', style: 'display:block;margin-top:10px' }, 'Notes', h('input', { type: 'text', maxlength: '140', value: f.note, placeholder: 'How it went', oninput: e => { f.note = e.target.value; } })));
+      body.appendChild(preview);
+      body.appendChild(h('button', { class: 'btn-primary', type: 'button', onclick: save }, 'Save changes'));
+      upd();
+    }
+    if (ed.member === mine) body.appendChild(h('button', { class: 'btn-ghost', type: 'button', style: 'margin-top:8px', onclick: () => { const w = ed; close(); { const s2 = Local.get('seen', {}); s2[w.id] = 1; Local.set('seen', s2); } del(w.id); render(); toast('Removed from your log', 'Undo', () => { put(Object.assign({}, w, { deleted: false })); render(); }); } }, 'I wasn\'t there'));
   }
   function base() {
     const detail = {}; statKeys(f.act).forEach(k => { if (f.detail[k] > 0) detail[k] = f.detail[k]; });
