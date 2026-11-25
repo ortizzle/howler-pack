@@ -6,8 +6,10 @@ The Ortiz family's fitness app: Chris and Kat (parents, "Proctors") and Sedona (
 
 GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every push to main is live for the whole family.**
 
-- Suggest alternatives, then get Chris's explicit OK before pushing.
-- Work on a branch until then.
+- **Chris's standing instruction (Nov 25, 2026): always publish** once a change is finished and every test suite passes. Don't wait for an OK.
+  - **Exception:** if his message asks questions, answer them first and publish only after he responds.
+  - Still mention alternatives worth considering when reporting what was published.
+- Do the work on a branch, test it, then fast-forward `main` to it.
 - After a deploy, remind him that Pages takes about a minute. The service worker fetches the page network-first, so closing and reopening the app picks up changes.
 
 ## Shape of the code
