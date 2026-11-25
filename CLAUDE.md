@@ -53,8 +53,13 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 - **Editing:** tapping an Annals entry calls `openLog({ edit: record })`, which updates that one record in place. In a group activity, the others keep their own copies.
 - **Peloton CSV import** (`pelotonRows`):
   - Ids come from the row timestamp (`w_pel_…`).
-  - A hand-logged entry on the same day, same activity and about the same length (±25% or 10 min) is **filled in** (`pelotonId` set, Peloton numbers win) instead of duplicated.
-  - Re-importing adds nothing.
+  - A hand-logged entry on the same day, same activity and about the same length (±25% or 10 min) is **filled in** (`pelotonId` set) instead of duplicated.
+  - **Peloton is final by default, with overrides.** Imported records keep `peloton: { min, detail }` (what Peloton said) and `overrides` (fields the person changed; `pelotonDiffs()` recomputes it on save).
+    - When a hand-logged entry disagrees, the import preview shows both and defaults to "Use Peloton"; "Keep mine" stores the person's numbers as overrides.
+    - Editing a Peloton record marks changed fields "edited" with a per-field ↺ restore and a "Restore all Peloton numbers" button.
+    - This matters most for outdoor workouts, whose GPS numbers often need fixing.
+  - Re-importing adds nothing and never undoes an override.
+- **Redraws from a field's `change` event go through `redraw()`** (setTimeout 0). `change` fires on blur, and rebuilding the sheet mid-blur throws `removeChild` errors.
 - **Weekly Primus:** `primusScores`. It goes to whoever beats their own target by the most, so kids and parents compete fairly.
 - **Coaches:** `COACHES` (Dancer, Mickey, Matteo, as in the original Howlers). The model is `claude-opus-5-5` with effort `low`, browser-direct, with server-side fallbacks.
 

@@ -113,6 +113,9 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .annal .ad { width: 50px; color: var(--muted); font-size: 12px; flex: 0 0 auto; }
 .annal .ll { flex: 1; } .annal small { display: block; color: var(--muted); font-size: 12px; }
 .annal-edit { text-align: left; min-height: 44px; padding: 2px 0; } .annal .note-line { font-style: italic; }
+.pel-banner { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(46,125,50,.07); border: 1px solid rgba(46,125,50,.3); font-size: 14px; }
+.num.edited { color: var(--accent); } .restore { min-height: 44px; margin-top: 4px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); font-size: 12px; color: var(--muted); background: var(--panel); }
+.conflict { margin-top: 6px; } .conflict small { display: block; margin-bottom: 6px; }
 .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
 .num input[type=text] { display: block; width: 100%; margin-top: 4px; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); color: var(--ink); padding: 0 12px; font-size: 16px; font-family: var(--fb); }
 .icon-btn { width: 44px; height: 44px; border-radius: 10px; color: var(--muted); font-size: 16px; flex: 0 0 auto; }
@@ -548,6 +551,15 @@ const STAT_FIELDS = {
 };
 const STATS_FOR = { tread: ['mph', 'incline', 'miles'], bike: ['kj', 'watts', 'cadence', 'resistance', 'miles'], run: ['miles', 'elev'], walk: ['miles', 'elev'], dogwalk: ['miles'], hike: ['miles', 'elev'], ride: ['miles', 'elev'], swim: ['miles'] };
 const STATS_ALL = ['hr', 'hrMax', 'kcal'];
+// Peloton is final by default; a person can override any number. A Peloton-sourced workout keeps
+// peloton: { min, detail } (what Peloton said) and overrides: [field…] (what the person chose to change).
+function pelotonDiffs(rec) {
+  const pv = rec.peloton; if (!pv) return [];
+  const out = []; if (pv.min && rec.min !== pv.min) out.push('min');
+  const a = rec.detail || {}, b = pv.detail || {};
+  new Set(Object.keys(a).concat(Object.keys(b))).forEach(k => { if ((a[k] || 0) !== (b[k] || 0)) out.push(k); });
+  return out;
+}
 function statKeys(act) { return (STATS_FOR[act] || []).concat(STATS_ALL); }
 function statsLine(w) {
   const d = w.detail || {}, bits = [];
@@ -943,6 +955,8 @@ function openLog(preset) {
   const f = ed ? { act: ed.act, min: ed.min, felt: ed.felt || 'normal', crew: [ed.member], detail: Object.assign({}, ed.detail || {}), open: !!(ed.detail || ed.note || ed.title), dogs: (ed.dogs || dogs().map(d => d.id)).slice(), date: ed.date, title: ed.title || '', note: ed.note || '' }
     : { act: (preset && preset.act) || (pup ? 'tkd' : 'tread'), min: (preset && preset.min) || 30, felt: 'normal', crew: [mine], detail: {}, open: false, dogs: dogs().map(d => d.id), date: today, title: '', note: '' };
   const body = h('div', { class: 'log-body' }), preview = h('div', { class: 'log-preview' });
+  // redraws caused by a field's change event wait a tick: change fires on blur, and rebuilding the sheet mid-blur breaks the DOM
+  const redraw = () => setTimeout(draw, 0);
   function draw() {
     clear(body);
     const anyAdult = f.crew.some(i => !isPup(i));
@@ -958,13 +972,19 @@ function openLog(preset) {
       body.appendChild(h('div', { class: 'chips' }, dogs().map(dg => h('button', { class: 'chip-btn' + (f.dogs.includes(dg.id) ? ' on' : ''), type: 'button',
         onclick: () => { f.dogs = f.dogs.includes(dg.id) ? f.dogs.filter(x => x !== dg.id) : f.dogs.concat(dg.id); if (!f.dogs.length) f.dogs = [dg.id]; draw(); } }, dg.icon + ' ' + dg.name))));
     }
-    body.appendChild(h('div', { class: 'fld' }, 'How long'));
+    body.appendChild(h('div', { class: 'fld' }, 'How long', ed && ed.peloton && ed.peloton.min && f.min !== ed.peloton.min ? h('small', null, ' · edited (Peloton: ' + ed.peloton.min + ' min) ') : null,
+      ed && ed.peloton && ed.peloton.min && f.min !== ed.peloton.min ? h('button', { class: 'restore', type: 'button', onclick: () => { f.min = ed.peloton.min; draw(); } }, '↺ Peloton') : null));
     const custom = h('input', { class: 'txt num-sm', type: 'number', inputmode: 'numeric', min: '1', max: '300', placeholder: 'other', 'aria-label': 'Minutes', value: [10, 20, 30, 45, 60, 90].includes(f.min) ? '' : f.min,
-      onchange: e => { const v = parseInt(e.target.value, 10); if (v > 0 && v <= 300) { f.min = v; draw(); } } });
+      onchange: e => { const v = parseInt(e.target.value, 10); if (v > 0 && v <= 300) { f.min = v; redraw(); } } });
     body.appendChild(h('div', { class: 'chips' }, [10, 20, 30, 45, 60, 90].map(n => h('button', { class: 'chip-btn' + (f.min === n ? ' on' : ''), type: 'button', onclick: () => { f.min = n; draw(); } }, n + 'm')), custom));
     body.appendChild(h('div', { class: 'fld' }, 'When'));
-    const dIn = h('input', { class: 'txt num-sm', type: 'date', max: today, value: f.date, 'aria-label': 'Date', onchange: e => { if (e.target.value && e.target.value <= today) { f.date = e.target.value; draw(); } } });
+    const dIn = h('input', { class: 'txt num-sm', type: 'date', max: today, value: f.date, 'aria-label': 'Date', onchange: e => { if (e.target.value && e.target.value <= today) { f.date = e.target.value; redraw(); } } });
     body.appendChild(h('div', { class: 'chips' }, [[today, 'Today'], [addDays(today, -1), 'Yesterday']].map(x => h('button', { class: 'chip-btn' + (f.date === x[0] ? ' on' : ''), type: 'button', onclick: () => { f.date = x[0]; draw(); } }, x[1])), dIn));
+    if (ed && ed.peloton) {
+      const live = Object.assign({}, ed, { min: f.min, detail: f.detail }), diffs = pelotonDiffs(live);
+      body.appendChild(h('div', { class: 'pel-banner' }, h('b', null, 'From Peloton ✓'), h('span', null, diffs.length ? ' You\'ve overridden ' + diffs.length + ' number' + (diffs.length > 1 ? 's' : '') + '. Your changes are kept, even if you import again.' : ' These are Peloton\'s numbers. Change any of them and your version is kept as an override.'),
+        diffs.length ? h('button', { class: 'more-btn', type: 'button', onclick: () => { f.min = ed.peloton.min || f.min; f.detail = Object.assign({}, ed.peloton.detail || {}); STATS_ALL.forEach(k => { if (ed.detail && ed.detail[k] && !(ed.peloton.detail || {})[k]) f.detail[k] = ed.detail[k]; }); draw(); } }, '↺ Restore all Peloton numbers') : null));
+    }
     if (ed) body.appendChild(h('p', { class: 'hint', style: 'font-size:14px;margin-top:12px' }, 'Editing ' + (ed.member === mine ? 'your' : M(ed.member).name + "'s") + ' entry' + (ed.group ? ' (the others who joined keep theirs as is)' : '') + '.'));
     else {
       body.appendChild(h('div', { class: 'fld' }, 'Who moved? ', h('small', null, 'one entry logs for everyone')));
@@ -979,9 +999,11 @@ function openLog(preset) {
         (f.open ? '▾ ' : '▸ ') + 'More stats (optional)' + (filled && !f.open ? ' · ' + filled + ' filled in' : '')));
       if (f.open) {
         const grid2 = h('div', { class: 'stat-grid' });
-        statKeys(f.act).forEach(k => { const sf = STAT_FIELDS[k];
-          grid2.appendChild(h('label', { class: 'num' }, sf[0] + ' (' + sf[1] + ')', h('input', { type: 'number', inputmode: 'decimal', step: sf[2], min: '0', value: f.detail[k] || '',
-            oninput: e => { const v = parseFloat(e.target.value); if (v > 0) f.detail[k] = v; else delete f.detail[k]; upd(); } }))); });
+        const pd = ed && ed.peloton ? (ed.peloton.detail || {}) : null;
+        statKeys(f.act).forEach(k => { const sf = STAT_FIELDS[k], edited = pd && pd[k] && (f.detail[k] || 0) !== pd[k];
+          grid2.appendChild(h('label', { class: 'num' + (edited ? ' edited' : '') }, sf[0] + ' (' + sf[1] + ')' + (edited ? ' · edited' : ''), h('input', { type: 'number', inputmode: 'decimal', step: sf[2], min: '0', value: f.detail[k] || '',
+            oninput: e => { const v = parseFloat(e.target.value); if (v > 0) f.detail[k] = v; else delete f.detail[k]; upd(); }, onchange: () => { if (pd) redraw(); } }),
+            edited ? h('button', { class: 'restore', type: 'button', onclick: e => { e.preventDefault(); f.detail[k] = pd[k]; draw(); } }, '↺ Peloton: ' + pd[k]) : null)); });
         body.appendChild(grid2);
         body.appendChild(h('label', { class: 'num', style: 'display:block;margin-top:10px' }, ACT[f.act].group === 'Peloton' ? 'Class name' : 'Route or place',
           h('input', { type: 'text', maxlength: '80', value: f.title, placeholder: ACT[f.act].group === 'Peloton' ? 'e.g. 30 min Hills Run' : 'e.g. Pinnacle Peak', oninput: e => { f.title = e.target.value; } })));
@@ -1010,7 +1032,7 @@ function openLog(preset) {
     if (preseason()) preview.appendChild(h('div', { class: 'hint' }, 'Practice entry: Merit starts counting Dec 1.'));
   }
   function save() {
-    if (ed) { const before = Object.assign({}, ed); put(Object.assign({}, ed, base())); close(); render(); toast('Saved ' + ACT[f.act].icon + ' ' + actLabel(Object.assign({}, ed, base())), 'Undo', () => { put(before); render(); }); return; }
+    if (ed) { const before = Object.assign({}, ed), next = Object.assign({}, ed, base()); if (next.peloton) next.overrides = pelotonDiffs(next); put(next); close(); render(); toast('Saved ' + ACT[f.act].icon + ' ' + actLabel(Object.assign({}, ed, base())), 'Undo', () => { put(before); render(); }); return; }
     const crew = f.crew.slice(); let ids; const g = gainFor(crew, () => { ids = logGroup(crew, base()); }); close(); render(); toast(ACT[f.act].icon + ' ' + gainText(g), 'Undo', () => undoLog(ids));
   }
   const close = openModal(ed ? 'Edit workout' : pup ? 'What did you do? 🐾' : 'Log a workout', body);
@@ -1119,7 +1141,8 @@ function pelotonRows(rows) {
     const done = !!DB.records[id] || all('workout').some(x => x.pelotonId === id);
     // A workout logged by hand the same day, same activity, about the same length → fill it in rather than add a twin
     const match = done ? null : all('workout').find(x => x.member === me() && x.date === date && x.act === act && !x.pelotonId && x.source !== 'peloton' && Math.abs(x.min - min) <= Math.max(10, min * 0.25));
-    return { id, type: 'workout', member: me(), date, act, min, felt: 'normal', detail: Object.keys(detail).length ? detail : null, title: r['Title'] || null, note: r['Instructor Name'] ? 'with ' + r['Instructor Name'] : null, by: me(), source: 'peloton', dupe: done, match };
+    const snap = { min, detail: Object.assign({}, detail) };
+    return { id, type: 'workout', member: me(), date, act, min, felt: 'normal', peloton: snap, overrides: [], detail: Object.keys(detail).length ? detail : null, title: r['Title'] || null, note: r['Instructor Name'] ? 'with ' + r['Instructor Name'] : null, by: me(), source: 'peloton', dupe: done, match };
   });
 }
 function openImport() {
@@ -1127,13 +1150,26 @@ function openImport() {
   const file = h('input', { type: 'file', accept: '.csv,text/csv', style: 'display:none', onchange: e => { const fl = e.target.files[0]; if (!fl) return; const rd = new FileReader(); rd.onload = () => show(String(rd.result)); rd.readAsText(fl); } });
   function show(text) {
     const list = pelotonRows(parseCSV(text)), todo = list.filter(w => !w.skip && !w.dupe), adds = todo.filter(w => !w.match), fills = todo.filter(w => w.match);
-    clear(body).appendChild(h('div', { class: 'hint', style: 'margin-bottom:8px' }, 'Found ' + list.length + ' workouts · ' + adds.length + ' new · ' + fills.length + ' fill in details on entries you already logged'));
+    clear(body).appendChild(h('div', { class: 'hint', style: 'margin-bottom:8px' }, 'Found ' + list.length + ' workout' + (list.length === 1 ? '' : 's') + ' · ' + adds.length + ' new' + (fills.length ? ' · ' + fills.length + ' fill' + (fills.length === 1 ? 's' : '') + ' in one you already logged' : '')));
+    // where a hand-logged entry disagrees with Peloton, show both; Peloton wins unless told otherwise
+    fills.forEach(w => { const x = w.match, d0 = x.detail || {}, d1 = w.detail || {}, diffs = [];
+      if (x.min !== w.min) diffs.push(['min', x.min + ' min', w.min + ' min']);
+      Object.keys(d0).forEach(k => { if (d1[k] && d1[k] !== d0[k] && STAT_FIELDS[k]) diffs.push([k, d0[k] + ' ' + STAT_FIELDS[k][1], d1[k] + ' ' + STAT_FIELDS[k][1]]); });
+      w.diffs = diffs; w.keepMine = false; });
+    const conflict = w => { if (!w.diffs || !w.diffs.length) return null; const box = h('div', { class: 'conflict' });
+      const draw = () => { clear(box).appendChild(h('small', null, 'You logged ' + w.diffs.map(d => d[1]).join(', ') + ' · Peloton says ' + w.diffs.map(d => d[2]).join(', ')));
+        box.appendChild(h('div', { class: 'chips' }, h('button', { class: 'chip-btn' + (w.keepMine ? '' : ' on'), type: 'button', onclick: () => { w.keepMine = false; draw(); } }, 'Use Peloton'),
+          h('button', { class: 'chip-btn' + (w.keepMine ? ' on' : ''), type: 'button', onclick: () => { w.keepMine = true; draw(); } }, 'Keep mine'))); };
+      draw(); return box; };
     list.slice(0, 60).forEach(w => body.appendChild(h('div', { class: 'imp-row' + (w.skip || w.dupe ? ' off' : '') }, h('span', { class: 'act-ico' }, w.skip ? '·' : ACT[w.act].icon),
-      h('span', { class: 'll' }, w.title || '', h('small', null, w.skip ? w.reason : fmtShort(w.date) + ' · ' + w.min + ' min' + (statsLine(w) ? ' · ' + statsLine(w) : '') + (w.dupe ? ' · already imported' : w.match ? ' · ✎ fills in the one you logged' : ''))))));
+      h('span', { class: 'll' }, w.title || '', h('small', null, w.skip ? w.reason : fmtShort(w.date) + ' · ' + w.min + ' min' + (statsLine(w) ? ' · ' + statsLine(w) : '') + (w.dupe ? ' · already imported' : w.match ? ' · ✎ fills in the one you logged' : '')), w.match ? conflict(w) : null))));
     body.appendChild(h('button', { class: 'btn-primary', type: 'button', style: 'margin-top:14px', onclick: () => {
       const g = gainFor([me()], () => {
         const recs = adds.map(w => { const r = Object.assign({}, w, { createdAt: Date.now() }); delete r.dupe; delete r.match; return r; });
-        fills.forEach(w => { const x = w.match; recs.push(Object.assign({}, x, { min: w.min, detail: Object.assign({}, x.detail || {}, w.detail || {}), title: x.title || w.title, note: x.note || w.note, pelotonId: w.id })); });
+        fills.forEach(w => { const x = w.match, mineD = x.detail || {}, pel = w.detail || {};
+          const merged = w.keepMine ? { min: x.min, detail: Object.assign({}, pel, mineD) } : { min: w.min, detail: Object.assign({}, mineD, pel) };
+          const r = Object.assign({}, x, merged, { title: x.title || w.title, note: x.note || w.note, pelotonId: w.id, peloton: w.peloton });
+          r.overrides = pelotonDiffs(r); recs.push(r); });
         putMany(recs); });
       close(); render(); toast('Peloton: ' + adds.length + ' added, ' + fills.length + ' filled in · ' + gainText(g)); } }, todo.length ? 'Import ' + todo.length : 'Nothing new'));
   }
@@ -1229,7 +1265,7 @@ function playerCard(sc, isPrimus, place) {
     if (!ws.length) inner.appendChild(h('p', { class: 'hint' }, 'Nothing logged yet.'));
     if (ws.length && canEdit) inner.appendChild(h('p', { class: 'hint', style: 'margin:0 0 4px' }, 'Tap an entry to edit it or add stats.'));
     ws.forEach(w => { const txt = [(ACT[w.act] ? ACT[w.act].icon : '') + ' ' + (w.title || actLabel(w)) + ' · ' + w.min + ' min',
-        h('small', null, (w.group ? 'with ' + all('workout').filter(x => x.group === w.group && x.member !== id).map(x => M(x.member).name).join(' & ') : 'solo') + (w.by && w.by !== id ? ' · added by ' + M(w.by).name : '') + (w.pelotonId || w.source === 'peloton' ? ' · Peloton ✓' : '')),
+        h('small', null, (w.group ? 'with ' + all('workout').filter(x => x.group === w.group && x.member !== id).map(x => M(x.member).name).join(' & ') : 'solo') + (w.by && w.by !== id ? ' · added by ' + M(w.by).name : '') + (w.pelotonId || w.source === 'peloton' ? ' · Peloton ✓' + ((w.overrides || []).length ? ' · ' + w.overrides.length + ' edited' : '') : '')),
         statsLine(w) ? h('small', null, statsLine(w)) : null, w.note ? h('small', { class: 'note-line' }, '“' + w.note + '”') : null];
       inner.appendChild(h('div', { class: 'annal' }, h('span', { class: 'ad' }, fmtShort(w.date)),
       canEdit ? h('button', { class: 'll annal-edit', type: 'button', 'aria-label': 'Edit ' + actLabel(w) + ' on ' + fmtDow(w.date), onclick: () => openLog({ edit: w }) }, txt) : h('span', { class: 'll' }, txt),
