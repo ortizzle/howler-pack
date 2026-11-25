@@ -46,6 +46,15 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - Seasons 2–4 have `loreDraft: true`. The family is still shaping that lore, so adding or rewriting stations is welcome.
   - Keep lore kid-friendly, accurate to the books, and short. "Real Mars/Moon fact" stations must be true.
   - Race goals assume about 2.5 Pack Steps a day when everyone meets their Standard. Holiday checkpoints (`by`) sit at or just under that pace.
+- **Adult workout stats:** `STAT_FIELDS` / `STATS_FOR` / `STATS_ALL`.
+  - Speed, incline, watts (or kJ → watts) and distance refine MET.
+  - Heart rate and device calories are stored and shown but never scored; keep it that way for fairness across bodies.
+  - Kids never see the stats section.
+- **Editing:** tapping an Annals entry calls `openLog({ edit: record })`, which updates that one record in place. In a group activity, the others keep their own copies.
+- **Peloton CSV import** (`pelotonRows`):
+  - Ids come from the row timestamp (`w_pel_…`).
+  - A hand-logged entry on the same day, same activity and about the same length (±25% or 10 min) is **filled in** (`pelotonId` set, Peloton numbers win) instead of duplicated.
+  - Re-importing adds nothing.
 - **Weekly Primus:** `primusScores`. It goes to whoever beats their own target by the most, so kids and parents compete fairly.
 - **Coaches:** `COACHES` (Dancer, Mickey, Matteo, as in the original Howlers). The model is `claude-opus-5-5` with effort `low`, browser-direct, with server-side fallbacks.
 
