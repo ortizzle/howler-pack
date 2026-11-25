@@ -530,13 +530,13 @@ const ACTIVITIES = [
   { id: 'yoga', name: 'Yoga', long: 'Yoga / Stretch', icon: '🧘', group: 'Peloton', met: [2.5, 3, 4] },
   { id: 'bootcamp', name: 'Bootcamp', long: 'Bootcamp', icon: '🔥', group: 'Peloton', met: [6, 8, 9] },
   { id: 'dogwalk', name: 'Dog Walk', long: 'Dog Walk', icon: '🐕', group: 'Together', met: [3, 3.5, 4.3], detail: 'dist' },
-  { id: 'walk', name: 'Walk', long: 'Walk', icon: '🚶', group: 'Together', met: [3, 3.5, 4.3], detail: 'dist' },
   { id: 'park', name: 'Park', long: 'Park', icon: '🛝', group: 'Together', met: [3.5, 4.5, 5.8] },
   { id: 'hike', name: 'Hike', long: 'Hike', icon: '⛰️', group: 'Together', met: [5.3, 6, 7.8], detail: 'dist' },
   { id: 'ride', name: 'Bike Ride', long: 'Bike Ride', icon: '🚵', group: 'Together', met: [6, 8, 10], detail: 'dist' },
   { id: 'swim', name: 'Swim', long: 'Swim', icon: '🏊', group: 'Together', met: [5.8, 7, 9.8] },
   { id: 'tkd', name: 'Taekwondo', long: 'Taekwondo', icon: '🥋', group: 'Classes & Outside', met: [5.3, 7.5, 10.3] },
   { id: 'run', name: 'Run', long: 'Run', icon: '👟', group: 'Classes & Outside', met: [8, 9.8, 11.5], detail: 'dist' },
+  { id: 'walk', name: 'Walk', long: 'Walk', icon: '🚶', group: 'Classes & Outside', met: [3, 3.5, 4.3], detail: 'dist' },
   { id: 'sport', name: 'Sport', long: 'Sport', icon: '🏓', group: 'Classes & Outside', met: [4, 5, 7] },
   { id: 'play', name: 'Active Play', long: 'Active Play', icon: '⚽', group: 'Classes & Outside', met: [3.5, 5, 6.5] },
 ];
@@ -643,9 +643,17 @@ const SEASONS = [
       { at: 200, icon: '🎆', name: "New Year's Eve · A Year of Howling", by: '2027-12-31', lore: 'From the trial run in The Passage to the end of the year: the pack made it. Rest, celebrate, and get ready to set next year\'s goals together. Hail, Howlers!' },
     ] } },
 ];
-function seasonFor(day) { return SEASONS.find(x => x.start <= day && day <= x.end) || null; }
-function currentSeason() { const t = AZ.today(); return seasonFor(t) || (t < SEASONS[0].start ? SEASONS[0] : SEASONS[SEASONS.length - 1]); }
-function preseason() { return AZ.today() < SEASONS[0].start; }
+// Practice Week: a warm-up before The Passage. Points, ranks, Primus and a mini race work, then everything restarts Dec 1.
+// It is deliberately not in SEASONS (no Hall of Honors crest, no goals); practice workouts stay in the Annals as history.
+const PRACTICE = { id: 'p0', name: 'Practice Week', sub: 'Warm-up', start: '2026-11-23', end: '2026-11-30', practice: true,
+  race: { name: 'Warm-up Walk', unit: 'Pack Steps', goal: 15, stations: [
+    { at: 6, icon: '🐾', name: 'First Steps', lore: 'Every pack starts the same way: a few people deciding to move together. In Red Rising, the Howlers begin as a handful of students who choose to trust each other. That is this week.' },
+    { at: 15, icon: '🚪', name: 'The Gate of the Passage', lore: 'You made it to the gate. On December 1 the real trial run begins: Merit resets to zero, the Race to the New Year starts, and every Active Day counts. See you on the other side.' },
+  ] } };
+function seasonFor(day) { return SEASONS.find(x => x.start <= day && day <= x.end) || (PRACTICE.start <= day && day <= PRACTICE.end ? PRACTICE : null); }
+function currentSeason() { const t = AZ.today(); return seasonFor(t) || (t < PRACTICE.start ? PRACTICE : SEASONS[SEASONS.length - 1]); }
+function preseason() { return AZ.today() < PRACTICE.start; }
+function practice() { return !!currentSeason().practice; }
 function nextSeason(se) { return SEASONS[SEASONS.indexOf(se) + 1] || null; }
 
 // ───────────────────────── Scoring (cached per data version)
@@ -747,7 +755,7 @@ function primusScores(wk, se) {
   }).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)));
 }
 function primusOf(wk) { const sc = primusScores(wk); return sc[0] && sc[0].score > 0 ? sc[0].id : null; }
-function primusCount(id) { return all('award').filter(a => a.member === id && a.kind === 'primus').length; }
+function primusCount(id) { return all('award').filter(a => a.member === id && a.kind === 'primus' && a.date >= SEASONS[0].start).length; }   // practice crowns don't count
 
 // ───────────────────────── Goals: monthly + season. December goals are practice for 2027.
 const GOAL_TYPES = {
@@ -763,7 +771,7 @@ const GOAL_TYPES = {
 function periodOf(scope, day) { const se = seasonFor(day) || currentSeason(); return scope === 'month' ? day.slice(0, 7) : se.id; }
 function windowOf(scope, day) { if (scope === 'month') { const a = day.slice(0, 8) + '01'; return { a, b: monthEnd(a), name: MONTHS_FULL[+day.slice(5, 7) - 1] }; } const se = seasonFor(day) || currentSeason(); return { a: se.start, b: se.end, name: se.name }; }
 function goalsOf(id, scope, day) { const r = rec('goals_' + id + '_' + scope + '_' + periodOf(scope, day || goalDay())); return r ? r.list : null; }
-function goalDay() { return preseason() ? SEASONS[0].start : AZ.today(); }
+function goalDay() { return preseason() || practice() ? SEASONS[0].start : AZ.today(); }   // goals start with The Passage
 function goalStatus(id, g, scope, day) {
   day = day || goalDay(); const win = windowOf(scope, day), T = GOAL_TYPES[g.type]; if (!T) return { v: 0, pct: 0, done: false, onPace: true };
   const v = T.val(id, win.a, win.b), elapsed = Math.max(0, (daysBetween(win.a, AZ.today()) + 1)) / (daysBetween(win.a, win.b) + 1);
@@ -875,7 +883,7 @@ function coachStats(id) {
   const sc = score(id), se = sc.se, wk = sc.cur, left = Math.max(0, R(id).standardDays - wk.active), today = AZ.today();
   const last = all('workout').filter(w => w.member === id && w.date <= today).sort((a, b) => a.date < b.date ? 1 : -1)[0];
   const ps = primusScores(weekKey(today)), place = ps.findIndex(x => x.id === id) + 1, rs = raceState(se);
-  const o = { name: M(id).name, role: isPup(id) ? 'kid' : 'parent', season: se.name + (se.trial ? ' (December trial run)' : ''),
+  const o = { name: M(id).name, role: isPup(id) ? 'kid' : 'parent', season: se.name + (se.trial ? ' (December trial run)' : se.practice ? ' (practice; points reset Dec 1)' : ''),
     activeDaysThisWeek: wk.active, weeklyTarget: R(id).standardDays, daysLeftInWeek: 6 - dow(today), standardMet: wk.standard, moreDaysNeeded: left,
     chainWeeks: sc.chain, seasonMerit: sc.total, rank: sc.rank.rank.name, primusRacePlace: place + ' of ' + ps.length, timesPrimus: primusCount(id),
     lastWorkout: last ? actLabel(last) + ' on ' + fmtDow(last.date) : 'none yet', packRace: rs.steps + ' of ' + rs.goal + ' ' + se.race.unit + ' toward ' + se.race.name,
@@ -939,7 +947,7 @@ function confirmModal(title, message, okText, onOk) {
 }
 function card(title, right, cls) { const c = h('div', { class: 'card' + (cls ? ' ' + cls : '') }); if (title) c.appendChild(h('div', { class: 'card-t' }, h('span', null, title), right ? h('span', { class: 'r' }, right) : null)); return c; }
 function gainFor(ids, fn) { const se = currentSeason(), b = {}; ids.forEach(i => b[i] = score(i, se).total); fn(); const o = {}; ids.forEach(i => o[i] = score(i, se).total - b[i]); return o; }
-function gainText(g) { return (Object.keys(g).length > 1 ? 'Logged for ' + Object.keys(g).length + ' · ' : '') + Object.keys(g).map(i => M(i).name + ' +' + g[i]).join(' · ') + (Object.keys(g).length > 1 ? ' Merit' : ' Merit') + (preseason() ? ' (scoring starts Dec 1)' : ''); }
+function gainText(g) { return (Object.keys(g).length > 1 ? 'Logged for ' + Object.keys(g).length + ' · ' : '') + Object.keys(g).map(i => M(i).name + ' +' + g[i]).join(' · ') + (Object.keys(g).length > 1 ? ' Merit' : ' Merit') + (preseason() ? ' (scoring starts Dec 1)' : practice() ? ' (practice, resets Dec 1)' : ''); }
 
 // ───────────────────────── Logging
 function logGroup(ids, base) {
@@ -949,7 +957,7 @@ function logGroup(ids, base) {
 function undoLog(ids) { ids.forEach(del); render(); }
 function isTogether(act) { return ACT[act] && ACT[act].group === 'Together'; }
 function quickUsual(u) {
-  if (u.together || isTogether(u.act)) { openLog({ act: u.act, min: u.min }); return; }   // everyone pre-selected; tap off whoever wasn't there
+  if (u.together || isTogether(u.act)) { openLog({ act: u.act, min: u.min, family: true }); return; }   // everyone pre-selected; tap off whoever wasn't there
   const crew = [me()];
   let ids; const g = gainFor(crew, () => { ids = logGroup(crew, { date: AZ.today(), act: u.act, min: u.min, felt: 'normal', by: me(), dogs: u.act === 'dogwalk' ? dogs().map(d => d.id) : null }); });
   render(); toast(ACT[u.act].icon + ' ' + gainText(g), 'Undo', () => undoLog(ids));
@@ -960,7 +968,7 @@ function openLog(preset) {
   const f = ed ? { act: ed.act, min: ed.min, felt: ed.felt || 'normal', crew: [ed.member], detail: Object.assign({}, ed.detail || {}), open: !!(ed.detail || ed.note || ed.title), dogs: (ed.dogs || dogs().map(d => d.id)).slice(), date: ed.date, title: ed.title || '', note: ed.note || '', groupAll: true }
     : { act: (preset && preset.act) || (pup ? 'tkd' : 'tread'), min: (preset && preset.min) || 30, felt: 'normal', crew: [mine], detail: {}, open: false, dogs: dogs().map(d => d.id), date: today, title: '', note: '', crewTouched: false, groupAll: true };
   // Together activities start with the whole family selected (until someone taps a name)
-  const autoCrew = () => { if (ed || f.crewTouched) return; f.crew = isTogether(f.act) ? [mine].concat(memberIds().filter(x => x !== mine)) : [mine]; };
+  const fam = !!(preset && preset.family) && !ed, autoCrew = () => { if (ed || f.crewTouched) return; f.crew = isTogether(f.act) || (fam && f.act === preset.act) ? [mine].concat(memberIds().filter(x => x !== mine)) : [mine]; };
   autoCrew();
   const body = h('div', { class: 'log-body' }), preview = h('div', { class: 'log-preview' });
   // redraws caused by a field's change event wait a tick: change fires on blur, and rebuilding the sheet mid-blur breaks the DOM
@@ -1000,7 +1008,7 @@ function openLog(preset) {
     if (ed && !others.length) body.appendChild(h('p', { class: 'hint', style: 'font-size:14px;margin-top:12px' }, 'Editing ' + (ed.member === mine ? 'your' : M(ed.member).name + "'s") + ' entry' + (ed.group ? ' (the others who joined keep theirs as is)' : '') + '.'));
     else {
       body.appendChild(h('div', { class: 'fld' }, 'Who moved? ', h('small', null, 'one entry logs for everyone selected')));
-      if (f.crew.length > 1) body.appendChild(h('p', { class: 'crew-note' }, isTogether(f.act) && !f.crewTouched ? '👨‍👩‍👧‍👧 Logging for the whole family. Tap anyone who wasn\'t there.' : 'Logging for ' + f.crew.length + ': ' + f.crew.map(i => M(i).name).join(', ') + '. Each gets it, plus +' + RULES.together + ' for doing it together.'));
+      if (f.crew.length > 1) body.appendChild(h('p', { class: 'crew-note' }, (isTogether(f.act) || fam) && !f.crewTouched && f.crew.length === memberIds().length ? '👨‍👩‍👧‍👧 Logging for the whole family. Tap anyone who wasn\'t there.' : 'Logging for ' + f.crew.length + ': ' + f.crew.map(i => M(i).name).join(', ') + '. Each gets it, plus +' + RULES.together + ' for doing it together.'));
       body.appendChild(h('div', { class: 'chips' }, members().map(m => h('button', { class: 'chip-btn who' + (f.crew.includes(m.mid) ? ' on' : ''), type: 'button', style: '--house:' + houseColor(m.mid), 'aria-pressed': f.crew.includes(m.mid) ? 'true' : 'false',
         onclick: () => { f.crewTouched = true; f.crew = f.crew.includes(m.mid) ? f.crew.filter(x => x !== m.mid) : f.crew.concat(m.mid); if (!f.crew.length) f.crew = [mine]; draw(); } }, (m.role === 'pup' ? '🐾 ' : '') + m.name))));
     }
@@ -1042,7 +1050,7 @@ function openLog(preset) {
     finally { if (ed) DB.records[ed.id] = saved; else f.crew.forEach((id, i) => delete DB.records['__tmp' + i]); _ver++; }
     clear(preview).appendChild(h('div', { class: 'gain' }, f.crew.map(i => h('span', null, h('b', null, (g[i] >= 0 ? '+' : '') + g[i]), ' ' + M(i).name + (ed ? ' (change)' : '')))));
     if (!isPup(f.crew[0])) { const mm = metFor(base()); preview.appendChild(h('div', { class: 'hint' }, ACT[f.act].name + ' ≈ ' + mm.met.toFixed(1) + ' MET · ' + mm.how)); }
-    if (preseason()) preview.appendChild(h('div', { class: 'hint' }, 'Practice entry: Merit starts counting Dec 1.'));
+    if (preseason() || practice()) preview.appendChild(h('div', { class: 'hint' }, 'Practice Week: these points are for fun and reset Dec 1 when The Passage starts.'));
   }
   function save() {
     if (ed && f.groupAll) { const others = ed.group ? all('workout').filter(x => x.group === ed.group && x.id !== ed.id) : [];
@@ -1324,8 +1332,9 @@ function raceCard(full) {
   else if (rs.next) line = 'Next: ' + rs.next.icon + ' ' + rs.next.name + ' in ' + (rs.next.at - rs.steps) + ' steps' + (rs.next.by ? ' (by ' + fmtShort(rs.next.by) + ' for +' + RULES.raceCheckpoint + ' each)' : '') + '.';
   else line = need + ' steps to go.';
   c.appendChild(h('p', { class: 'race-line' }, line));
+  if (se.practice) c.appendChild(h('p', { class: 'hint' }, 'A warm-up race to try it out. The real Race to the New Year starts from zero on ' + fmtDow(SEASONS[0].start) + '.'));
   if (!preseason() && !rs.reached.goal && daysLeft >= 0) c.appendChild(h('p', { class: 'hint' }, rs.projected >= rs.goal ? '✓ On pace to arrive by ' + fmtShort(se.end) + ' (projected ' + rs.projected + ').' : 'Pack needs about ' + (need / Math.max(1, daysLeft + 1)).toFixed(1) + ' steps a day. At this pace: ' + rs.projected + '.'));
-  c.appendChild(h('p', { class: 'prize' }, '🏆 ' + (prize ? 'Prize: ' + prize : 'Pick a family prize in Settings ⚙️')));
+  if (!se.practice) c.appendChild(h('p', { class: 'prize' }, '🏆 ' + (prize ? 'Prize: ' + prize : 'Pick a family prize in Settings ⚙️')));
   const unlocked = race.stations.filter(st => rs.steps >= st.at);
   if (unlocked.length) c.appendChild(h('button', { class: 'btn-ghost', type: 'button', onclick: () => openLore(se, unlocked[unlocked.length - 1]) }, '📜 Lore: ' + unlocked[unlocked.length - 1].name));
   if (full) race.stations.forEach(st => c.appendChild(h('button', { class: 'lore-row' + (rs.steps >= st.at ? '' : ' locked'), type: 'button', onclick: () => openLore(se, st) },
@@ -1425,6 +1434,8 @@ function weighRow() {
 }
 function seasonBanner() {
   const se = currentSeason(), t = AZ.today();
+  if (practice()) return h('div', { class: 'season-banner' }, h('div', null, h('b', null, 'Practice Week · Warm-up'), h('small', null, 'Points count now so you can try everything. On ' + fmtDow(SEASONS[0].start) + ' it all resets to zero and The Passage begins.')),
+    h('div', { class: 'left' }, daysBetween(t, SEASONS[0].start), h('small', null, 'days to go')));
   if (preseason()) return h('div', { class: 'season-banner' }, h('div', null, h('b', null, se.name + ' · ' + se.sub), h('small', null, 'Our December trial run starts ' + fmtDow(se.start) + '. Set your goals, log a practice walk, and get the app on everyone\'s phone.')),
     h('div', { class: 'left' }, daysBetween(t, se.start), h('small', null, 'days to go')));
   const nx = nextSeason(se);
@@ -1505,7 +1516,7 @@ function activityMix(id, se) {
   return box;
 }
 function activeCalendar(id, se) {
-  const cal = h('div', { class: 'cal' }), sc = score(id, se), a = se.trial ? se.start : AZ.today().slice(0, 8) + '01', b = se.trial ? se.end : monthEnd(a);
+  const cal = h('div', { class: 'cal' }), sc = score(id, se), a = se.trial || se.practice ? se.start : AZ.today().slice(0, 8) + '01', b = se.trial || se.practice ? se.end : monthEnd(a);
   DOWS.forEach(d => cal.appendChild(h('div', { class: 'h' }, d[0])));
   for (let i = 0; i < dow(a); i++) cal.appendChild(h('div'));
   range(a, b).forEach(d => cal.appendChild(h('div', { class: 'd' + (sc.days[d] && sc.days[d].active ? ' on' : '') + (d > AZ.today() ? ' fut' : '') + (d === AZ.today() ? ' today' : '') }, toD(d).getUTCDate())));
@@ -1596,7 +1607,7 @@ function renderGoals(main) {
     main.appendChild(c);
   });
   const nx = nextSeason(se);
-  if (se.trial && nx && !preseason()) { const c = card('SUGGESTED FOR ' + nx.name.toUpperCase(), 'from your December', 'suggest');
+  if (se.trial && nx && !preseason() && !practice()) { const c = card('SUGGESTED FOR ' + nx.name.toUpperCase(), 'from your December', 'suggest');
     suggestGoals(id, 'month').forEach(g => c.appendChild(h('div', { class: 'goal' }, h('div', { class: 'goal-top' }, h('span', { class: 'gi' }, GOAL_TYPES[g.type].icon), h('span', { class: 'gl' }, 'January: ' + GOAL_TYPES[g.type].label(g.target))))));
     c.appendChild(h('p', { class: 'hint' }, 'On Jan 1 you will get a quick goal check-in with these pre-filled.')); main.appendChild(c); }
   const hon = h('div', { class: 'honors' });
@@ -1633,7 +1644,7 @@ function renderPack(main) {
   const crowns = all('award').filter(a => a.kind === 'primus').sort((a, b) => a.week < b.week ? 1 : -1);
   const pc = card('PRIMUS HISTORY', crowns.length + ' crowned');
   if (!crowns.length) pc.appendChild(h('p', { class: 'hint' }, 'The first Primus is crowned at the end of the first week.'));
-  crowns.slice(0, 8).forEach(a => pc.appendChild(h('div', { class: 'ledger-row' }, h('span', { class: 'ld' }, fmtShort(a.week)), h('span', { class: 'll', style: 'color:' + houseColor(a.member) }, '♛ ' + M(a.member).name), h('span', { class: 'lp' }, '+' + a.pts))));
+  crowns.slice(0, 8).forEach(a => pc.appendChild(h('div', { class: 'ledger-row' }, h('span', { class: 'ld' }, fmtShort(a.week)), h('span', { class: 'll', style: 'color:' + houseColor(a.member) }, '♛ ' + M(a.member).name + (a.date < SEASONS[0].start ? ' (practice)' : '')), h('span', { class: 'lp' }, '+' + a.pts))));
   main.appendChild(pc);
   const dc = card('THE DOGS', 'walks this season'), se = currentSeason();
   dc.appendChild(h('div', { class: 'dogrow' }, dogs().map(dg => { const n = new Set(all('workout').filter(w => w.act === 'dogwalk' && w.date >= se.start && (w.dogs || []).includes(dg.id)).map(w => w.group || w.id)).size; return h('div', { class: 'dog' }, h('b', null, dg.icon + ' ' + n), dg.name); })));

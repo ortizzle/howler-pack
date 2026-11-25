@@ -42,6 +42,12 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 - **Rules and Merit values:** `RULES`.
 - **Activities and MET values:** `ACTIVITIES`.
 - **Ranks:** `RANK_BASE`, per 13-week season, scaled to season length; they reset each season.
+- **Practice Week:** `PRACTICE` (Nov 23–30, 2026).
+  - It's deliberately not in `SEASONS`. `seasonFor` / `currentSeason` return it for those dates.
+  - Points, ranks, Primus and a 15-step warm-up race work, then everything restarts Dec 1 with The Passage.
+  - `practice()` is true during it. Goals point at December (`goalDay`).
+  - Practice Primus crowns don't count in `primusCount`.
+  - Practice workouts stay in the Annals.
 - **Seasons, races, lore:** `SEASONS`.
   - Seasons 2–4 have `loreDraft: true`. The family is still shaping that lore, so adding or rewriting stations is welcome.
   - Keep lore kid-friendly, accurate to the books, and short. "Real Mars/Moon fact" stations must be true.
@@ -50,7 +56,7 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - Speed, incline, watts (or kJ → watts) and distance refine MET.
   - Heart rate and device calories are stored and shown but never scored; keep it that way for fairness across bodies.
   - Kids never see the stats section.
-- **Family activities:** the "Together" group is Dog Walk, Walk, Park, Hike, Bike Ride and Swim.
+- **Family activities:** the "Together" group is Dog Walk, Park, Hike, Bike Ride and Swim. Walk lives under Classes & Outside (starts with just the logger); the parents' **Walk 30m** usual is a family walk (`openLog({ …, family: true })` pre-selects everyone).
   - Picking one in the log sheet pre-selects the whole family (`autoCrew`) until someone taps a name; people deselect whoever wasn't there.
   - One entry becomes one `workout` per person, sharing a `group` id.
   - Quick usuals marked `together` open the sheet rather than logging in one tap, so deselecting is always possible.
