@@ -67,12 +67,15 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - Speed, incline, watts (or kJ → watts) and distance refine MET.
   - Heart rate and device calories are stored and shown but never scored; keep it that way for fairness across bodies.
   - Kids never see the stats section.
-- **Family activities:** the "Together" group is Dog Walk, Park, Hike, Bike Ride and Swim. Walk lives under Classes & Outside (starts with just the logger); the parents' **Walk 30m** usual is a family walk (`openLog({ …, family: true })` pre-selects everyone).
-  - Picking one in the log sheet pre-selects the whole family (`autoCrew`) until someone taps a name; people deselect whoever wasn't there.
-  - One entry becomes one `workout` per person, sharing a `group` id.
-  - Quick usuals marked `together` open the sheet rather than logging in one tap, so deselecting is always possible.
+- **Activity groups and "With anyone?"** (Chris, Nov 25, 2026): two groups in `ACTIVITIES`.
+  - **Peloton** (Tread, Bike, Strength, Yoga, Stretch, Meditation, Bootcamp) is solo: no who question (`isSolo`).
+  - **Outside & Classes** (everything else) asks **"With anyone?"**: starts as Just me; tap names to add people, or one-tap **↻ Same as last time** (`lastCrew`, from your last group entry of that activity). Nothing is pre-selected.
+  - One entry becomes one `workout` per person, sharing a `group` id. Non-Peloton quick usuals open the sheet instead of logging in one tap.
   - People something was logged for see "📬 Added for you" with **I wasn't there** (removes only their copy). The service worker also notifies them.
-  - `migrateUsuals()` adds a family Walk usual once per parent; up to 6 usuals.
+  - **Park was folded into Active Play** (Chris's call). `park` stays in `ACTIVITIES` with `hidden: true` so old entries still read; don't show it in pickers.
+  - **Meditation** (`mind: true`) earns 1 point per 10 min and is never movement: `moveMin()` returns 0 for it, so it doesn't count toward Active Days, week minutes, minutes goals or growth. **Stretch** is MET 2.3 (2024 Compendium). **Pickleball** is 4.1–6.5.
+  - **Weekly classes** (`member.weekly: [{act, days, min}]`, Settings → My weekly class): `classPrompts()` checks in after noon on the day, or for up to two days after. Kat's Sunday pickleball is pre-set (`migrateWeekly`).
+  - `migrateUsuals()` adds a Walk usual once per parent; up to 6 usuals.
 - **Where & how far** (Chris, Nov 25, 2026): every log sheet, kids' included, shows a route/place box (`title`) and, for distance activities, miles (`detail.miles`) right after "When". They're visible, never required, and recent places (`recentPlaces`) are one-tap chips so they're nearly always answered. These fields are not in "More stats".
 - **Editing:** tapping an Annals entry calls `openLog({ edit: record })`, which updates that record in place.
   - For a group activity, **Apply to everyone who joined** (on by default) copies the shared facts to the others: activity, minutes, date, dogs, title, distance, elevation.
