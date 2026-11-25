@@ -754,7 +754,10 @@ function primusScores(wk, se) {
     return { id, active, std: r.standardDays, mins, avg, score: Math.min(active / r.standardDays, 1.5) + 0.25 * vsSelf + 0.01 * together };
   }).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)));
 }
-function primusOf(wk) { const sc = primusScores(wk); return sc[0] && sc[0].score > 0 ? sc[0].id : null; }
+// A tie at the top means no crown yet; if the week ends tied, everyone tied shares it. Never broken alphabetically.
+function primusLeaders(wk) { const sc = primusScores(wk); if (!sc.length || sc[0].score <= 0) return []; return sc.filter(x => Math.abs(x.score - sc[0].score) < 1e-6).map(x => x.id); }
+function primusOf(wk) { const L = primusLeaders(wk); return L.length === 1 ? L[0] : null; }
+function primusPlace(wk, id) { const sc = primusScores(wk), mine = sc.find(x => x.id === id); return mine ? 1 + sc.filter(x => x.score > mine.score + 1e-6).length : 0; }
 function primusCount(id) { return all('award').filter(a => a.member === id && a.kind === 'primus' && a.date >= SEASONS[0].start).length; }   // practice crowns don't count
 
 // ───────────────────────── Goals: monthly + season. December goals are practice for 2027.
@@ -841,7 +844,8 @@ function syncGoalAndPrimusAwards() {
   // crown last week's Primus (any phone may write it; same id everywhere)
   const se = currentSeason(), lastWk = addDays(weekKey(today), -7);
   if (addDays(lastWk, 6) >= se.start && !all('award').some(a => a.kind === 'primus' && a.week === lastWk)) {
-    const p = primusOf(lastWk); if (p) writes.push({ id: 'aw_primus_' + lastWk, type: 'award', kind: 'primus', week: lastWk, member: p, cat: 'bonus', date: addDays(lastWk, 6) < se.start ? se.start : addDays(lastWk, 6), label: '♛ Primus of the week of ' + fmtShort(lastWk), pts: RULES.primus });
+    const L = primusLeaders(lastWk), shared = L.length > 1;
+    L.forEach(p => writes.push({ id: 'aw_primus_' + lastWk + (shared ? '_' + p : ''), type: 'award', kind: 'primus', week: lastWk, member: p, cat: 'bonus', date: addDays(lastWk, 6) < se.start ? se.start : addDays(lastWk, 6), label: '♛ Primus of the week of ' + fmtShort(lastWk) + (shared ? ' (shared)' : ''), pts: RULES.primus }));
   }
   if (writes.length) putMany(writes);
 }
@@ -1313,7 +1317,7 @@ function packSection(full) {
   }
   const grid = h('div', { class: 'player-grid' });
   const order = ps.map(x => x.id);
-  list.slice().sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)).forEach(sc => grid.appendChild(playerCard(sc, sc.id === leader, order.indexOf(sc.id) + 1)));
+  list.slice().sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)).forEach(sc => grid.appendChild(playerCard(sc, sc.id === leader, primusPlace(wk, sc.id))));
   box.appendChild(grid); return box;
 }
 
@@ -1350,11 +1354,12 @@ function openLore(se, st) {
 // Weekly Primus: short-term target that resets every Monday
 function primusCard() {
   const wk = weekKey(AZ.today()), ps = primusScores(wk), leader = primusOf(wk), lastWk = addDays(wk, -7);
-  const lastAw = all('award').find(a => a.kind === 'primus' && a.week === lastWk);
+  const lastAws = all('award').filter(a => a.kind === 'primus' && a.week === lastWk), top = primusLeaders(wk), tied = top.length > 1;
   const c = card("THIS WEEK'S PRIMUS", 'crowned Sunday night · +' + RULES.primus);
-  ps.forEach((x, i) => c.appendChild(h('div', { class: 'prow' }, h('span', { class: 'pp' }, x.id === leader ? '♛' : i + 1), h('span', { class: 'pn', style: 'color:' + houseColor(x.id) }, M(x.id).name),
-    h('div', { class: 'bar' }, h('i', { style: 'width:' + Math.min(100, x.score / 1.75 * 100) + '%;background:' + houseColor(x.id) })), h('span', { class: 'pv' }, x.active + '/' + x.std))));
-  c.appendChild(h('p', { class: 'hint' }, 'Primus goes to whoever beats their own weekly target by the most: days moved against your Standard, plus minutes against your own usual. Kids and parents compete fairly.' + (lastAw ? ' Last week: ♛ ' + M(lastAw.member).name + '.' : '')));
+  if (tied) c.appendChild(h('p', { class: 'crew-note' }, '⚖️ Tied at the top: ' + top.map(i => M(i).name).join(', ') + '. Anyone can take the crown.'));
+  ps.forEach(x => { const pl = primusPlace(wk, x.id), same = ps.filter(y => primusPlace(wk, y.id) === pl).length > 1; c.appendChild(h('div', { class: 'prow' }, h('span', { class: 'pp' }, x.id === leader ? '♛' : (same ? '=' : '') + pl), h('span', { class: 'pn', style: 'color:' + houseColor(x.id) }, M(x.id).name),
+    h('div', { class: 'bar' }, h('i', { style: 'width:' + Math.min(100, x.score / 1.75 * 100) + '%;background:' + houseColor(x.id) })), h('span', { class: 'pv' }, x.active + '/' + x.std))); });
+  c.appendChild(h('p', { class: 'hint' }, 'Primus goes to whoever beats their own weekly target by the most: days moved against your Standard, plus minutes against your own usual. Kids and parents compete fairly. A tie at the end of the week is shared.' + (lastAws.length ? ' Last week: ♛ ' + lastAws.map(a => M(a.member).name).join(' & ') + (lastAws.length > 1 ? ' (shared)' : '') + '.' : '')));
   return c;
 }
 function coachCard(id) {
