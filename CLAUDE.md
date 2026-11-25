@@ -1,6 +1,6 @@
 # The Howler Pack: notes for Claude
 
-The Ortiz family's fitness app: Chris and Kat (parents, "Proctors") and Sedona (13) and River (10) (kids, "Pups"). The family follows the family-app standards skill (`family-app-standards`); read it before changing anything. This file covers what is specific to this repo.
+The Ortiz family's fitness app: Chris and Kat (parents, "Praetorians"; the internal role id stays `proctor`) and Sedona (13) and River (10) (kids, "Pups"). The family follows the family-app standards skill (`family-app-standards`); read it before changing anything. This file covers what is specific to this repo.
 
 ## Deploying = pushing to `main`
 
@@ -42,8 +42,8 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 ## Game rules (where to change them)
 
 - **Rules and Merit values:** `RULES`. **One Merit scale for everyone** (Chris chose this, Nov 25, 2026):
-  - Showing up pays the same: Active Day +15, Standard +50 (Proctors 4 days, Pups 3), chain, together, cheers, goals, Primus, race.
-  - Effort: Proctors use MET × min ÷ 10; Pups use 1 point per 2 minutes. Both cap at 40 a day, so a 30-min kid workout ≈ a 30-min adult one at average intensity.
+  - Showing up pays the same: Active Day +15, Standard +50 (Praetorians 4 days, Pups 3), chain, together, cheers, goals, Primus, race.
+  - Effort: Praetorians use MET × min ÷ 10; Pups use 1 point per 2 minutes. Both cap at 40 a day, so a 30-min kid workout ≈ a 30-min adult one at average intensity.
   - **Pups' growth points** (`RULES.growth`) balance the parents' weight-progress points: best week yet, longest outing yet, taekwondo stripe/belt and personal bests. `milestone` records are added via `openMilestone`.
   - Kid bonus points may come later; Chris expects the kids to push harder instead.
 - **The Codex** (`openCodex`) shows every rule and number. It's generated from `RULES` / `RANKS`, so it can't drift. Linked from the Pack tab, Settings, and "How points work ›" under The Pack.

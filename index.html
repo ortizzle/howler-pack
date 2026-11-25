@@ -636,7 +636,7 @@ const SEASONS = [
       { at: 55, icon: '🦉', name: 'Minerva, the Wise', lore: 'Minerva was the Roman goddess of wisdom and strategy. Her House is known for thinking before it acts. Planning your week (which days you will move) is a little bit of Minerva.' },
       { at: 90, icon: '💐', name: "Mother's Day", by: '2027-05-09', lore: 'Every pack has someone who keeps it together. Today we celebrate the moms. Red Rising is full of strong mothers, starting with Darrow\'s mom, who taught him to keep going no matter what.' },
       { at: 125, icon: '🐎', name: 'Mustang Rides', lore: 'Mustang earns her nickname because she is a fearless rider who shows up when she is needed. She reminds Darrow that a leader\'s job is to make the people around them better.' },
-      { at: 160, icon: '⛰️', name: 'Olympus and the Proctors', lore: 'The Proctors watch the Institute from a mountain fortress called Olympus, named after the home of the gods. They are supposed to keep the game fair. In our pack, the Proctors are Mom and Dad.' },
+      { at: 160, icon: '⛰️', name: 'Olympus and the Proctors', lore: 'The Proctors watch the Institute from a mountain fortress called Olympus, named after the home of the gods. They are supposed to keep the game fair. Our parents have a different job: they are the pack\'s Praetorians, its protectors.' },
       { at: 200, icon: '☀️', name: "Father's Day · First Day of Summer", by: '2027-06-20', lore: 'Halfway through the year, together. Darrow\'s father taught him that real strength is quiet and patient. Happy Father\'s Day, and welcome to summer, Howlers.' },
     ] } },
   { id: 's3', name: 'Season 3', sub: 'Mars Rising', start: '2027-07-01', end: '2027-09-30', loreDraft: true,
@@ -1323,7 +1323,7 @@ function playerCard(sc, isPrimus, place, stand) {
   stand = stand || { place: 1, tied: false, pct: standingPct(sc) };
   const crowns = primusCount(id), cardEl = h('div', { class: 'player-card' + (isPrimus ? ' primus' : '') + (mine ? ' me' : '') + (openCards[id] ? ' card-open' : ''), style: '--house-color:' + color });
   cardEl.appendChild(h('div', { class: 'card-rank-row' },
-    h('div', { class: 'card-rank-left' }, h('div', { class: 'card-house-dot' }), h('div', { class: 'card-house-label' }, (m.house || '').toUpperCase() + ' · ' + (m.role === 'pup' ? 'PUP' : 'PROCTOR'))),
+    h('div', { class: 'card-rank-left' }, h('div', { class: 'card-house-dot' }), h('div', { class: 'card-house-label' }, (m.house || '').toUpperCase() + ' · ' + (m.role === 'pup' ? 'PUP' : 'PRAETORIAN'))),
     h('div', { class: 'card-rank-right' },
       all('cheer').some(c => c.to === id && c.date === AZ.today()) ? h('span', { title: 'Cheered today' }, '🐺') : null,
       quiet >= 3 && quiet < 99 ? h('span', { class: 'card-quiet' }, '🌙 ' + quiet + 'd quiet') : null,
@@ -1379,7 +1379,7 @@ function playerCard(sc, isPrimus, place, stand) {
 function packSection(full) {
   const se = currentSeason(), list = memberIds().map(id => score(id, se)), wk = weekKey(AZ.today()), ps = primusScores(wk), leader = preseason() ? null : primusOf(wk);
   const box = h('div', { class: 'pack-section' });
-  box.appendChild(h('div', { class: 'pack-head' }, h('b', null, 'The Pack'), h('span', null, 'ranked by standing · tap to open')));
+  box.appendChild(h('div', { class: 'pack-head' }, h('b', null, 'The Pack'), h('span', null, 'ranked by Merit · tap to open')));
   box.appendChild(h('p', { class: 'stand-note' }, 'Everyone earns Merit on the same scale and climbs one ladder all year. ♛ Primus is this week\'s crown. ', h('button', { class: 'linklike', type: 'button', onclick: openCodex }, 'How points work ›')));
   if (full) {
     const met = list.filter(x => x.cur.standard).length, dd = list.reduce((a, x) => a + x.cur.active, 0);
@@ -1739,7 +1739,7 @@ function renderPack(main) {
 const GLOSSARY = [
   ['🐺', 'The Howlers', 'Darrow\'s loyal crew in House Mars. They wear wolf cloaks and never leave anyone behind. Our app is named after them.'],
   ['♛', 'Primus', 'The leader of a House at the Institute. Here, each week\'s Primus is whoever beat their own target by the most.'],
-  ['🎓', 'Proctors', 'The teachers who watch over the Institute. In our pack, the parents are Proctors.'],
+  ['🛡', 'Praetorians', 'The Sovereign\'s elite guard in Red Rising, sworn to protect. In our pack, the parents are Praetorians: they guard the pack and keep everyone moving.'],
   ['🐾', 'Pups', 'Young wolves still learning the pack\'s ways. The kids are Pups, with their own ladder.'],
   ['🎖', 'Merit', 'Our points. Earned by showing up, effort, time together, cheering, and hitting goals.'],
   ['🌈', 'The Colors', 'In Red Rising everyone is born into a Color with a job. Our ranks climb the Colors: Red, Gray, Obsidian, Copper, Silver, Gold, then Peerless.'],
@@ -1754,18 +1754,18 @@ function openCodex() {
   const table = rows => { const tb = h('table', null); rows.forEach(r => tb.appendChild(h('tr', null, h('td', null, r[0]), h('td', null, r[1])))); body.appendChild(tb); };
   sec('Merit: one scale for everyone', 'Everyone earns the same for showing up. Only the weekly target and how effort is measured differ, so kids and parents compete fairly on one total.');
   table([['Active Day: ' + P.activeMin + '+ minutes of anything (parents: or a hard shorter workout)', '+' + P.activeDay],
-    ['Weekly Standard: ' + P.standardDays + ' Active Days for Proctors, ' + K.standardDays + ' for Pups (Mon–Sun)', '+' + P.standard],
+    ['Weekly Standard: ' + P.standardDays + ' Active Days for Praetorians, ' + K.standardDays + ' for Pups (Mon–Sun)', '+' + P.standard],
     ['Chain: each week in a row you meet your Standard adds ' + Math.round(RULES.chainStep * 100) + '% to that week. A missed week drops one link.', 'up to ×' + (1 + RULES.chainStep * RULES.chainMax).toFixed(1)],
-    ['Effort, Proctors: activity intensity (MET) × minutes ÷ ' + P.effortDiv + '. Speed, incline, watts or distance make it exact.', 'up to ' + P.effortCap + '/day'],
+    ['Effort, Praetorians: activity intensity (MET) × minutes ÷ ' + P.effortDiv + '. Speed, incline, watts or distance make it exact.', 'up to ' + P.effortCap + '/day'],
     ['Effort, Pups: 1 point per ' + K.minPer + ' minutes of anything', 'up to ' + K.minCap + '/day'],
     ['Together: 2+ of you log the same activity', '+' + RULES.together + ' (2/day)'],
     ['Cheering someone', '+' + RULES.cheer + ' (' + RULES.cheerDailyMax + '/day)'],
     ['Weekly Primus', '+' + RULES.primus],
     ['Monthly goal · Season goal', '+' + P.goalMonth + ' · +' + P.goalSeason],
     ['Race checkpoint on time · Reaching the destination (everyone)', '+' + RULES.raceCheckpoint + ' · +' + RULES.raceFinish]]);
-  sec('Progress points', 'Proctors earn progress from their private weight trend (pounds never leave their phone); Pups earn growth points for beating their own bests.');
-  table([['Proctors: weekly weigh-in', '+' + RULES.weighIn], ['Proctors: each new ' + RULES.stepPct + '% low on the trend line (max ' + RULES.weeklyPctCap + '% a week)', '+' + RULES.stepPts],
-    ['Proctors: 5% · 10% · 15% milestones', RULES.milestones.map(m => '+' + m[1]).join(' · ')], ['Proctors: Holiday Hold (December)', '+' + RULES.hold],
+  sec('Progress points', 'Praetorians earn progress from their private weight trend (pounds never leave their phone); Pups earn growth points for beating their own bests.');
+  table([['Praetorians: weekly weigh-in', '+' + RULES.weighIn], ['Praetorians: each new ' + RULES.stepPct + '% low on the trend line (max ' + RULES.weeklyPctCap + '% a week)', '+' + RULES.stepPts],
+    ['Praetorians: 5% · 10% · 15% milestones', RULES.milestones.map(m => '+' + m[1]).join(' · ')], ['Praetorians: Holiday Hold (December)', '+' + RULES.hold],
     ['Pups: best week of minutes yet', '+' + G.bestWeek], ['Pups: longest single outing yet (30+ min, once a week)', '+' + G.longest],
     ['Pups: taekwondo stripe · belt test passed', '+' + G.stripe + ' · +' + G.belt], ['Pups: personal best (up to ' + G.pbWeeklyMax + ' a week)', '+' + G.pb]]);
   sec('Ranks: built all year', 'Your rank grows from Dec 1 through the whole year and never resets. Each color takes more than the last; Peerless takes beating your Standard week after week.');
@@ -1904,7 +1904,7 @@ function renderWelcome(main) {
       ensureFamily(); Local.set('me', m.mid);
       if (join) { history.replaceState(null, '', location.pathname); await joinWith(join); } else render();
       if (!Sync.on() && !PREVIEW) setTimeout(() => toast('Tip: connect family sync in Settings ⚙️'), 600);
-    } }, h('span', { class: 'who-dot' }, m.role === 'pup' ? '🐾' : m.name[0]), m.name, h('small', null, m.role === 'pup' ? 'Pup' : 'Proctor')))),
+    } }, h('span', { class: 'who-dot' }, m.role === 'pup' ? '🐾' : m.name[0]), m.name, h('small', null, m.role === 'pup' ? 'Pup' : 'Praetorian')))),
     join ? h('p', { class: 'hint', style: 'text-align:center' }, '✓ Family link found. Pick your name to join.') : h('p', { class: 'hint', style: 'text-align:center' }, 'Have a join link from family? Open it on this phone first.'),
     h('button', { class: 'btn-ghost', type: 'button', onclick: enterPreview }, '👀 Just look around with sample data'));
   main.appendChild(c);
