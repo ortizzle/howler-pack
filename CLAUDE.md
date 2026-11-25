@@ -44,7 +44,7 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 - **Rules and Merit values:** `RULES`.
 - **Activities and MET values:** `ACTIVITIES`.
 - **Ranks:** `RANK_BASE`, per 13-week season, scaled to season length; they reset each season.
-- **Standing** (`standingPct`): Merit ÷ that person's Peerless threshold, i.e. how far up their own ladder. It's the fair cross-family comparison, because kids and parents earn Merit on different scales. Pack cards are sorted by it and show the ordinal ("=1st" on ties) plus "% to Peerless"; raw Merit is in the sub line.
+- **Standing** (`standingPct`): Merit ÷ that person's Peerless threshold, i.e. how far up their own ladder. It's the fair cross-family comparison, because kids and parents earn Merit on different scales. Pack cards are sorted by it and show the ordinal ("=1st" on ties) plus progress to the **next** rank (`nextRankStat`: "18 to Gray" with a bar in that rank's color), because it moves every workout and reads well for kids. The exact % to Peerless is inside the expanded card; raw Merit is in the sub line.
 - **Practice Week:** `PRACTICE` (Nov 23–30, 2026).
   - It's deliberately not in `SEASONS`. `seasonFor` / `currentSeason` return it for those dates.
   - Points, ranks, Primus and a 15-step warm-up race work, then everything restarts Dec 1 with The Passage.
