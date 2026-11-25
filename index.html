@@ -80,6 +80,8 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .card-qstat { text-align: right; }
 .card-qstat-val { font-family: var(--fh); font-size: 21px; font-weight: 700; color: var(--house-color); line-height: 1; }
 .card-qstat-label { font-family: var(--fh); font-size: 10px; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
+.card-qstat-val.standing { font-size: 22px; } .card-qstat-val.standing.first { color: #b8920f; }
+.stand-note { font-size: 12px; color: var(--muted); font-style: italic; margin: -4px 2px 10px; }
 .card-chevron { font-size: 11px; color: var(--muted); transition: transform .25s; }
 .player-card.card-open .card-chevron { transform: rotate(180deg); }
 .card-detail { max-height: 0; overflow: hidden; transition: max-height .35s cubic-bezier(.4,0,.2,1); }
@@ -1242,15 +1244,19 @@ const CAT_LABEL = { consistency: 'Showing up', effort: 'Effort', progress: 'Prog
 
 // The Pack: everyone at a glance; tap ▼ to open (like the original main page)
 function rankPct(sc) { const L = sc.rank.list; return Math.min(1, sc.total / L[L.length - 1].min); }
+// Standing: how far up your OWN Red → Peerless ladder you are. Kids and parents earn Merit on different scales,
+// but each ladder is sized to its scale, so this percentage is the fair way to say who is ahead.
+function standingPct(sc) { const L = sc.rank.list; return sc.total / L[L.length - 1].min; }
+function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+function fmtPct(x) { const v = x * 100; return (v > 0 && v < 10 ? v.toFixed(1) : Math.round(v)) + '%'; }
 function swordBar(sc) {
   const r = sc.rank, pct = rankPct(sc), stops = r.list.map((x, i) => x.color + ' ' + Math.round(i / (r.list.length - 1) * 100) + '%').join(',');
   return h('div', { class: 'sword' }, h('div', { class: 'sword-track' }, h('div', { class: 'sword-fill', style: 'width:' + Math.max(3, pct * 100) + '%;background:linear-gradient(90deg,' + stops + ');background-size:' + (100 / Math.max(.03, pct)) + '% 100%' })),
     h('div', { class: 'sword-meta' }, h('span', null, h('b', { style: 'color:' + r.rank.color }, r.rank.name)), h('span', null, r.next ? (r.next.min - sc.total) + ' Merit to ' + r.next.name : 'Peerless Scarred')));
 }
-function playerCard(sc, isPrimus, place) {
+function playerCard(sc, isPrimus, place, stand) {
   const id = sc.id, m = M(id), mine = id === me(), last = lastActive(id), quiet = last ? daysBetween(last, AZ.today()) : 99, color = houseColor(id);
-  const lastWkKey = addDays(sc.cur.key, -7), cutoff = addDays(lastWkKey, dow(AZ.today())), thisM = sc.byWeek[sc.cur.key] || 0;
-  const prevM = score(id, seasonFor(lastWkKey) || sc.se).ledger.filter(e => e.date >= lastWkKey && e.date <= cutoff).reduce((a, e) => a + e.pts, 0);
+  stand = stand || { place: 1, tied: false, pct: standingPct(sc) };
   const crowns = primusCount(id), cardEl = h('div', { class: 'player-card' + (isPrimus ? ' primus' : '') + (mine ? ' me' : '') + (openCards[id] ? ' card-open' : ''), style: '--house-color:' + color });
   cardEl.appendChild(h('div', { class: 'card-rank-row' },
     h('div', { class: 'card-rank-left' }, h('div', { class: 'card-house-dot' }), h('div', { class: 'card-house-label' }, (m.house || '').toUpperCase() + ' · ' + (m.role === 'pup' ? 'PUP' : 'PROCTOR'))),
@@ -1261,10 +1267,10 @@ function playerCard(sc, isPrimus, place) {
       isPrimus ? h('div', { class: 'card-arch' }, '♛ PRIMUS') : null)));
   cardEl.appendChild(h('button', { class: 'card-summary', type: 'button', 'aria-expanded': openCards[id] ? 'true' : 'false', onclick: () => { openCards[id] = !openCards[id]; cardEl.classList.toggle('card-open', !!openCards[id]); } },
     h('div', { class: 'card-name-block' }, h('div', { class: 'card-name' }, (isPrimus ? '♛ ' : '') + m.name + (mine ? ' (you)' : '')),
-      h('div', { class: 'card-sub' }, (sc.cur.standard ? '✦ Standard met' : sc.cur.active + ' of ' + R(id).standardDays + ' days this week') + (crowns ? ' · ♛×' + crowns : ''))),
+      h('div', { class: 'card-sub' }, (sc.cur.standard ? '✦ Standard met' : sc.cur.active + ' of ' + R(id).standardDays + ' days this week') + ' · ' + sc.total + ' Merit' + (crowns ? ' · ♛×' + crowns : ''))),
     h('div', { class: 'card-quick-stats' },
-      h('div', { class: 'card-qstat' }, h('div', { class: 'card-qstat-val' }, sc.total), h('div', { class: 'card-qstat-label' }, 'Merit')),
-      h('div', { class: 'card-qstat' }, h('div', { class: 'card-qstat-val', style: 'font-size:15px;color:' + (thisM >= prevM ? '#2e7d32' : '#9a1010') }, (thisM >= prevM ? '↑' : '↓') + Math.abs(thisM - prevM)), h('div', { class: 'card-qstat-label' }, 'vs last ' + DOWS[dow(AZ.today())]))),
+      h('div', { class: 'card-qstat' }, h('div', { class: 'card-qstat-val standing' + (stand.place === 1 && stand.pct > 0 ? ' first' : '') }, (stand.tied ? '=' : '') + ordinal(stand.place)), h('div', { class: 'card-qstat-label' }, 'Standing')),
+      h('div', { class: 'card-qstat' }, h('div', { class: 'card-qstat-val', style: 'font-size:17px' }, fmtPct(Math.min(1, stand.pct))), h('div', { class: 'card-qstat-label' }, 'to Peerless'))),
     h('div', { class: 'card-chevron', 'aria-hidden': 'true' }, '▼')));
   const side = cardSide[id] || 'stats', inner = h('div', { class: 'card-detail-inner' });
   inner.appendChild(h('div', { class: 'card-tab-row' }, [['stats', '⚔ Stats'], ['annals', '📜 The Annals']].map(t => h('button', { class: 'card-tab' + (side === t[0] ? ' active' : ''), type: 'button', onclick: () => { cardSide[id] = t[0]; render(); } }, t[1]))));
@@ -1308,7 +1314,8 @@ function playerCard(sc, isPrimus, place) {
 function packSection(full) {
   const se = currentSeason(), list = memberIds().map(id => score(id, se)), wk = weekKey(AZ.today()), ps = primusScores(wk), leader = preseason() ? null : primusOf(wk);
   const box = h('div', { class: 'pack-section' });
-  box.appendChild(h('div', { class: 'pack-head' }, h('b', null, 'The Pack'), h('span', null, 'tap a name to open')));
+  box.appendChild(h('div', { class: 'pack-head' }, h('b', null, 'The Pack'), h('span', null, 'ranked by standing · tap to open')));
+  box.appendChild(h('p', { class: 'stand-note' }, 'Standing = how far up your own Red → Peerless ladder you are. Kids and parents earn Merit on different scales, so this is the fair way to see who\'s ahead. ♛ Primus is this week\'s crown.'));
   if (full) {
     const met = list.filter(x => x.cur.standard).length, dd = list.reduce((a, x) => a + x.cur.active, 0);
     const tog = new Set(all('workout').filter(w => w.group && weekKey(w.date) === wk).map(w => w.group)).size;
@@ -1316,8 +1323,9 @@ function packSection(full) {
       h('div', { class: 'metric go' }, h('b', null, met + '/' + list.length), h('span', null, 'MET THE STANDARD')), h('div', { class: 'metric' }, h('b', null, tog), h('span', null, 'TIMES TOGETHER'))));
   }
   const grid = h('div', { class: 'player-grid' });
-  const order = ps.map(x => x.id);
-  list.slice().sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)).forEach(sc => grid.appendChild(playerCard(sc, sc.id === leader, primusPlace(wk, sc.id))));
+  const pcts = {}; list.forEach(sc => pcts[sc.id] = standingPct(sc));
+  const standOf = id => { const mine = pcts[id], place = 1 + list.filter(x => pcts[x.id] > mine + 1e-9).length; return { place, pct: mine, tied: list.filter(x => Math.abs(pcts[x.id] - mine) < 1e-9).length > 1 }; };
+  list.slice().sort((a, b) => pcts[b.id] - pcts[a.id] || primusPlace(wk, a.id) - primusPlace(wk, b.id)).forEach(sc => grid.appendChild(playerCard(sc, sc.id === leader, primusPlace(wk, sc.id), standOf(sc.id))));
   box.appendChild(grid); return box;
 }
 
