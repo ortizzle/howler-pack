@@ -41,10 +41,18 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 
 ## Game rules (where to change them)
 
-- **Rules and Merit values:** `RULES`.
+- **Rules and Merit values:** `RULES`. **One Merit scale for everyone** (Chris chose this, Nov 25, 2026):
+  - Showing up pays the same: Active Day +15, Standard +50 (Proctors 4 days, Pups 3), chain, together, cheers, goals, Primus, race.
+  - Effort: Proctors use MET × min ÷ 10; Pups use 1 point per 2 minutes. Both cap at 40 a day, so a 30-min kid workout ≈ a 30-min adult one at average intensity.
+  - **Pups' growth points** (`RULES.growth`) balance the parents' weight-progress points: best week yet, longest outing yet, taekwondo stripe/belt and personal bests. `milestone` records are added via `openMilestone`.
+  - Kid bonus points may come later; Chris expects the kids to push harder instead.
+- **The Codex** (`openCodex`) shows every rule and number. It's generated from `RULES` / `RANKS`, so it can't drift. Linked from the Pack tab, Settings, and "How points work ›" under The Pack.
 - **Activities and MET values:** `ACTIVITIES`.
-- **Ranks:** `RANK_BASE`, per 13-week season, scaled to season length; they reset each season.
-- **Standing** (`standingPct`): Merit ÷ that person's Peerless threshold, i.e. how far up their own ladder. It's the fair cross-family comparison, because kids and parents earn Merit on different scales. Pack cards are sorted by it and show the ordinal ("=1st" on ties) plus progress to the **next** rank (`nextRankStat`: "18 to Gray" with a bar in that rank's color), because it moves every workout and reads well for kids. The exact % to Peerless is inside the expanded card; raw Merit is in the sub line.
+- **Ranks:** `RANKS`, **one ladder for everyone, built all year** from Dec 1 and never reset (`score().year` = this season plus earlier seasons; Practice Week stands alone).
+  - It's progressively harder, like the original Howlers: 0 / 600 / 2,000 / 4,500 / 8,000 / 12,500 / 18,000. Peerless by year's end takes beating the Standard (~300 Merit a week).
+  - Seasons keep things fresh with races, monthly and season goals, and the Hall of Honors (the color at each season's end).
+- **Pack cards** are sorted by year Merit and show it with the place ("Merit · =1st" on ties), plus progress to the next rank (`nextRankStat`, e.g. "18 to Gray" with a bar in that rank's color). The % to Peerless is inside the expanded card.
+- **Cheers** go through `sendCheer` (5 s Undo). Your own cheers can be taken back from the Cheer Wall; the +2 goes with them.
 - **Practice Week:** `PRACTICE` (Nov 23–30, 2026).
   - It's deliberately not in `SEASONS`. `seasonFor` / `currentSeason` return it for those dates.
   - Points, ranks, Primus and a 15-step warm-up race work, then everything restarts Dec 1 with The Passage.

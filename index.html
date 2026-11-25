@@ -82,6 +82,10 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .card-qstat-label { font-family: var(--fh); font-size: 10px; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
 .card-qstat-val.standing { font-size: 22px; } .card-qstat-val.standing.first { color: #b8920f; }
 .next-rank { min-width: 92px; } .nr-bar { height: 6px; border-radius: 99px; background: var(--panel2); overflow: hidden; margin-top: 5px; } .nr-bar i { display: block; height: 100%; border-radius: 99px; }
+.codex h3 { font-family: var(--fh); font-size: 18px; color: var(--accent); margin: 16px 0 4px; } .codex p { font-size: 14px; color: var(--ink2); margin-bottom: 6px; }
+.codex table { width: 100%; border-collapse: collapse; font-size: 14px; } .codex td { padding: 7px 4px; border-top: 1px solid var(--line); vertical-align: top; } .codex td:last-child { text-align: right; font-weight: 600; white-space: nowrap; padding-left: 10px; }
+.linklike { color: var(--accent); font-style: normal; font-size: 13px; min-height: 44px; padding: 0 2px; text-decoration: underline; }
+.milestone-tile { border-color: var(--gold); }
 .stand-note { font-size: 12px; color: var(--muted); font-style: italic; margin: -4px 2px 10px; }
 .card-chevron { font-size: 11px; color: var(--muted); transition: transform .25s; }
 .player-card.card-open .card-chevron { transform: rotate(180deg); }
@@ -517,8 +521,12 @@ function memberIds() { return members().map(m => m.mid); }
 
 // ───────────────────────── Rules
 const RULES = {
+  // One Merit scale for everyone. Showing up pays the same; only the weekly Standard (days) and how effort is measured differ.
   proctor: { activeMin: 20, activeMetMin: 100, activeDay: 15, standardDays: 4, standard: 50, effortDiv: 10, effortCap: 40, goalMonth: 50, goalSeason: 150 },
-  pup:     { activeMin: 20, activeDay: 10, standardDays: 3, standard: 30, minPer: 5, minCap: 12, goalMonth: 25, goalSeason: 75 },
+  // Pups: effort by minutes, 1 per 2 min, so a 30-minute kid workout ≈ a 30-minute adult workout at average intensity (~5 MET)
+  pup:     { activeMin: 20, activeDay: 15, standardDays: 3, standard: 50, minPer: 2, minCap: 40, goalMonth: 50, goalSeason: 150 },
+  // Pups' growth points balance the parents' private weight-progress points
+  growth: { bestWeek: 25, longest: 25, stripe: 25, belt: 100, pb: 25, pbWeeklyMax: 2 },
   chainStep: 0.10, chainMax: 5, together: 5, togetherDailyMax: 2, cheer: 2, cheerDailyMax: 5,
   weighIn: 5, stepPct: 0.5, stepPts: 25, weeklyPctCap: 1.0, milestones: [[5, 100], [10, 150], [15, 200]],
   primus: 25, raceFinish: 50, raceCheckpoint: 25, hold: 100,
@@ -586,14 +594,18 @@ function metFor(w) {
   return { met: a.met[f.i], how: f.label };
 }
 
-// Ranks per 13-week season; scaled to the season's length. They reset each season.
-const RANK_BASE = [
-  { name: 'Red', color: '#b3261e', p: 0, k: 0 }, { name: 'Gray', color: '#6b7078', p: 450, k: 250 }, { name: 'Obsidian', color: '#2c3e57', p: 1100, k: 550 },
-  { name: 'Copper', color: '#a0572a', p: 1900, k: 900 }, { name: 'Silver', color: '#8a929e', p: 2800, k: 1300 }, { name: 'Gold', color: '#b8920f', p: 3800, k: 1750 },
-  { name: 'Peerless', color: '#d4a82a', p: 4800, k: 2200 },
+// One ladder for everyone. Rank builds all year from Dec 1 (The Passage) and never resets; each color takes more than the last.
+// Reaching Peerless by year's end takes beating your Standard, not just meeting it (about 300 Merit a week).
+const RANKS = [
+  { name: 'Red', color: '#b3261e', min: 0, motto: 'Break the chains.' },
+  { name: 'Gray', color: '#6b7078', min: 600, motto: 'Discipline, every day.' },
+  { name: 'Obsidian', color: '#2c3e57', min: 2000, motto: 'Strength that endures.' },
+  { name: 'Copper', color: '#a0572a', min: 4500, motto: 'Steady hands, steady work.' },
+  { name: 'Silver', color: '#8a929e', min: 8000, motto: 'Shine through effort.' },
+  { name: 'Gold', color: '#b8920f', min: 12500, motto: 'Rise above.' },
+  { name: 'Peerless', color: '#d4a82a', min: 18000, motto: 'Scarred, and unbroken.' },
 ];
-function ranksFor(id, season) { const scale = (daysBetween(season.start, season.end) + 1) / 91, pup = isPup(id); return RANK_BASE.map(r => ({ name: r.name, color: r.color, min: Math.round((pup ? r.k : r.p) * scale / 10) * 10 })); }
-function rankOf(id, pts, season) { const L = ranksFor(id, season); let i = 0; L.forEach((r, j) => { if (pts >= r.min) i = j; }); return { i, rank: L[i], next: L[i + 1] || null, list: L }; }
+function rankOf(pts) { let i = 0; RANKS.forEach((r, j) => { if (pts >= r.min) i = j; }); return { i, rank: RANKS[i], next: RANKS[i + 1] || null, list: RANKS }; }
 
 // ───────────────────────── Seasons, races and lore. December is the trial run; then quarterly.
 const SEASONS = [
@@ -713,11 +725,30 @@ function score(id, se) {
     all('award').filter(a => a.member === id && a.date >= se.start && a.date <= se.end).forEach(a => add(a.date, a.cat, a.label, a.pts));
     // race rewards are shared by everyone
     raceRewards(se).forEach(x => add(x.date, 'bonus', x.label, x.pts));
+    // Pups' growth: beating their own best (counted from The Passage on, never in Practice Week)
+    if (pup && !se.practice) {
+      const G = RULES.growth, hist = all('workout').filter(w => w.member === id && w.date >= SEASONS[0].start && w.date <= end).sort((a, b) => (a.date + (a.createdAt || 0)) < (b.date + (b.createdAt || 0)) ? -1 : 1);
+      let best = 0, n = 0; const longWk = {};
+      hist.forEach(w => { if (n >= 3 && w.min >= 30 && w.min > best && w.date >= se.start && !longWk[weekKey(w.date)]) { longWk[weekKey(w.date)] = 1; add(w.date, 'progress', 'Longest outing yet · ' + w.min + ' min', G.longest); } best = Math.max(best, w.min); n++; });
+      const wkMin = {}; hist.forEach(w => { const k = weekKey(w.date); wkMin[k] = (wkMin[k] || 0) + w.min; });
+      let bestW = 0, nW = 0;
+      Object.keys(wkMin).sort().forEach(k => { const wEnd = addDays(k, 6); if (wEnd >= today) return;
+        if (nW >= 2 && wkMin[k] > bestW && wEnd >= se.start && wEnd <= se.end) add(wEnd, 'progress', 'Best week yet · ' + wkMin[k] + ' min', G.bestWeek);
+        bestW = Math.max(bestW, wkMin[k]); nW++; });
+    }
+    // milestones (taekwondo stripes and belts, personal bests)
+    const pbWk = {};
+    all('milestone').filter(x => x.member === id && x.date >= se.start && x.date <= end).sort((a, b) => a.date < b.date ? -1 : 1).forEach(x => {
+      const K = MILESTONE_KINDS[x.kind]; if (!K) return;
+      if (x.kind === 'pb') { const k = weekKey(x.date); pbWk[k] = (pbWk[k] || 0) + 1; if (pbWk[k] > RULES.growth.pbWeeklyMax) return; }
+      add(x.date, 'progress', K.icon + ' ' + K.label + (x.label ? ': ' + x.label : ''), RULES.growth[x.kind]); });
     let total = 0; const byWeek = {}, cats = { consistency: 0, effort: 0, progress: 0, together: 0, bonus: 0 };
     ledger.forEach(e => { total += e.pts; byWeek[weekKey(e.date)] = (byWeek[weekKey(e.date)] || 0) + e.pts; cats[e.cat] = (cats[e.cat] || 0) + e.pts; });
     ledger.sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
     const cur = weeks[weeks.length - 1] || { key: weekKey(today), active: 0, standard: false, mult: 1, chainIn: 0, complete: false };
-    return { id, se, total, ledger, weeks, cur, chain: cur.chainIn, byWeek, cats, days: dm, rank: rankOf(id, total, se) };
+    // Rank builds all year: this season plus every earlier season since Dec 1 (Practice Week stands alone)
+    const year = se.practice ? total : SEASONS.filter(x => x.start < se.start).reduce((a, x) => a + score(id, x).total, 0) + total;
+    return { id, se, total, year, ledger, weeks, cur, chain: cur.chainIn, byWeek, cats, days: dm, rank: rankOf(year) };
   });
 }
 function weekMinutes(id, wk) { return all('workout').filter(w => w.member === id && weekKey(w.date) === wk && w.date <= AZ.today()).reduce((a, w) => a + w.min, 0); }
@@ -892,7 +923,7 @@ function coachStats(id) {
   const ps = primusScores(weekKey(today)), place = ps.findIndex(x => x.id === id) + 1, rs = raceState(se);
   const o = { name: M(id).name, role: isPup(id) ? 'kid' : 'parent', season: se.name + (se.trial ? ' (December trial run)' : se.practice ? ' (practice; points reset Dec 1)' : ''),
     activeDaysThisWeek: wk.active, weeklyTarget: R(id).standardDays, daysLeftInWeek: 6 - dow(today), standardMet: wk.standard, moreDaysNeeded: left,
-    chainWeeks: sc.chain, seasonMerit: sc.total, rank: sc.rank.rank.name, primusRacePlace: place + ' of ' + ps.length, timesPrimus: primusCount(id),
+    chainWeeks: sc.chain, seasonMerit: sc.total, yearMerit: sc.year, rank: sc.rank.rank.name, primusRacePlace: place + ' of ' + ps.length, timesPrimus: primusCount(id),
     lastWorkout: last ? actLabel(last) + ' on ' + fmtDow(last.date) : 'none yet', packRace: rs.steps + ' of ' + rs.goal + ' ' + se.race.unit + ' toward ' + se.race.name,
     cheersReceivedThisWeek: all('cheer').filter(c => c.to === id && c.date >= weekKey(today)).length };
   if (!isPup(id) && id === me()) { const t = trendSeries(se.start, se.end); if (t && t.series.length > 1) o.weightTrendPercentSinceSeasonStart = -(Math.round(t.pct * 10) / 10); }
@@ -919,7 +950,9 @@ async function askCoach(id) {
 // ───────────────────────── Cheers (support, never trash talk)
 const CHEER_EMOJI = ['🔥', '👏', '💪', '🐺', '❤️'];
 const CHEER_PRESETS = ['Way to show up!', 'Proud of you!', 'That streak though!', 'You made it look easy.', 'Thanks for walking the dogs!'];
-function cheer(to, emoji, text) { put({ id: rid('c'), type: 'cheer', from: me(), to, date: AZ.today(), emoji, text: (text || '').slice(0, 140), createdAt: Date.now() }); }
+function cheer(to, emoji, text) { const id = rid('c'); put({ id, type: 'cheer', from: me(), to, date: AZ.today(), emoji, text: (text || '').slice(0, 140), createdAt: Date.now() }); return id; }
+// Every cheer gets 5 seconds of Undo; your own cheers can also be removed later from the Cheer Wall
+function sendCheer(to, emoji, text, msg) { const cid = cheer(to, emoji, text); render(); toast(msg || (emoji + ' sent to ' + M(to).name + ' · +' + RULES.cheer + ' Merit'), 'Undo', () => { del(cid); render(); toast('Cheer taken back'); }); }
 
 // ───────────────────────── Fuel (ortizzle.github.io/fuel): read-only, same site, this phone only
 const FUEL_URL = 'https://ortizzle.github.io/fuel/';
@@ -1072,12 +1105,35 @@ function openLog(preset) {
   const close = openModal(ed ? 'Edit workout' : pup ? 'What did you do? 🐾' : 'Log a workout', body);
   draw();
 }
+const MILESTONE_KINDS = { stripe: { icon: '🥋', label: 'Taekwondo stripe' }, belt: { icon: '🥋', label: 'Belt test passed' }, pb: { icon: '⚡', label: 'Personal best' } };
+function openMilestone(id) {
+  const body = h('div', { class: 'log-body' }), today = AZ.today(), f = { kind: 'stripe', label: '', date: today };
+  const canEdit = id === me() || !isPup(me());
+  function draw() {
+    clear(body);
+    body.appendChild(h('div', { class: 'chips' }, Object.keys(MILESTONE_KINDS).map(k => h('button', { class: 'chip-btn' + (f.kind === k ? ' on' : ''), type: 'button', onclick: () => { f.kind = k; draw(); } }, MILESTONE_KINDS[k].icon + ' ' + MILESTONE_KINDS[k].label + ' +' + RULES.growth[k]))));
+    if (f.kind === 'pb') body.appendChild(h('label', { class: 'num', style: 'display:block;margin-top:12px' }, 'What was it?', h('input', { type: 'text', maxlength: '60', value: f.label, placeholder: 'e.g. fastest mile, 50 push-ups', oninput: e => { f.label = e.target.value; } })));
+    body.appendChild(h('div', { class: 'fld' }, 'When'));
+    body.appendChild(h('div', { class: 'chips' }, [[today, 'Today'], [addDays(today, -1), 'Yesterday']].map(x => h('button', { class: 'chip-btn' + (f.date === x[0] ? ' on' : ''), type: 'button', onclick: () => { f.date = x[0]; draw(); } }, x[1]))));
+    body.appendChild(h('p', { class: 'hint' }, 'Personal bests count up to ' + RULES.growth.pbWeeklyMax + ' a week. Growth points are how Pups keep pace with the parents\' progress points.'));
+    body.appendChild(h('button', { class: 'btn-primary', type: 'button', style: 'margin-top:12px', onclick: () => {
+      if (f.kind === 'pb' && !f.label.trim()) { toast('Say what the personal best was'); return; }
+      const mid = rid('m'); put({ id: mid, type: 'milestone', member: id, kind: f.kind, label: f.label.trim() || null, date: f.date, by: me(), createdAt: Date.now() });
+      close(); render(); toast(MILESTONE_KINDS[f.kind].icon + ' ' + M(id).name + ': ' + MILESTONE_KINDS[f.kind].label + ' · +' + RULES.growth[f.kind] + ' Merit', 'Undo', () => { del(mid); render(); }); } }, 'Add it'));
+    const recent = all('milestone').filter(x => x.member === id).sort((a, b) => a.date < b.date ? 1 : -1).slice(0, 5);
+    if (recent.length) { body.appendChild(h('div', { class: 'fld' }, 'Recent'));
+      recent.forEach(x => body.appendChild(h('div', { class: 'annal' }, h('span', { class: 'ad' }, fmtShort(x.date)), h('span', { class: 'll' }, MILESTONE_KINDS[x.kind].icon + ' ' + MILESTONE_KINDS[x.kind].label + (x.label ? ': ' + x.label : ''), h('small', null, x.by && x.by !== id ? 'added by ' + M(x.by).name : '')),
+        canEdit ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove', onclick: () => { del(x.id); draw(); render(); } }, '✕') : null))); }
+  }
+  const close = openModal('🏅 ' + (id === me() ? 'I earned something!' : M(id).name + ' earned something'), body); draw();
+}
 // Kids' chooser: big buttons first
 function openPupChooser() {
   const grid = h('div', { class: 'big-acts' });
   PUP_BUTTONS.forEach(a => grid.appendChild(h('button', { class: 'big-act', type: 'button', onclick: () => { close(); openLog({ act: a, min: a === 'tkd' || a === 'park' || a === 'hike' ? 60 : 30 }); } },
     h('span', { class: 'ic' }, ACT[a].icon), a === 'bike' ? 'Peloton Bike' : a === 'tread' ? 'Peloton Tread' : a === 'dogwalk' ? dogs().map(d => d.name).join(' & ') : ACT[a].name)));
   grid.appendChild(h('button', { class: 'big-act', type: 'button', onclick: () => { close(); openLog(); } }, h('span', { class: 'ic' }, '➕'), 'Other'));
+  grid.appendChild(h('button', { class: 'big-act milestone-tile', type: 'button', onclick: () => { close(); openMilestone(me()); } }, h('span', { class: 'ic' }, '🏅'), 'I earned something'));
   const close = openModal('I moved! 🐾', grid);
 }
 
@@ -1244,24 +1300,23 @@ const CAT_COLORS = { consistency: '#9a1010', effort: '#b08a1e', progress: '#2e7d
 const CAT_LABEL = { consistency: 'Showing up', effort: 'Effort', progress: 'Progress', together: 'Together & cheers', bonus: 'Primus, goals & race' };
 
 // The Pack: everyone at a glance; tap ▼ to open (like the original main page)
-function rankPct(sc) { const L = sc.rank.list; return Math.min(1, sc.total / L[L.length - 1].min); }
-// Standing: how far up your OWN Red → Peerless ladder you are. Kids and parents earn Merit on different scales,
-// but each ladder is sized to its scale, so this percentage is the fair way to say who is ahead.
-function standingPct(sc) { const L = sc.rank.list; return sc.total / L[L.length - 1].min; }
+function rankPct(sc) { const L = sc.rank.list; return Math.min(1, sc.year / L[L.length - 1].min); }
+// Everyone earns on one scale and climbs one ladder, so Merit itself is the standing.
+function standingPct(sc) { const L = sc.rank.list; return sc.year / L[L.length - 1].min; }
 function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 // "18 to Gray" with a short bar in the next rank's color: progress through the current rank band
 function nextRankStat(sc) {
   const r = sc.rank;
   if (!r.next) return h('div', { class: 'card-qstat next-rank' }, h('div', { class: 'card-qstat-val', style: 'font-size:17px;color:' + r.rank.color }, 'Peerless ✦'), h('div', { class: 'card-qstat-label' }, 'top rank'));
-  const band = Math.max(0, Math.min(1, (sc.total - r.rank.min) / (r.next.min - r.rank.min)));
-  return h('div', { class: 'card-qstat next-rank' }, h('div', { class: 'card-qstat-val', style: 'font-size:17px' }, (r.next.min - sc.total) + ' to ' + r.next.name),
+  const band = Math.max(0, Math.min(1, (sc.year - r.rank.min) / (r.next.min - r.rank.min)));
+  return h('div', { class: 'card-qstat next-rank' }, h('div', { class: 'card-qstat-val', style: 'font-size:17px' }, (r.next.min - sc.year) + ' to ' + r.next.name),
     h('div', { class: 'nr-bar', role: 'img', 'aria-label': Math.round(band * 100) + '% of the way to ' + r.next.name }, h('i', { style: 'width:' + Math.max(4, band * 100) + '%;background:' + r.next.color })));
 }
 function fmtPct(x) { const v = x * 100; return (v > 0 && v < 10 ? v.toFixed(1) : Math.round(v)) + '%'; }
 function swordBar(sc) {
   const r = sc.rank, pct = rankPct(sc), stops = r.list.map((x, i) => x.color + ' ' + Math.round(i / (r.list.length - 1) * 100) + '%').join(',');
   return h('div', { class: 'sword' }, h('div', { class: 'sword-track' }, h('div', { class: 'sword-fill', style: 'width:' + Math.max(3, pct * 100) + '%;background:linear-gradient(90deg,' + stops + ');background-size:' + (100 / Math.max(.03, pct)) + '% 100%' })),
-    h('div', { class: 'sword-meta' }, h('span', null, h('b', { style: 'color:' + r.rank.color }, r.rank.name), ' · ' + fmtPct(Math.min(1, standingPct(sc))) + ' to Peerless'), h('span', null, r.next ? (r.next.min - sc.total) + ' Merit to ' + r.next.name : 'Peerless Scarred')));
+    h('div', { class: 'sword-meta' }, h('span', null, h('b', { style: 'color:' + r.rank.color }, r.rank.name), ' · ' + fmtPct(Math.min(1, standingPct(sc))) + ' to Peerless'), h('span', null, r.next ? (r.next.min - sc.year) + ' Merit to ' + r.next.name : 'Peerless Scarred')));
 }
 function playerCard(sc, isPrimus, place, stand) {
   const id = sc.id, m = M(id), mine = id === me(), last = lastActive(id), quiet = last ? daysBetween(last, AZ.today()) : 99, color = houseColor(id);
@@ -1276,9 +1331,9 @@ function playerCard(sc, isPrimus, place, stand) {
       isPrimus ? h('div', { class: 'card-arch' }, '♛ PRIMUS') : null)));
   cardEl.appendChild(h('button', { class: 'card-summary', type: 'button', 'aria-expanded': openCards[id] ? 'true' : 'false', onclick: () => { openCards[id] = !openCards[id]; cardEl.classList.toggle('card-open', !!openCards[id]); } },
     h('div', { class: 'card-name-block' }, h('div', { class: 'card-name' }, (isPrimus ? '♛ ' : '') + m.name + (mine ? ' (you)' : '')),
-      h('div', { class: 'card-sub' }, (sc.cur.standard ? '✦ Standard met' : sc.cur.active + ' of ' + R(id).standardDays + ' days this week') + ' · ' + sc.total + ' Merit' + (crowns ? ' · ♛×' + crowns : ''))),
+      h('div', { class: 'card-sub' }, (sc.cur.standard ? '✦ Standard met' : sc.cur.active + ' of ' + R(id).standardDays + ' days this week') + (crowns ? ' · ♛×' + crowns : ''))),
     h('div', { class: 'card-quick-stats' },
-      h('div', { class: 'card-qstat' }, h('div', { class: 'card-qstat-val standing' + (stand.place === 1 && stand.pct > 0 ? ' first' : '') }, (stand.tied ? '=' : '') + ordinal(stand.place)), h('div', { class: 'card-qstat-label' }, 'Standing')),
+      h('div', { class: 'card-qstat' }, h('div', { class: 'card-qstat-val standing' + (stand.place === 1 && stand.pct > 0 ? ' first' : '') }, sc.year.toLocaleString()), h('div', { class: 'card-qstat-label' }, 'Merit · ' + (stand.tied ? '=' : '') + ordinal(stand.place))),
       nextRankStat(sc)),
     h('div', { class: 'card-chevron', 'aria-hidden': 'true' }, '▼')));
   const side = cardSide[id] || 'stats', inner = h('div', { class: 'card-detail-inner' });
@@ -1304,7 +1359,8 @@ function playerCard(sc, isPrimus, place, stand) {
     inner.appendChild(h('div', { class: 'card-actions' }, mine
       ? h('button', { class: 'primary', type: 'button', onclick: () => go('progress') }, '📈 My full progress')
       : [h('button', { class: 'primary', type: 'button', onclick: () => openCheerNote(id) }, '🔥 Cheer ' + m.name),
-         quiet >= 3 ? h('button', { type: 'button', onclick: () => { cheer(id, '❤️', 'Thinking of you. Want to go for a walk?'); render(); toast('Encouragement sent to ' + m.name); } }, '🌙 Encourage') : null]));
+         isPup(id) && !isPup(me()) ? h('button', { type: 'button', onclick: () => openMilestone(id) }, '🏅 Milestone') : null,
+         quiet >= 3 ? h('button', { type: 'button', onclick: () => sendCheer(id, '❤️', 'Thinking of you. Want to go for a walk?', 'Encouragement sent to ' + m.name) }, '🌙 Encourage') : null]));
   } else {
     const ws = all('workout').filter(w => w.member === id && w.date <= AZ.today()).sort((a, b) => (b.date + (b.createdAt || 0)) > (a.date + (a.createdAt || 0)) ? 1 : -1).slice(0, 8);
     const canEdit = mine || (!isPup(me()) && isPup(id));
@@ -1324,7 +1380,7 @@ function packSection(full) {
   const se = currentSeason(), list = memberIds().map(id => score(id, se)), wk = weekKey(AZ.today()), ps = primusScores(wk), leader = preseason() ? null : primusOf(wk);
   const box = h('div', { class: 'pack-section' });
   box.appendChild(h('div', { class: 'pack-head' }, h('b', null, 'The Pack'), h('span', null, 'ranked by standing · tap to open')));
-  box.appendChild(h('p', { class: 'stand-note' }, 'Standing = how far up your own Red → Peerless ladder you are (exact % inside each card). Kids and parents earn Merit on different scales, so this is the fair way to see who\'s ahead. ♛ Primus is this week\'s crown.'));
+  box.appendChild(h('p', { class: 'stand-note' }, 'Everyone earns Merit on the same scale and climbs one ladder all year. ♛ Primus is this week\'s crown. ', h('button', { class: 'linklike', type: 'button', onclick: openCodex }, 'How points work ›')));
   if (full) {
     const met = list.filter(x => x.cur.standard).length, dd = list.reduce((a, x) => a + x.cur.active, 0);
     const tog = new Set(all('workout').filter(w => w.group && weekKey(w.date) === wk).map(w => w.group)).size;
@@ -1424,15 +1480,15 @@ function cheersForMe() {
   if (!mine.length) return null;
   const c = card('CHEERS FOR YOU', mine.length + ' lately');
   mine.slice(0, 3).forEach(x => c.appendChild(h('div', { class: 'cheer-row' }, h('span', { class: 'ce' }, x.emoji), h('span', { class: 'ct' }, M(x.from).name + (x.text ? ': "' + x.text + '"' : ' cheered you on'), h('small', null, fmtDow(x.date))),
-    h('button', { class: 'chip-btn', type: 'button', onclick: () => { cheer(x.from, '❤️', ''); render(); toast('❤️ sent to ' + M(x.from).name + ' · +2 Merit'); } }, '❤️ back'))));
+    h('button', { class: 'chip-btn', type: 'button', onclick: () => sendCheer(x.from, '❤️', '') }, '❤️ back'))));
   return c;
 }
 function myWeekCard() {
   const id = me(), sc = score(id), r = R(id), left = Math.max(0, r.standardDays - sc.cur.active), c = card('THIS WEEK · ' + M(id).name.toUpperCase(), 'Chain ×' + sc.cur.mult.toFixed(1));
   c.appendChild(weekDots(id));
   c.appendChild(h('div', { class: 'metrics' }, h('div', { class: 'metric' + (sc.cur.standard ? ' go' : '') }, h('b', null, sc.cur.standard ? '✦' : sc.cur.active + '/' + r.standardDays), h('span', null, sc.cur.standard ? 'STANDARD MET' : left + ' MORE TO GO')),
-    h('div', { class: 'metric' }, h('b', null, sc.byWeek[sc.cur.key] || 0), h('span', null, 'MERIT THIS WEEK')), h('div', { class: 'metric' }, h('b', null, sc.total), h('span', null, 'SEASON MERIT'))));
-  c.appendChild(h('div', { class: 'rank-line' }, h('b', { style: 'color:' + sc.rank.rank.color + ';font-family:var(--fh);font-size:20px' }, sc.rank.rank.name), h('span', { class: 'rank-pts' }, sc.rank.next ? (sc.rank.next.min - sc.total) + ' to ' + sc.rank.next.name : 'Peerless Scarred')));
+    h('div', { class: 'metric' }, h('b', null, sc.byWeek[sc.cur.key] || 0), h('span', null, 'MERIT THIS WEEK')), h('div', { class: 'metric' }, h('b', null, sc.year.toLocaleString()), h('span', null, sc.se.practice ? 'PRACTICE MERIT' : 'MERIT THIS YEAR'))));
+  c.appendChild(h('div', { class: 'rank-line' }, h('b', { style: 'color:' + sc.rank.rank.color + ';font-family:var(--fh);font-size:20px' }, sc.rank.rank.name), h('span', { class: 'rank-pts' }, sc.rank.next ? (sc.rank.next.min - sc.year) + ' to ' + sc.rank.next.name : 'Peerless Scarred')));
   c.appendChild(ladderEl(sc)); return c;
 }
 function fuelCard() {
@@ -1554,7 +1610,7 @@ function scorecards(id, se) {
     c.appendChild(h('div', { class: 'wkrow' }, h('div', null, h('b', null, fmtShort(wk.key)), h('div', { class: 'meta' }, wk.complete ? 'final' : 'in progress')),
       h('div', null, seg, h('div', { class: 'meta' }, wk.active + ' active days · ' + (wk.standard ? '✦ Standard' : 'no Standard') + ' · ×' + wk.mult.toFixed(1))), h('div', { class: 'pts' }, sc.byWeek[wk.key] || 0)));
   });
-  c.appendChild(h('div', { class: 'legend' }, Object.keys(CAT_LABEL).filter(k => !(isPup(id) && k === 'progress')).map(k => h('span', null, h('i', { style: 'background:' + CAT_COLORS[k] }), CAT_LABEL[k]))));
+  c.appendChild(h('div', { class: 'legend' }, Object.keys(CAT_LABEL).map(k => h('span', null, h('i', { style: 'background:' + CAT_COLORS[k] }), CAT_LABEL[k]))));
   return c;
 }
 function renderProgress(main) {
@@ -1647,7 +1703,7 @@ function cheerFeed() {
   items.forEach(w => { const m = M(w.member), sent = all('cheer').find(x => x.from === me() && x.to === w.member && x.date === AZ.today());
     c.appendChild(h('div', { class: 'act-feed' }, h('div', { class: 'who' }, h('div', { class: 'fav', style: 'background:' + houseColor(w.member) }, m.role === 'pup' ? '🐾' : m.name[0]),
       h('div', null, m.name + ' · ' + (ACT[w.act] ? ACT[w.act].icon : '') + ' ' + actLabel(w) + ' ' + w.min + 'm', h('small', null, fmtDow(w.date)))),
-      h('div', { class: 'emoji-row' }, CHEER_EMOJI.map(e => h('button', { class: sent && sent.emoji === e ? 'done' : '', type: 'button', 'aria-label': 'Cheer ' + e, onclick: () => { cheer(w.member, e, ''); render(); toast(e + ' sent to ' + m.name + ' · +2 Merit'); } }, e)),
+      h('div', { class: 'emoji-row' }, CHEER_EMOJI.map(e => h('button', { class: sent && sent.emoji === e ? 'done' : '', type: 'button', 'aria-label': 'Cheer ' + e, onclick: () => sendCheer(w.member, e, '') }, e)),
         h('button', { class: 'note', type: 'button', onclick: () => openCheerNote(w.member) }, '✍️ note')))); });
   return c;
 }
@@ -1656,7 +1712,7 @@ function openCheerNote(to) {
   const emo = h('div', { class: 'chips' }); const drawE = () => { clear(emo); CHEER_EMOJI.forEach(e => emo.appendChild(h('button', { class: 'chip-btn' + (e === emoji ? ' on' : ''), type: 'button', onclick: () => { emoji = e; drawE(); } }, e))); }; drawE();
   body.appendChild(emo); body.appendChild(h('div', { class: 'chips', style: 'margin-top:10px' }, CHEER_PRESETS.map(t => h('button', { class: 'chip-btn', type: 'button', onclick: () => { inp.value = t; } }, t))));
   body.appendChild(h('div', { style: 'margin-top:10px' }, inp));
-  body.appendChild(h('button', { class: 'btn-primary', type: 'button', style: 'margin-top:12px', onclick: () => { cheer(to, emoji, inp.value.trim()); close(); render(); toast(emoji + ' Cheer sent to ' + M(to).name); } }, 'Send cheer'));
+  body.appendChild(h('button', { class: 'btn-primary', type: 'button', style: 'margin-top:12px', onclick: () => { close(); sendCheer(to, emoji, inp.value.trim(), emoji + ' Cheer sent to ' + M(to).name) } }, 'Send cheer'));
   const close = openModal('Cheer ' + M(to).name, body);
 }
 function renderPack(main) {
@@ -1674,9 +1730,11 @@ function renderPack(main) {
   const wall = card('CHEER WALL', 'the whole family');
   const cs = all('cheer').sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 8);
   if (!cs.length) wall.appendChild(h('p', { class: 'hint' }, 'No cheers yet. Be the first.'));
-  cs.forEach(x => wall.appendChild(h('div', { class: 'cheer-row' }, h('span', { class: 'ce' }, x.emoji), h('span', { class: 'ct' }, M(x.from).name + ' → ' + M(x.to).name + (x.text ? ': "' + x.text + '"' : ''), h('small', null, fmtDow(x.date))))));
+  cs.forEach(x => wall.appendChild(h('div', { class: 'cheer-row' }, h('span', { class: 'ce' }, x.emoji), h('span', { class: 'ct' }, M(x.from).name + ' → ' + M(x.to).name + (x.text ? ': "' + x.text + '"' : ''), h('small', null, fmtDow(x.date))),
+    x.from === me() ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Take back this cheer', onclick: () => { del(x.id); render(); toast('Cheer taken back', 'Undo', () => { put(Object.assign({}, x, { deleted: false })); render(); }); } }, '✕') : null)));
   main.appendChild(wall);
-  main.appendChild(h('button', { class: 'btn-ghost', type: 'button', onclick: openLoreLibrary }, '📜 The Lore of the Pack: learn the world of Red Rising'));
+  main.appendChild(h('button', { class: 'btn-ghost', type: 'button', onclick: openCodex }, '📜 The Codex: rules, points & ranks'));
+  main.appendChild(h('button', { class: 'btn-ghost', type: 'button', onclick: openLoreLibrary }, '🐺 The Lore of the Pack: learn the world of Red Rising'));
 }
 const GLOSSARY = [
   ['🐺', 'The Howlers', 'Darrow\'s loyal crew in House Mars. They wear wolf cloaks and never leave anyone behind. Our app is named after them.'],
@@ -1690,6 +1748,34 @@ const GLOSSARY = [
   ['🎭', 'Carvers', 'Violets who reshape people with incredible skill. Mickey is one, and he coaches here.'],
   ['🌸', 'Pinks', 'Experts in manners and the art of fitting in. Matteo is one, and he coaches here.'],
 ];
+function openCodex() {
+  const P = RULES.proctor, K = RULES.pup, G = RULES.growth, body = h('div', { class: 'log-body codex' });
+  const sec = (title, intro) => { body.appendChild(h('h3', null, title)); if (intro) body.appendChild(h('p', null, intro)); };
+  const table = rows => { const tb = h('table', null); rows.forEach(r => tb.appendChild(h('tr', null, h('td', null, r[0]), h('td', null, r[1])))); body.appendChild(tb); };
+  sec('Merit: one scale for everyone', 'Everyone earns the same for showing up. Only the weekly target and how effort is measured differ, so kids and parents compete fairly on one total.');
+  table([['Active Day: ' + P.activeMin + '+ minutes of anything (parents: or a hard shorter workout)', '+' + P.activeDay],
+    ['Weekly Standard: ' + P.standardDays + ' Active Days for Proctors, ' + K.standardDays + ' for Pups (Mon–Sun)', '+' + P.standard],
+    ['Chain: each week in a row you meet your Standard adds ' + Math.round(RULES.chainStep * 100) + '% to that week. A missed week drops one link.', 'up to ×' + (1 + RULES.chainStep * RULES.chainMax).toFixed(1)],
+    ['Effort, Proctors: activity intensity (MET) × minutes ÷ ' + P.effortDiv + '. Speed, incline, watts or distance make it exact.', 'up to ' + P.effortCap + '/day'],
+    ['Effort, Pups: 1 point per ' + K.minPer + ' minutes of anything', 'up to ' + K.minCap + '/day'],
+    ['Together: 2+ of you log the same activity', '+' + RULES.together + ' (2/day)'],
+    ['Cheering someone', '+' + RULES.cheer + ' (' + RULES.cheerDailyMax + '/day)'],
+    ['Weekly Primus', '+' + RULES.primus],
+    ['Monthly goal · Season goal', '+' + P.goalMonth + ' · +' + P.goalSeason],
+    ['Race checkpoint on time · Reaching the destination (everyone)', '+' + RULES.raceCheckpoint + ' · +' + RULES.raceFinish]]);
+  sec('Progress points', 'Proctors earn progress from their private weight trend (pounds never leave their phone); Pups earn growth points for beating their own bests.');
+  table([['Proctors: weekly weigh-in', '+' + RULES.weighIn], ['Proctors: each new ' + RULES.stepPct + '% low on the trend line (max ' + RULES.weeklyPctCap + '% a week)', '+' + RULES.stepPts],
+    ['Proctors: 5% · 10% · 15% milestones', RULES.milestones.map(m => '+' + m[1]).join(' · ')], ['Proctors: Holiday Hold (December)', '+' + RULES.hold],
+    ['Pups: best week of minutes yet', '+' + G.bestWeek], ['Pups: longest single outing yet (30+ min, once a week)', '+' + G.longest],
+    ['Pups: taekwondo stripe · belt test passed', '+' + G.stripe + ' · +' + G.belt], ['Pups: personal best (up to ' + G.pbWeeklyMax + ' a week)', '+' + G.pb]]);
+  sec('Ranks: built all year', 'Your rank grows from Dec 1 through the whole year and never resets. Each color takes more than the last; Peerless takes beating your Standard week after week.');
+  table(RANKS.map(r => [h('span', null, h('b', { style: 'color:' + r.color }, r.name), ' · ', h('i', null, r.motto)), r.min.toLocaleString()]));
+  sec('Seasons keep it fresh', 'Each quarter brings a new race toward a holiday, new season goals and lore to unlock; goals also reset every month. Your color at the end of each season goes in the Hall of Honors.');
+  sec('Weekly Primus', 'The crown goes to whoever beats their own target by the most: days moved against your Standard, plus minutes against your own usual. A tie means no crown yet; if the week ends tied, everyone tied shares it.');
+  sec('The race', 'Every Active Day moves the pack one step; every activity done together adds one more. Hit a holiday checkpoint on time and everyone earns a bonus.');
+  sec('Practice Week (Nov 23–30)', 'Points count for practice, then everything resets on Dec 1 when The Passage begins.');
+  openModal('📜 The Codex: how the Pack works', body);
+}
 function openLoreLibrary() {
   const body = h('div', { class: 'log-body' });
   GLOSSARY.forEach(g => body.appendChild(h('div', { class: 'gloss' }, h('span', { class: 'gi' }, g[0]), h('div', null, h('b', null, g[1]), h('p', null, g[2])))));
@@ -1784,6 +1870,7 @@ function openSettings() {
     const nOn = Store.get('notify', false) && 'Notification' in window && Notification.permission === 'granted';
     nt.appendChild(toggle('Notifications on this phone', nOn, async () => { if (nOn) { Store.set('notify', false); swConfig(); draw(); return; } await enableNotifications(); draw(); }));
     if (window.OrtizDrive && !pup && !PREVIEW) { const dv = sec('GOOGLE DRIVE COPY', 'A dated backup of the family data in your Drive (Ortiz App Backups › Howler Pack).'); try { dv.appendChild(OrtizDrive.settingsBlock({ buttonClass: 'btn-ghost', hintClass: 'hint' })); } catch (e) { /* drive unavailable */ } }
+    sec('THE CODEX', 'Every rule, point value and rank, in one place.').appendChild(h('button', { class: 'btn-ghost', type: 'button', onclick: () => { close(); openCodex(); } }, '📜 Read the Codex'));
     const dt = sec('DATA');
     if (!PREVIEW) dt.appendChild(h('button', { class: 'btn-ghost', type: 'button', onclick: () => { close(); enterPreview(); } }, '👀 Preview with sample data'));
     dt.appendChild(h('button', { class: 'btn-ghost', type: 'button', onclick: () => { const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' }); const a = h('a', { href: URL.createObjectURL(blob), download: 'howler-pack-' + AZ.today() + '.json' }); document.body.appendChild(a); a.click(); a.remove(); } }, '⬇ Save a backup file'));
