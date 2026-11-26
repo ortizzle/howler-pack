@@ -46,6 +46,9 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 
 - **Rules and Merit values:** `RULES`. **One Merit scale for everyone** (Chris chose this, Nov 25, 2026):
   - Showing up pays the same: Active Day +15, Standard +50, chain, together, cheers, goals, Primus, race.
+  - **No cliff at 20 minutes** (Chris, Nov 26, 2026): a day short of an Active Day earns part of the +15, about ¾ point a minute (or by MET-minutes for parents), as "Showing up · N of 20 min". The 20-minute line still decides Active Days for the Standard, Primus and the race.
+  - **Stretching never makes an Active Day by itself** (`gentle: true` in `ACTIVITIES`). It earns its effort points, and it tops up real movement up to as many minutes as you actually moved (10 walk + 10 stretch = an Active Day; 30 stretch alone isn't). Meditation still doesn't count at all.
+  - Re-ran the Dec–Mar fairness simulation after this change: equal effort still gives equal Merit within ~10%.
   - **The Standard is 4 Active Days a week for everyone, kids included** (Chris, Nov 26, 2026). A Dec–Mar simulation showed that with the old 3-day kids' Standard, the kids earned nearly twice the adults' Merit for the same workouts at 3 days a week and took almost every Primus crown. At 4 days for everyone, equal effort gives equal Merit (within ~10%) and the crowns spread out. Don't reintroduce a separate kids' Standard without re-running that comparison.
   - **Holiday weeks** (`HOLIDAYS`, `holidayFor` / `stdDays`): the Standard drops to 3 days for everyone, and missing it doesn't cost a chain link. Dec 21 – Jan 3 is listed; add the girls' spring break when the dates are known. Cards show "of 3 days 🎄" and the Codex lists them.
   - Effort: Praetorians use MET × min ÷ 10; Pups use 1 point per 2 minutes. **Both cap at 60 a day** (raised from 40, Chris, Nov 26, 2026), so a 30-min kid workout ≈ a 30-min adult one at average intensity.

@@ -677,7 +677,7 @@ const ACTIVITIES = [
   ] },
   { id: 'strength', name: 'Strength', long: 'Strength', icon: '🏋️', group: 'Peloton', met: [3.5, 5, 6] },
   { id: 'yoga', name: 'Yoga', long: 'Yoga', icon: '🧘', group: 'Peloton', met: [2.5, 3, 4] },
-  { id: 'stretch', name: 'Stretch', long: 'Stretch', icon: '🤸', group: 'Peloton', met: [2.3, 2.3, 2.8] },           // Compendium 2024: stretching, mild 2.3
+  { id: 'stretch', name: 'Stretch', long: 'Stretch', icon: '🤸', group: 'Peloton', met: [2.3, 2.3, 2.8], gentle: true },   // gentle: earns effort, but never counts toward an Active Day           // Compendium 2024: stretching, mild 2.3
   { id: 'meditate', name: 'Meditation', long: 'Meditation', icon: '🕯️', group: 'Peloton', met: [1, 1, 1], mind: true }, // not movement: low flat points, no Active Day
   { id: 'bootcamp', name: 'Bootcamp', long: 'Bootcamp', icon: '🔥', group: 'Peloton', met: [6, 8, 9] },
   { id: 'dogwalk', name: 'Dog Walk', long: 'Dog Walk', icon: '🐕', group: 'Outside & Classes', met: [3, 3.5, 4.3], detail: 'dist' },
@@ -840,12 +840,13 @@ function days(id, se) {
   return memo('days:' + id + ':' + se.id, () => {
     const end = AZ.today() < se.end ? AZ.today() : se.end, r = R(id), pup = isPup(id), out = {};
     workoutsOf(id, se.start, end).sort((a, b) => (a.date + (a.createdAt || 0)) < (b.date + (b.createdAt || 0)) ? -1 : 1).forEach(w => {
-      const d = out[w.date] || (out[w.date] = { min: 0, metMin: 0, eff: 0, tog: 0, list: [] });
-      const mm = metFor(w), mind = ACT[w.act] && ACT[w.act].mind; d.min += mind ? 0 : w.min; d.metMin += mind ? 0 : mm.met * w.min; d.list.push(w);
+      const d = out[w.date] || (out[w.date] = { min: 0, metMin: 0, eff: 0, tog: 0, list: [], soft: 0, softMet: 0 });
+      const mm = metFor(w), mind = ACT[w.act] && ACT[w.act].mind, soft = mind || (ACT[w.act] && ACT[w.act].gentle); d.min += soft ? 0 : w.min; d.metMin += soft ? 0 : mm.met * w.min; if (soft && !mind) { d.soft += w.min; d.softMet += mm.met * w.min; } d.list.push(w);
       const raw = mind ? Math.floor(w.min / 10) : pup ? Math.floor(w.min / r.minPer) : Math.round(mm.met * w.min / r.effortDiv), cap = pup ? r.minCap : r.effortCap;
       w._eff = Math.max(0, Math.min(raw, cap - d.eff)); d.eff += w._eff; w._met = mm;
     });
-    for (const k in out) out[k].active = out[k].min >= r.activeMin || (!pup && out[k].metMin >= r.activeMetMin);
+    // stretching tops up real movement (up to as many minutes as you actually moved) but never makes an Active Day alone
+    for (const k in out) { const d = out[k]; d.min += Math.min(d.soft, d.min); d.metMin += Math.min(d.softMet, d.metMin); d.active = d.min >= r.activeMin || (!pup && d.metMin >= r.activeMetMin); }
     return out;
   });
 }
@@ -871,6 +872,9 @@ function score(id, se) {
       ds.forEach(d => { const di = dm[d];
         if (di && di.active) { active++; add(d, 'consistency', 'Active Day', r.activeDay); base += r.activeDay;
           if (active === need) { std = true; add(d, 'consistency', 'Weekly Standard met', r.standard); base += r.standard; } }
+        else if (di) {   // short of an Active Day: the +15 builds minute by minute (¾ point a minute), so there's no cliff at 20 minutes
+          const frac = Math.min(1, Math.max(di.min / r.activeMin, !pup ? di.metMin / r.activeMetMin : 0)), pts = Math.round(r.activeDay * frac);
+          if (pts > 0) { add(d, 'consistency', 'Showing up · ' + di.min + ' of ' + r.activeMin + ' min', pts); base += pts; } }
         if (di) base += di.eff; });
       const mult = 1 + RULES.chainStep * chain, bonus = Math.round(base * (mult - 1));
       add(complete ? (wEnd < se.end ? wEnd : se.end) : end, 'consistency', 'Chain bonus ×' + mult.toFixed(1), bonus);
@@ -2615,7 +2619,7 @@ function openCodex() {
   const table = rows => { const tb = h('table', null); rows.forEach(r => tb.appendChild(h('tr', null, h('td', null, r[0]), h('td', null, r[1])))); body.appendChild(tb); };
   body.appendChild(h('button', { class: 'btn-ghost', type: 'button', style: 'margin-bottom:8px', onclick: () => { closeCx(); openTour(me(), 'welcome'); } }, '▶ Replay the welcome tour'));
   sec('Merit: one scale for everyone', 'Everyone earns the same for showing up and has the same weekly Standard. Only how effort is measured differs, so kids and parents compete fairly on one total.');
-  table([['Active Day: ' + P.activeMin + '+ minutes of anything (parents: or a hard shorter workout)', '+' + P.activeDay],
+  table([['Active Day: ' + P.activeMin + '+ minutes of movement (parents: or a hard shorter workout). Shorter days earn part of it, about ¾ point a minute. Stretching tops up other movement (up to as many minutes as you moved) but never makes one alone; meditation does not count toward it', '+' + P.activeDay],
     ['Weekly Standard: ' + P.standardDays + ' Active Days (Mon–Sun), the same for everyone', '+' + P.standard],
     ...HOLIDAYS.map(x => [x.icon + ' Holiday weeks, ' + x.name + ' (' + fmtShort(x.from) + '–' + fmtShort(x.to) + '): the Standard is ' + x.days + ' days, and missing it doesn\'t cost a chain link', x.days + ' days']),
     ['Chain: each week in a row you meet your Standard adds ' + Math.round(RULES.chainStep * 100) + '% to that week. A missed week drops one link.', 'up to ×' + (1 + RULES.chainStep * RULES.chainMax).toFixed(1)],
