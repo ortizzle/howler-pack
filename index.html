@@ -541,6 +541,7 @@ const RULES = {
   weighIn: 5, stepPct: 0.5, stepPts: 25, weeklyPctCap: 1.0, milestones: [[5, 100], [10, 150], [15, 200]],
   primus: 25, raceFinish: 50, raceCheckpoint: 25, hold: 100,
 };
+const TKD_MIN = 35;   // the girls' taekwondo class is about 35 minutes of actual training
 function R(id) { return isPup(id) ? RULES.pup : RULES.proctor; }
 
 // MET values ≈ Compendium of Physical Activities [easy, normal, brutal]; Tread/run/walk use ACSM equations when pace is known.
@@ -872,10 +873,16 @@ function trendSeries(a, b) {
   ws.forEach(w => { t += 0.3 * (w.lbs - t); low = Math.min(low, t); series.push({ date: w.date, lbs: w.lbs, trend: t }); });
   return { start, trend: t, low, series, pct: (start - t) / start * 100 };
 }
+function goalLb() { const v = Number(Local.get('goal_lb', 0)); return v > 50 && v < 500 ? v : 0; }
+// Goal as % of a season's starting weight: from the pounds goal when this phone has one, else the synced %
+function goalPctFor(id, t) { const g = id === me() && !isPup(id) ? goalLb() : 0; return g && t && t.start > g ? Math.round((t.start - g) / t.start * 1000) / 10 : (M(id).goalPct || 10); }
+function syncGoalPct() { const id = me(); if (!id || isPup(id) || !goalLb()) return; const se = currentSeason(), t = trendSeries(se.start, se.end) || trendSeries('2000-01-01', AZ.today());
+  const pct = goalPctFor(id, t); if (t && pct !== M(id).goalPct) put(Object.assign({}, M(id), { goalPct: pct })); }
 function trendPctBetween(a, b) { const s2 = trendSeries(a, b); return s2 ? Math.max(0, Math.round(s2.pct * 10) / 10) : 0; }
 // Recompute this phone's progress awards for the season and write only what changed. Pounds never leave the phone.
 function syncProgressAwards() {
   const id = me(); if (!id || isPup(id)) return;
+  syncGoalPct();
   const se = currentSeason(), ws = weighins().filter(w => w.date >= se.start && w.date <= se.end).sort((x, y) => x.date < y.date ? -1 : 1);
   const want = {};
   if (ws.length) {
@@ -1282,7 +1289,7 @@ function openPupChooser() {
     wrap.appendChild(h('div', { class: 'big-acts fav-acts' }, fav.map(u => h('button', { class: 'big-act fav-act', type: 'button', onclick: () => { close(); quickUsual(u); } }, h('span', { class: 'ic' }, ACT[u.act].icon), (u.act === 'dogwalk' ? dogs().map(d => d.name).join(' & ') : ACT[u.act].name), h('small', null, u.min + ' min')))));
     wrap.appendChild(h('div', { class: 'fld' }, 'Everything')); }
   wrap.appendChild(grid);
-  PUP_BUTTONS.forEach(a => grid.appendChild(h('button', { class: 'big-act', type: 'button', onclick: () => { close(); openLog({ act: a, min: a === 'tkd' || a === 'park' || a === 'hike' ? 60 : 30 }); } },
+  PUP_BUTTONS.forEach(a => grid.appendChild(h('button', { class: 'big-act', type: 'button', onclick: () => { close(); openLog({ act: a, min: a === 'tkd' ? TKD_MIN : a === 'park' || a === 'hike' ? 60 : 30 }); } },
     h('span', { class: 'ic' }, ACT[a].icon), a === 'bike' ? 'Peloton Bike' : a === 'tread' ? 'Peloton Tread' : a === 'dogwalk' ? dogs().map(d => d.name).join(' & ') : ACT[a].name)));
   grid.appendChild(h('button', { class: 'big-act', type: 'button', onclick: () => { close(); openLog(); } }, h('span', { class: 'ic' }, '➕'), 'Other'));
   grid.appendChild(h('button', { class: 'big-act milestone-tile', type: 'button', onclick: () => { close(); openMilestone(me()); } }, h('span', { class: 'ic' }, '🏅'), 'I earned something'));
@@ -1651,7 +1658,7 @@ function tkdPrompt() {
     const missing = kidsIds.filter(k => !went.includes(k)).filter(k => !isPup(me()) || k === me());
     if (!missing.length) continue;
     const when = back === 0 ? 'tonight' : back === 1 ? 'yesterday' : DOWS[dow(d)];
-    const log = ids => { let wIds; const g = gainFor(ids, () => { wIds = logGroup(ids, { date: d, act: 'tkd', min: 60, felt: 'normal', by: me() }); }); render(); toast('🥋 ' + gainText(g), 'Undo', () => undoLog(wIds)); };
+    const log = ids => { let wIds; const g = gainFor(ids, () => { wIds = logGroup(ids, { date: d, act: 'tkd', min: TKD_MIN, felt: 'normal', by: me() }); }); render(); toast('🥋 ' + gainText(g), 'Undo', () => undoLog(wIds)); };
     const skip = () => { const s2 = Local.get('seen', {}); s2['tkd' + d] = 1; Local.set('seen', s2); render(); toast('No worries. Streaks are weekly, not daily.'); };
     return h('div', { class: 'card prompt' }, h('p', null, '🥋 Taekwondo was ' + when + '. ' + (isPup(me()) ? 'Did you go?' : 'Did ' + missing.map(k => M(k).name).join(' & ') + ' go?')),
       h('div', { class: 'row' }, missing.length > 1 ? h('button', { class: 'yes', type: 'button', onclick: () => log(missing) }, 'Both went') : null,
@@ -1803,7 +1810,7 @@ function scorecards(id, se) {
 function renderProgress(main) {
   const id = me(), se = currentSeason(), sc = score(id, se);
   if (!isPup(id)) {
-    const t = trendSeries(se.start, se.end), goalPct = M(id).goalPct || 10, c = card('THE ASCENT', 'trend line, not daily noise');
+    const t = trendSeries(se.start, se.end), goalPct = goalPctFor(id, t), c = card('THE ASCENT', 'trend line, not daily noise');
     if (t && t.series.length) {
       const weeks = Math.max(1, (daysBetween(t.series[0].date, AZ.today()) + 1) / 7);
       c.appendChild(h('div', { class: 'stats4' }, [[t.start.toFixed(1), 'START'], [t.trend.toFixed(1), 'TREND'], ['−' + Math.max(0, t.pct).toFixed(1) + '%', 'LOST'], [(t.pct / weeks).toFixed(2) + '%', 'PER WEEK']]
@@ -2000,7 +2007,12 @@ function openSettings() {
     cs.appendChild(h('div', { class: 'chips' }, Object.keys(COACHES).map(k => h('button', { class: 'chip-btn' + (m.coach === k ? ' on' : ''), type: 'button', onclick: () => { saveMember({ coach: k }); delete coachMsg[id]; draw(); render(); } }, COACHES[k].icon + ' ' + COACHES[k].name))));
     if (!pup) {
       const ws = sec('MY WEIGHT GOAL', 'Private. Pounds never leave this phone. The family sees your % only if you turn sharing on.');
-      ws.appendChild(h('div', { class: 'edit-row' }, h('span', { class: 'gl' }, 'Season goal'), h('div', { class: 'stepper' },
+      const gl = goalLb(), se0 = currentSeason(), t0 = trendSeries(se0.start, se0.end) || trendSeries('2000-01-01', AZ.today());
+      ws.appendChild(h('div', { class: 'edit-row' }, h('span', { class: 'gl' }, 'Goal weight'), h('input', { class: 'txt num-sm', type: 'number', inputmode: 'decimal', min: '60', max: '499', step: '0.5', placeholder: 'lb', value: gl || '', 'aria-label': 'Goal weight in pounds',
+        onchange: e => { const v = parseFloat(e.target.value); if (!e.target.value) { Local.set('goal_lb', 0); toast('Goal weight cleared'); } else if (v > 50 && v < 500) { Local.set('goal_lb', v); syncGoalPct(); toast('Goal saved on this phone'); } else { toast('Enter your goal in lbs'); return; } setTimeout(() => { draw(); render(); }, 0); } })));
+      if (gl && t0) ws.appendChild(h('p', { class: 'hint' }, 'Goal ' + gl + ' lb = ' + goalPctFor(m.mid, t0) + '% from your start of ' + Math.round(t0.start * 10) / 10 + ' lb' + (t0.start <= gl ? ' (you\'re already there: set a new goal!)' : '') + '. Fuel uses it for your protein target.'));
+      else if (gl) ws.appendChild(h('p', { class: 'hint' }, 'Goal ' + gl + ' lb. Log a weigh-in and the % fills in. Fuel uses it for your protein target.'));
+      else ws.appendChild(h('div', { class: 'edit-row' }, h('span', { class: 'gl' }, 'Or a % goal'), h('div', { class: 'stepper' },
         h('button', { type: 'button', 'aria-label': 'Less', onclick: () => { saveMember({ goalPct: Math.max(1, (m.goalPct || 10) - 1) }); draw(); render(); } }, '−'), h('b', null, '−' + (m.goalPct || 10) + '%'),
         h('button', { type: 'button', 'aria-label': 'More', onclick: () => { saveMember({ goalPct: Math.min(20, (m.goalPct || 10) + 1) }); draw(); render(); } }, '+'))));
       ws.appendChild(toggle('Share my % lost with the family', !!m.share, () => { saveMember({ share: !m.share }); syncProgressAwards(); draw(); render(); }));
@@ -2123,7 +2135,7 @@ function seedSample() {
   const grp = (ids, base) => { const g = ids.length > 1 ? rid('g') : null; ids.forEach((id, i) => list.push(Object.assign({ id: rid('w') + i, type: 'workout', member: id, group: g, createdAt: Date.now() }, base))); };
   range('2026-12-01', addDays(PREVIEW_TODAY, -1)).forEach((d, i) => {
     const wd = dow(d), weekend = wd >= 5;
-    if (cfg().tkdDays.includes(wd) && d !== addDays(PREVIEW_TODAY, -1)) grp(kidsIds, { date: d, act: 'tkd', min: 60, felt: 'normal', by: adults[1] || adults[0] });
+    if (cfg().tkdDays.includes(wd) && d !== addDays(PREVIEW_TODAY, -1)) grp(kidsIds, { date: d, act: 'tkd', min: TKD_MIN, felt: 'normal', by: adults[1] || adults[0] });
     if (r() < .6) { const crew = memberIds().filter(() => r() < .55); if (crew.length) grp(crew, { date: d, act: 'dogwalk', min: 20 + Math.floor(r() * 3) * 5, felt: 'easy', dogs: r() < .6 ? dogs().map(x => x.id) : [dogs()[r() < .5 ? 0 : 1].id] }); }
     if (weekend && r() < .7) grp(kidsIds.concat(adults[r() < .5 ? 0 : 1] || adults[0]), { date: d, act: 'play', min: 60 + Math.floor(r() * 3) * 15, felt: 'normal' });
     kidsIds.forEach(k => { if (!weekend && r() < .3) grp([k], { date: d, act: ['play', 'ride', 'bike', 'run', 'yoga'][Math.floor(r() * 5)], min: [20, 30][Math.floor(r() * 2)], felt: 'normal' }); });

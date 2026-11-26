@@ -33,6 +33,9 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - Deletes are tombstones. Sync is fetch → merge (newest wins) → write.
 - **Weigh-ins never leave the phone** (`pack_weighins` in localStorage):
   - Only the derived Merit `award` records sync, plus a `pct` record when that parent turns sharing on.
+  - **Goal weight** (Chris, Nov 26, 2026): set in pounds in Settings → My weight goal and stored only on the phone (`pack_goal_lb`, `goalLb()`).
+    - The member record syncs just the % from the season's starting weight (`goalPctFor` / `syncGoalPct`). The % stepper stays as a fallback when no pounds goal is set.
+    - The Pack is the one place to set it: Fuel reads `pack_goal_lb` for its protein target and shows its own box as "set in the Howler Pack".
   - Never put pounds in a synced record, a label or an AI prompt about someone else.
 - **Kids:** no weight, food or body talk anywhere on a Pup's screen, card or coach prompt.
 - **Secrets:** the Gist token (`pack_gist_token`) and Claude key (`pack_anthropic_key`, falling back to Fuel's `fuel_anthropic_key`) live only in localStorage. Never commit a key or token.
@@ -48,6 +51,7 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - Kid bonus points may come later; Chris expects the kids to push harder instead.
 - **The Codex** (`openCodex`) shows every rule and number. It's generated from `RULES` / `RANKS`, so it can't drift. Linked from the Pack tab, Settings, and "How points work ›" under The Pack.
 - **Activities and MET values:** `ACTIVITIES`.
+- **Taekwondo is about 35 minutes of actual training** (`TKD_MIN`), used by the kids' big button, the TKD check-in and sample data.
 - **Ranks:** `RANKS`, **one ladder for everyone, built all year** from Dec 1 and never reset (`score().year` = this season plus earlier seasons; Practice Week stands alone).
   - It's progressively harder, like the original Howlers: 0 / 600 / 2,000 / 4,500 / 8,000 / 12,500 / 18,000. Peerless by year's end takes beating the Standard (~300 Merit a week).
   - Seasons keep things fresh with races, monthly and season goals, and the Hall of Honors (the color at each season's end).
