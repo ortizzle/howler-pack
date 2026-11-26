@@ -122,6 +122,18 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 - **Weekly Primus:** `primusScores`. It goes to whoever beats their own target by the most, so kids and parents compete fairly.
   - **Ties are never broken alphabetically.** A tie at the top (`primusLeaders`) shows no crown and an "anyone can take it" note. If the week ends tied, each tied person gets a shared crown (`aw_primus_<week>_<id>`, "(shared)") and the +25.
 - **Coaches:** `COACHES` (Dancer, Mickey, Matteo, as in the original Howlers). The model is `claude-opus-5-5` with effort `low`, browser-direct, with server-side fallbacks.
+  - **After Practice Week the coach lives in the season banner** (`coachBanner`), the place Chris hopes everyone reads daily (Nov 26, 2026).
+    - It shows the coach's word for the day (`coachWord`: one Claude message a day saved in `pack_coach_day` when there's a key, else the built-in `coachLine`), the days-left counter, an **Ask** button, and insights you tap **›** to flip through (`bannerInsights`): holiday week, Standard, challenge, family quest, next rank, Primus race, chain, race checkpoint.
+    - The separate coach card shows only before Dec 1. Kids' banner content follows the no-weight/food/body rule.
+
+## Family quests (Chris, Nov 26, 2026)
+
+- **"Something we all do together from time to time."** `quest` records, planned by anyone from the Pack tab (`openQuestPlanner`).
+  - **Special outing** (`kind: 'event'`): the listed members do one activity together (a single group entry) by the date. The whole pack earns +50 each; if it ends with only some of them, +15 each for those who came.
+  - **Team total** (`kind: 'total'`): the family's minutes reach a target by the date, +30 each for everyone who moved.
+  - Values are in `QUEST`.
+- `syncQuestAwards()` (run from `renderToday`) writes deterministic `aw_quest_<quest>_<member>` awards and removes stale ones if a workout is deleted.
+- Today shows active quests with who's joined and a "Log it together" button that opens the log sheet with the activity, everyone and the place filled in (`openLog` takes `crew` / `title`). The recap and banner mention them, and the Codex lists the values.
 
 ## Colors (Chris, Nov 26, 2026)
 

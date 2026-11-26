@@ -127,6 +127,18 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .newfor-list { background: rgba(46,125,50,.07); border-color: rgba(46,125,50,.3); } .newfor-list .card-t .chip-btn { min-height: 44px; font-size: 13px; }
 .newfor-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid rgba(46,125,50,.2); font-size: 14px; } .newfor-row .ll { flex: 1; } .newfor-row small { display: block; color: var(--muted); font-size: 12px; }
 .chip-btn.same { border-style: dashed; }
+.coach-banner { align-items: stretch; } .cb-main { flex: 1; min-width: 0; }
+.cb-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .cb-head b { color: var(--coach); } .cb-head small { width: 100%; opacity: .7; }
+.cb-av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--panel); border: 2px solid var(--coach); font-size: 17px; }
+.cb-word { font-style: italic; font-size: 16px; line-height: 1.4; margin: 8px 0; }
+.cb-ins { display: flex; align-items: center; gap: 8px; background: var(--panel); border-radius: 12px; padding: 4px 4px 4px 10px; min-height: 48px; }
+.cb-ins .ii { font-size: 18px; } .cb-ins .it { flex: 1; font-size: 14px; line-height: 1.3; } .cb-ins .in { font-size: 11px; opacity: .6; }
+.ins-next { min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); font-size: 22px; font-weight: 700; color: var(--coach); }
+.cb-ask { margin-top: 8px; min-height: 44px; padding: 0 12px; border-radius: 22px; border: 1px solid var(--coach); background: transparent; color: var(--coach); font: inherit; font-size: 14px; }
+.quest-row { padding: 10px 0; border-bottom: 1px solid var(--line); } .quest-row:last-of-type { border-bottom: 0; } .quest-row .qt { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; } .quest-row .qt small { opacity: .75; white-space: nowrap; }
+.quest-row.done .qt b { color: #2e7d32; } .qwho { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.qchip { padding: 4px 10px; border-radius: 14px; font-size: 13px; border: 1px solid var(--house); color: var(--house); } .qchip.on { background: var(--house); color: #fff; }
+.qbar { position: relative; height: 26px; border-radius: 13px; background: var(--panel2); overflow: hidden; margin-top: 6px; } .qbar i { position: absolute; inset: 0 auto 0 0; background: rgba(46,125,50,.35); } .qbar span { position: relative; font-size: 13px; padding-left: 10px; line-height: 26px; }
 .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: left; }
 .color-tile { min-height: 64px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--line); border-left: 6px solid var(--cc); background: var(--panel2); display: flex; flex-direction: column; gap: 2px; font: inherit; color: inherit; text-align: left; }
 .color-tile b { color: var(--cc); font-size: 15px; } .color-tile small { font-size: 12px; opacity: .8; line-height: 1.3; } .color-tile.on { outline: 3px solid var(--cc); }
@@ -1184,7 +1196,7 @@ function recentPlaces(act) {
 function openLog(preset) {
   const mine = me(), pup = isPup(mine), today = AZ.today(), ed = preset && preset.edit;
   const f = ed ? { act: ed.act, min: ed.min, felt: ed.felt || 'normal', crew: [ed.member], detail: Object.assign({}, ed.detail || {}), open: !!(Object.keys(ed.detail || {}).some(k => k !== 'cls' && k !== 'miles') || ed.note), dogs: (ed.dogs || dogs().map(d => d.id)).slice(), date: ed.date, title: ed.title || '', note: ed.note || '', groupAll: true }
-    : { act: (preset && preset.act) || (pup ? 'tkd' : 'tread'), min: (preset && preset.min) || 30, felt: 'normal', crew: [mine], detail: {}, open: false, dogs: dogs().map(d => d.id), date: (preset && preset.date) || today, title: '', note: '', crewTouched: false, groupAll: true };
+    : { act: (preset && preset.act) || (pup ? 'tkd' : 'tread'), min: (preset && preset.min) || 30, felt: 'normal', crew: preset && preset.crew ? [mine].concat(preset.crew.filter(x => x !== mine)) : [mine], detail: {}, open: false, dogs: dogs().map(d => d.id), date: (preset && preset.date) || today, title: (preset && preset.title) || '', note: '', crewTouched: !!(preset && preset.crew), groupAll: true };
   // Together activities start with the whole family selected (until someone taps a name)
   const autoCrew = () => { if (ed || f.crewTouched) return; f.crew = [mine]; };   // always starts with just you
   autoCrew();
@@ -1781,12 +1793,48 @@ function weighRow() {
   return h('div', { class: 'wrow' }, h('span', null, '⚖️ Weigh-in'), inp, h('button', { type: 'button', onclick: save }, todayW ? 'Update' : 'Save'),
     h('small', null, todayW ? '✓ Logged today. Merit comes from the weekly trend, so daily swings never cost you.' : 'Optional and private. Once a week earns +' + RULES.weighIn + '; the trend line does the rest.'));
 }
+function bannerInsights(id) {
+  const sc = score(id), wk = sc.cur, out = [], today = AZ.today(), left = Math.max(0, wk.need - wk.active), dleft = 6 - dow(today);
+  if (wk.hol) out.push(['🎄', 'Holiday week: just ' + wk.need + ' days keeps your chain going.']);
+  out.push(wk.standard ? ['✦', 'Standard met this week. Everything else is bonus!'] : ['📅', left + ' more Active Day' + (left === 1 ? '' : 's') + ' for your Standard' + (dleft ? ', ' + (dleft + 1) + ' days to go (today included).' : '. Today is the last day!')]);
+  const ch = challengesFor(weekKey(today), id).filter(x => x.status === 'on')[0];
+  if (ch) { const R_ = chResult(ch), other = ch.from === id ? ch.to : ch.from, mine = ch.from === id ? R_.a : R_.b, theirs = ch.from === id ? R_.b : R_.a;
+    out.push(['⚔️', mine > theirs ? 'You lead ' + M(other).name + ' ' + mine + ' to ' + theirs + ' (' + CH_METRICS[ch.metric].label + ').' : mine < theirs ? M(other).name + ' leads you ' + theirs + ' to ' + mine + '. Time to catch up!' : 'You and ' + M(other).name + ' are tied. Who blinks first?']); }
+  const q = quests().find(x => x.to >= today && x.from <= addDays(today, 7) && !questStatus(x).done); if (q) out.push(['🏔', 'Family quest: ' + q.title + ', ' + (q.from === q.to ? fmtDow(q.to) : 'by ' + fmtDow(q.to)) + '.']);
+  if (sc.rank.next) out.push([sc.rank.next.icon, (sc.rank.next.min - sc.year).toLocaleString() + ' Merit to ' + sc.rank.next.name + '.']);
+  const ps = primusScores(weekKey(today)), pl = primusPlace(weekKey(today), id), lead = primusLeaders(weekKey(today));
+  if (ps.length > 1) out.push(['♛', lead.length === 1 && lead[0] === id ? 'You lead the Primus race this week!' : 'Primus race: you\'re ' + ordinal(pl) + (lead.length === 1 ? ', ' + M(lead[0]).name + ' leads.' : '. The top is tied: anyone can take it.')]);
+  if (sc.chain) out.push(['🔗', 'Chain ×' + (1 + RULES.chainStep * sc.chain).toFixed(1) + '. Meet this week\'s Standard to grow it.']);
+  const rs = raceState(); if (rs.next) out.push(['🏁', rs.next.name + ' in ' + (rs.next.at - rs.steps) + ' Pack Steps. Moving together adds a bonus step.']);
+  return out;
+}
+function ordinal(n) { return n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th'); }
+let bannerIdx = 0;
+// The coach's word for the day: a fresh Claude message once a day when there's a key (saved on the phone), else the built-in line
+function coachWord(id) { const s = Local.get('coach_day', {}); return s.date === AZ.today() && s.id === id && s.text ? s.text : coachLine(id); }
+async function refreshCoachWord(id, force) {
+  const s = Local.get('coach_day', {}); if (!getKey() || PREVIEW || (!force && s.date === AZ.today() && s.id === id) || refreshCoachWord.busy) return;
+  refreshCoachWord.busy = true; try { const text = await askCoach(id); Local.set('coach_day', { date: AZ.today(), id, text }); render(); } catch (e) { if (force) toast(aiErr(e)); } finally { refreshCoachWord.busy = false; }
+}
+function coachBanner(se) {
+  const id = me(), c = coachOf(id), ins = bannerInsights(id), t = AZ.today(), i = bannerIdx % Math.max(1, ins.length), cur = ins[i];
+  const nxt = h('button', { class: 'ins-next', type: 'button', 'aria-label': 'Next insight', onclick: () => { bannerIdx++; render(); } }, '›');
+  refreshCoachWord(id, false);
+  return h('div', { class: 'season-banner coach-banner', style: '--coach:' + c.color },
+    h('div', { class: 'cb-main' },
+      h('div', { class: 'cb-head' }, h('span', { class: 'cb-av' }, c.icon), h('b', null, c.name + ' · ' + fmtDow(t)), h('small', null, se.name + ' · ' + se.sub)),
+      h('p', { class: 'cb-word' }, coachWord(id)),
+      cur ? h('div', { class: 'cb-ins' }, h('span', { class: 'ii' }, cur[0]), h('span', { class: 'it' }, cur[1]), h('span', { class: 'in' }, (i + 1) + '/' + ins.length), nxt) : null,
+      getKey() ? h('button', { class: 'cb-ask', type: 'button', onclick: e => { e.target.textContent = c.name + ' is thinking…'; refreshCoachWord(id, true); } }, '💬 Ask ' + c.name + ' again') : h('button', { class: 'cb-ask', type: 'button', onclick: () => toast('Live coaching needs a Claude key: Settings ⚙️') }, '💬 Ask ' + c.name)),
+    h('div', { class: 'left' }, daysBetween(t, se.end), h('small', null, 'days left')));
+}
 function seasonBanner() {
   const se = currentSeason(), t = AZ.today();
   if (practice()) return h('div', { class: 'season-banner' }, h('div', null, h('b', null, 'Practice Week · Warm-up'), h('small', null, 'Points count now so you can try everything. On ' + fmtDow(SEASONS[0].start) + ' it all resets to zero and The Passage begins.')),
     h('div', { class: 'left' }, daysBetween(t, SEASONS[0].start), h('small', null, 'days to go')));
   if (preseason()) return h('div', { class: 'season-banner' }, h('div', null, h('b', null, se.name + ' · ' + se.sub), h('small', null, 'Our December trial run starts ' + fmtDow(se.start) + '. Set your goals, log a practice walk, and get the app on everyone\'s phone.')),
     h('div', { class: 'left' }, daysBetween(t, se.start), h('small', null, 'days to go')));
+  return coachBanner(se);
   const nx = nextSeason(se);
   return h('div', { class: 'season-banner' }, h('div', null, h('b', null, se.name + ' · ' + se.sub), h('small', null, se.trial ? 'Merit and ranks count from Dec 1 and build all year. ' + (nx ? nx.name + ': ' + nx.sub : 'The next season') + ' starts ' + (nx ? fmtShort(nx.start) : 'soon') + ' with a new race.' : fmtShort(se.start) + ' – ' + fmtShort(se.end) + ' · ranks reset each season')),
     h('div', { class: 'left' }, daysBetween(t, se.end), h('small', null, 'days left')));
@@ -1809,11 +1857,12 @@ function renderToday(main) {
     lc.appendChild(weighRow());
   }
   main.appendChild(lc);
-  [colorPrompt(), recapCard(), newForYou(), tkdPrompt(), ...classPrompts(), goalNudge()].forEach(x => { if (x) main.appendChild(x); });
+  syncQuestAwards();
+  [colorPrompt(), questCard(), recapCard(), newForYou(), tkdPrompt(), ...classPrompts(), goalNudge()].forEach(x => { if (x) main.appendChild(x); });
   main.appendChild(raceCard(false));
   if (!preseason()) main.appendChild(primusCard());
   main.appendChild(challengeCard());
-  main.appendChild(coachCard(id));
+  if (practice() || preseason()) main.appendChild(coachCard(id));   // after Practice Week the coach lives in the banner
   main.appendChild(myWeekCard());
   [cheersForMe(), fuelCard()].forEach(x => { if (x) main.appendChild(x); });
 }
@@ -1842,6 +1891,7 @@ function recapBody(wk, opts) {
   const ch = challengesFor(wk).filter(c => c.status === 'on');
   ch.forEach(c => { const R_ = chResult(c), U = CH_METRICS[c.metric].unit;
     box.appendChild(h('p', { class: 'recap-ch' }, '⚔️ ' + (R_.winner ? M(R_.winner).name + (done ? ' beat ' : ' leads ') + M(R_.winner === c.from ? c.to : c.from).name : M(c.from).name + ' and ' + M(c.to).name + (done ? ' tied' : ' are tied')) + ': ' + Math.max(R_.a, R_.b) + ' to ' + Math.min(R_.a, R_.b) + ' ' + U)); });
+  quests().filter(q => { const s = questStatus(q); return s.done && weekKey(q.kind === 'total' ? s.doneOn : s.date) === wk; }).forEach(q => box.appendChild(h('p', { class: 'recap-ch' }, '🏔 Family quest complete: ' + q.title + '!')));
   const tog = new Set(all('workout').filter(w => w.group && weekKey(w.date) === wk).map(w => w.group)).size;
   if (tog) box.appendChild(h('p', { class: 'hint' }, '🤝 ' + tog + ' workout' + (tog > 1 ? 's' : '') + ' done together this week.'));
   return box;
@@ -1889,6 +1939,85 @@ function openChallenge() {
       put({ id: 'ch_' + wk + '_' + id + '_' + f.to, type: 'challenge', week: wk, from: id, to: f.to, metric: f.metric, status: 'open', createdAt: Date.now() }); close(); render(); toast('⚔️ Challenge sent to ' + M(f.to).name); } }, f.to ? 'Challenge ' + M(f.to).name : 'Send challenge'));
   }
   const close = openModal('⚔️ Challenge someone', body); draw();
+}
+// ───────────────────────── Family quests: something special the pack does together now and then
+// event: everyone listed does one activity together (one group entry) by the date. total: the team adds up minutes by the date.
+const QUEST = { eventAll: 50, eventSome: 15, total: 30 };
+function quests() { return all('quest').sort((a, b) => a.to < b.to ? -1 : 1); }
+function questStatus(q) {
+  const today = AZ.today(), inWin = w => w.date >= q.from && w.date <= q.to && w.date <= today, mem = q.members || memberIds();
+  if (q.kind === 'total') {
+    const ws = all('workout').filter(w => mem.includes(w.member) && inWin(w)).sort((a, b) => a.date < b.date ? -1 : 1); let sum = 0, doneOn = null;
+    ws.forEach(w => { sum += moveMin(w); if (!doneOn && sum >= q.target) doneOn = w.date; });
+    const who = mem.filter(id => ws.some(w => w.member === id && moveMin(w) > 0));
+    return { sum, target: q.target, done: sum >= q.target, doneOn, who, over: q.to < today };
+  }
+  const groups = {}; all('workout').filter(w => w.group && mem.includes(w.member) && inWin(w) && (q.act === 'any' ? !(ACT[w.act] && ACT[w.act].mind) : w.act === q.act))
+    .forEach(w => { (groups[w.group] = groups[w.group] || { date: w.date, who: [] }).who.push(w.member); });
+  const best = Object.values(groups).sort((a, b) => b.who.length - a.who.length)[0] || { who: [], date: null };
+  return { who: best.who, date: best.date, done: mem.every(id => best.who.includes(id)), over: q.to < today, mem };
+}
+// Any phone may write these (same ids everywhere); stale ones are removed if a workout goes away
+function syncQuestAwards() {
+  if (PREVIEW) return; const want = {};
+  quests().forEach(q => { const s = questStatus(q), add = (id, pts, label, date) => { want['aw_quest_' + q.id + '_' + id] = { id: 'aw_quest_' + q.id + '_' + id, type: 'award', kind: 'quest', member: id, cat: 'bonus', date, label, pts }; };
+    if (q.kind === 'total') { if (s.done) s.who.forEach(id => add(id, QUEST.total, '🏔 Family quest: ' + q.title, s.doneOn)); }
+    else if (s.done) s.who.forEach(id => add(id, QUEST.eventAll, '🏔 Family quest: ' + q.title + ' (the whole pack!)', s.date));
+    else if (s.over && s.who.length >= 2) s.who.forEach(id => add(id, QUEST.eventSome, '🏔 Family quest: ' + q.title + ' (part of the pack)', s.date)); });
+  const writes = Object.values(want).filter(a => { const r = rec(a.id); return !r || r.pts !== a.pts || r.date !== a.date; });
+  const stale = all('award').filter(a => a.kind === 'quest' && !want[a.id]).map(a => a.id);
+  if (writes.length) putMany(writes); stale.forEach(del);
+}
+function questRow(q, compact) {
+  const s = questStatus(q), mem = q.members || memberIds(), A = q.act && q.act !== 'any' ? ACT[q.act] : null, when = q.from === q.to ? fmtDow(q.to) : 'by ' + fmtDow(q.to);
+  const row = h('div', { class: 'quest-row' + (s.done ? ' done' : '') }, h('div', { class: 'qt' }, h('b', null, (A ? A.icon : '🏔') + ' ' + q.title), h('small', null, s.done ? '✓ Done! +' + (q.kind === 'total' ? QUEST.total : QUEST.eventAll) + ' Merit each' : s.over ? 'Ended ' + fmtShort(q.to) : when)));
+  if (q.kind === 'total') row.appendChild(h('div', { class: 'qbar' }, h('i', { style: 'width:' + Math.min(100, Math.round(s.sum / s.target * 100)) + '%' }), h('span', null, s.sum + ' / ' + s.target + ' family minutes')));
+  else row.appendChild(h('div', { class: 'qwho' }, mem.map(id => h('span', { class: 'qchip' + (s.who.includes(id) ? ' on' : ''), style: '--house:' + houseColor(id) }, (s.who.includes(id) ? '✓ ' : '') + M(id).name))));
+  if (!s.done && !s.over && !compact) row.appendChild(h('button', { class: 'btn-primary', type: 'button', style: 'margin-top:8px', onclick: () => openLog({ act: A ? q.act : undefined, crew: q.kind === 'total' ? null : mem, title: q.place || '' }) }, q.kind === 'total' ? 'Log minutes' : 'We did it! Log it together'));
+  return row;
+}
+function questCard() {
+  const today = AZ.today(), act = quests().filter(q => q.to >= today && q.from <= addDays(today, 7) && !questStatus(q).done), just = quests().filter(q => questStatus(q).done && q.to >= addDays(today, -2));
+  if (!act.length && !just.length) return null;
+  const c = card('🏔 FAMILY QUEST' + (act.length + just.length > 1 ? 'S' : ''), null, 'quest-card'); act.concat(just).forEach(q => c.appendChild(questRow(q))); return c;
+}
+function questPackCard() {
+  const c = card('🏔 FAMILY QUESTS', 'something special, together'), qs = quests().slice().reverse().slice(0, 6);
+  if (!qs.length) c.appendChild(h('p', { class: 'hint' }, 'Plan a special family hike, ride or outing. When the whole pack does it together, everyone gets +' + QUEST.eventAll + ' Merit.'));
+  qs.forEach(q => c.appendChild(questRow(q, true)));
+  c.appendChild(h('button', { class: 'ai-btn', type: 'button', onclick: () => openQuestPlanner() }, '➕ Plan a family quest'));
+  return c;
+}
+function openQuestPlanner() {
+  const today = AZ.today(), sun = addDays(weekKey(today), 6), body = h('div', { class: 'log-body' });
+  const f = { kind: 'event', title: '', act: 'hike', to: sun, target: 500, members: memberIds(), place: '' };
+  const outside = ACTIVITIES.filter(a => !a.hidden && !a.mind && a.group !== 'Peloton');
+  function draw() {
+    clear(body).appendChild(h('div', { class: 'chips' }, [['event', '🏔 Special outing, together'], ['total', '➕ Team total minutes']].map(k => h('button', { class: 'chip-btn' + (f.kind === k[0] ? ' on' : ''), type: 'button', onclick: () => { f.kind = k[0]; draw(); } }, k[1]))));
+    body.appendChild(h('p', { class: 'hint' }, f.kind === 'event' ? 'Everyone does one activity together by the date. Whole pack = +' + QUEST.eventAll + ' Merit each; if only some make it, +' + QUEST.eventSome + ' each.' : 'Add up everyone\'s minutes by the date. Hit the target and everyone who moved gets +' + QUEST.total + ' Merit.'));
+    body.appendChild(h('div', { class: 'fld' }, 'Name it'));
+    body.appendChild(h('input', { class: 'txt', type: 'text', maxlength: '60', value: f.title, placeholder: f.kind === 'event' ? 'e.g. Saturday family hike' : 'e.g. 500 minutes before Christmas', 'aria-label': 'Quest name', oninput: e => { f.title = e.target.value; } }));
+    if (f.kind === 'event') {
+      body.appendChild(h('div', { class: 'chips', style: 'margin-top:6px' }, ['Family hike', 'Bike ride together', 'Saturday walk', 'Park & play day'].map(s => h('button', { class: 'chip-btn', type: 'button', onclick: () => { f.title = s; f.act = s.includes('hike') ? 'hike' : s.includes('Bike') ? 'ride' : s.includes('walk') ? 'walk' : 'play'; draw(); } }, s))));
+      body.appendChild(h('div', { class: 'fld' }, 'What'));
+      body.appendChild(h('div', { class: 'chips' }, outside.map(a => h('button', { class: 'chip-btn' + (f.act === a.id ? ' on' : ''), type: 'button', onclick: () => { f.act = a.id; draw(); } }, a.icon + ' ' + a.name)).concat(h('button', { class: 'chip-btn' + (f.act === 'any' ? ' on' : ''), type: 'button', onclick: () => { f.act = 'any'; draw(); } }, '✨ Anything'))));
+      body.appendChild(h('div', { class: 'fld' }, 'Where (optional)'));
+      body.appendChild(h('input', { class: 'txt', type: 'text', maxlength: '60', value: f.place, placeholder: 'e.g. Pinnacle Peak', 'aria-label': 'Quest place', oninput: e => { f.place = e.target.value; } }));
+    } else {
+      body.appendChild(h('div', { class: 'fld' }, 'Family minutes target'));
+      body.appendChild(h('div', { class: 'chips' }, [300, 500, 800, 1200].map(n => h('button', { class: 'chip-btn' + (f.target === n ? ' on' : ''), type: 'button', onclick: () => { f.target = n; draw(); } }, n + ' min'))));
+    }
+    body.appendChild(h('div', { class: 'fld' }, 'By'));
+    body.appendChild(h('div', { class: 'chips' }, [[sun, 'This Sunday'], [addDays(sun, 7), 'Next Sunday']].map(x => h('button', { class: 'chip-btn' + (f.to === x[0] ? ' on' : ''), type: 'button', onclick: () => { f.to = x[0]; draw(); } }, x[1])),
+      h('input', { class: 'txt num-sm', type: 'date', min: today, value: f.to, 'aria-label': 'Quest date', onchange: e => { if (e.target.value >= today) { f.to = e.target.value; setTimeout(draw, 0); } } })));
+    body.appendChild(h('div', { class: 'fld' }, 'Who'));
+    body.appendChild(h('div', { class: 'chips' }, members().map(m => h('button', { class: 'chip-btn who' + (f.members.includes(m.mid) ? ' on' : ''), type: 'button', style: '--house:' + houseColor(m.mid), onclick: () => { f.members = f.members.includes(m.mid) ? f.members.filter(x => x !== m.mid) : f.members.concat(m.mid); if (f.members.length < 2) { toast('A family quest needs at least two of you'); f.members = memberIds(); } draw(); } }, m.name))));
+    body.appendChild(h('button', { class: 'btn-primary', type: 'button', style: 'margin-top:12px', onclick: () => {
+      const title = f.title.trim() || (f.kind === 'event' ? (f.act === 'any' ? 'Family day out' : 'Family ' + ACT[f.act].name.toLowerCase()) : f.target + ' family minutes');
+      put({ id: rid('q'), type: 'quest', kind: f.kind, title, act: f.kind === 'event' ? f.act : null, place: f.place.trim() || null, from: today, to: f.to, target: f.kind === 'total' ? f.target : null, members: f.members.slice(), by: me(), createdAt: Date.now() });
+      close(); render(); toast('🏔 Quest on: ' + title); } }, 'Start the quest'));
+  }
+  const close = openModal('🏔 Plan a family quest', body); draw();
 }
 function goalNudge() {
   if (goalsOf(me(), 'month')) return null;
@@ -2065,6 +2194,7 @@ function openCheerNote(to) {
 function renderPack(main) {
   main.appendChild(packSection(true));
   main.appendChild(raceCard(true));
+  main.appendChild(questPackCard());
   main.appendChild(cheerFeed());
   const lw = addDays(weekKey(AZ.today()), -7);
   main.appendChild(h('div', { class: 'two', style: 'margin:0 0 12px' }, h('button', { class: 'btn-ghost', type: 'button', onclick: () => openRecap(weekKey(AZ.today())) }, '🗞 This week so far'), h('button', { class: 'btn-ghost', type: 'button', onclick: () => openRecap(lw) }, '🗞 Last week')));
@@ -2169,6 +2299,8 @@ function openCodex() {
     ['Meditation (everyone): 1 point per 10 minutes; welcome, but it doesn\'t count toward an Active Day', 'low'],
     ['Who: Peloton classes are just you. Everything else asks "With anyone?" (just you by default, or tap whoever joined)', '—'],
     ['Together: 2+ of you log the same activity', '+' + RULES.together + ' (2/day)'],
+    ['🏔 Family quest, special outing: everyone listed does it together by the date (only some of you: +' + QUEST.eventSome + ' each)', '+' + QUEST.eventAll + ' each'],
+    ['🏔 Family quest, team total: the family\'s minutes reach the target by the date', '+' + QUEST.total + ' each'],
     ['Cheering someone', '+' + RULES.cheer + ' (' + RULES.cheerDailyMax + '/day)'],
     ['Weekly Primus', '+' + RULES.primus],
     ['Monthly goal · Season goal', '+' + P.goalMonth + ' · +' + P.goalSeason],
