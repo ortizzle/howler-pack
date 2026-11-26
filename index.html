@@ -143,7 +143,10 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .coach-tile.rec { outline: 3px solid var(--coach); } .coach-tile p { margin: 6px 0 4px; font-size: 14px; } .ct-head { display: flex; align-items: center; gap: 8px; } .ct-head b { color: var(--coach); font-size: 17px; } .ct-head small { opacity: .75; } .ct-focus { opacity: .7; font-size: 12px; }
 .idea-row { padding: 8px 0 10px; border-bottom: 1px solid var(--line); } .idea-row p { margin: 0 0 8px; }
 .three { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 8px; } .three button { min-height: 44px; }
-.coach-banner { margin-top: 6px; } .coach-banner.season-banner { display: block; }
+.coach-banner { margin-top: 6px; }
+.cb-classic { width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.cb-classic .cb-word { display: block; font-style: italic; } .cb-classic .cb-head { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; }
+.cb-classic .cb-head b { display: inline; font-size: 14px; color: var(--coach); font-family: var(--fh); letter-spacing: .06em; } .cb-classic .cb-av { width: 26px; height: 26px; font-size: 13px; border-width: 1.5px; } .cb-classic .cb-more { margin-left: auto; color: var(--coach); font-size: 13px; } .coach-banner.season-banner { display: block; }
 .cb-season { display: flex; justify-content: space-between; font-family: var(--fh); font-weight: 700; letter-spacing: .12em; font-size: 12px; color: #7a5a1c; margin: 8px 2px 8px; text-transform: uppercase; }
 .cb-note { display: flex; gap: 10px; align-items: flex-start; padding: 14px; border-radius: 4px 14px 6px 12px / 12px 5px 14px 6px; background: linear-gradient(180deg, #fffaf0, #f8eed6); border: 1px solid rgba(140,100,30,.35); outline: 1px solid rgba(201,162,39,.45); outline-offset: -6px; box-shadow: var(--shadow); }
 .cb-note .cb-word { margin: 2px 0 0; }
@@ -1925,11 +1928,11 @@ function coachBanner(se) {
   const id = me(), c = coachOf(id), t = AZ.today(), sc = score(id), wk = sc.cur, pl = primusPlace(weekKey(t), id), lead = primusLeaders(weekKey(t));
   refreshCoachWord(id, false);
   const tile = (big, small, cls) => h('div', { class: 'cb-tile' + (cls ? ' ' + cls : '') }, h('b', null, big), h('small', null, small));
+  // Same look as the Practice Week banner Chris liked: a title, one sentence, the days counter. Tap it for the coach's notes.
   return h('div', { class: 'coach-banner', style: '--coach:' + c.color },
-    h('div', { class: 'cb-season' }, h('span', null, se.name + ' · ' + se.sub), h('span', null, daysBetween(t, se.end) + ' days left')),
-    h('div', { class: 'cb-note' }, h('span', { class: 'cb-av' }, c.icon),
-      h('div', { class: 'cb-main' }, h('div', { class: 'cb-head' }, h('b', null, c.name + ' · ' + fmtDow(t))), h('p', { class: 'cb-word' }, coachWord(id))),
-      h('button', { class: 'cb-ask', type: 'button', 'aria-label': c.name + '\'s notes and insights', onclick: () => openCoachNotes(id) }, '💬')),
+    h('button', { class: 'season-banner cb-classic', type: 'button', 'aria-label': c.name + '\'s notes and insights', onclick: () => openCoachNotes(id) },
+      h('div', null, h('b', null, se.name + ' · ' + se.sub), h('small', { class: 'cb-word' }, coachWord(id)), h('span', { class: 'cb-head' }, h('span', { class: 'cb-av' }, c.icon), h('b', null, '— ' + c.name), h('span', { class: 'cb-more' }, 'notes ›'))),
+      h('div', { class: 'left' }, daysBetween(t, se.end), h('small', null, 'days left'))),
     h('div', { class: 'cb-tiles' },
       tile(wk.standard ? '✦' : wk.active + '/' + wk.need, wk.standard ? 'Standard met' + (wk.hol ? ' 🎄' : '') : 'days this week' + (wk.hol ? ' 🎄' : ''), wk.standard ? 'go' : ''),
       tile(lead.length === 1 && lead[0] === id ? '♛' : ordinal(pl), lead.length === 1 && lead[0] === id ? 'leading Primus' : 'Primus race'),

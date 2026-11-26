@@ -127,10 +127,9 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - **Coaches follow the books as the family reads them.** All four appear in *Red Rising* (book 1). **Ragnar** (calm, wise strength) is saved for year 2, once the story reaches him (Chris, Nov 26, 2026). Don't add characters from later books before then.
   - **After Practice Week the coach lives in the season banner** (`coachBanner`), the place Chris hopes everyone reads daily (Nov 26, 2026).
     - **Split layout (option 1, Chris, Nov 26, 2026):**
-      - A slim season line ("THE PASSAGE · TRIAL RUN … 13 DAYS LEFT").
-      - The coach's note on its own paper card (`coachWord`: one Claude message a day saved in `pack_coach_day` when there's a key, else the built-in `coachLine`).
+      - **The banner keeps the Practice Week banner's look** (Chris preferred it, Nov 26, 2026): the season as the title, the coach's note as the one sentence (`coachWord`: one Claude message a day saved in `pack_coach_day` when there's a key, else the built-in `coachLine`), "— Dancer · notes ›" underneath, and the days-left counter on the right (`.cb-classic`). Tapping it opens the notes. Don't turn it back into a busier card.
       - **Three tiles that never move:** days this week (✦ when the Standard is met, 🎄 in holiday weeks), Primus place (♛ when leading), Merit to the next rank.
-    - The round **💬** button opens `openCoachNotes`: the note, every insight (`bannerInsights`: holiday week, Standard, challenge, family quest, next rank, Primus race, chain, race checkpoint) and, with a key, "Ask for a fresh note".
+    - Tapping the banner opens `openCoachNotes`: the note, every insight (`bannerInsights`: holiday week, Standard, challenge, family quest, next rank, Primus race, chain, race checkpoint) and, with a key, "Ask for a fresh note".
     - The separate coach card shows only before Dec 1. Kids' banner content follows the no-weight/food/body rule.
 
 ## Today and Progress layout (Chris, Nov 26, 2026)
