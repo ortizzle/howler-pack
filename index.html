@@ -1623,9 +1623,16 @@ function newForYou() {
   return c;
 }
 function weeklyClasses(id) { return (M(id).weekly || []).filter(c => ACT[c.act]); }
+// How long you really do an activity: your most common length over the last 60 days (3+ entries, rounded to 5 min)
+function learnedMin(id, act) {
+  const since = addDays(AZ.today(), -60), ws = all('workout').filter(w => w.member === id && w.act === act && w.date >= since && w.date <= AZ.today());
+  if (ws.length < 3) return 0; const n = {}; ws.forEach(w => { const m = Math.max(5, Math.round(w.min / 5) * 5); n[m] = (n[m] || 0) + 1; });
+  return +Object.keys(n).sort((a, b) => n[b] - n[a] || b - a)[0];
+}
+function classMin(id, c) { return learnedMin(id, c.act) || c.min; }
 function classPrompts() {
   const id = me(), seen = Local.get('seen', {}), out = [];
-  weeklyClasses(id).forEach(c => {
+  weeklyClasses(id).forEach(c0 => { const c = Object.assign({}, c0, { min: classMin(id, c0) });
     for (let back = 0; back < 3; back++) {
       const d = addDays(AZ.today(), -back), key = 'cls_' + c.act + '_' + d;
       if (!c.days.includes(dow(d)) || seen[key]) continue;
@@ -2063,7 +2070,7 @@ function openSettings() {
     }
     // Claude key
     const wk = sec('MY WEEKLY CLASS', 'Something you do most weeks (pickleball, a swim lesson…). The app checks in that day so it\'s one tap to log.'), weekly = (m.weekly || []).slice();
-    weekly.forEach((c, i) => ACT[c.act] && wk.appendChild(h('div', { class: 'edit-row' }, h('span', { class: 'gi' }, ACT[c.act].icon), h('span', { class: 'gl' }, ACT[c.act].name + ' · ' + c.days.map(x => DOWS[x]).join(', ') + ' · ' + c.min + ' min'),
+    weekly.forEach((c, i) => ACT[c.act] && wk.appendChild(h('div', { class: 'edit-row' }, h('span', { class: 'gi' }, ACT[c.act].icon), h('span', { class: 'gl' }, ACT[c.act].name + ' · ' + c.days.map(x => DOWS[x]).join(', ') + ' · ' + classMin(m.mid, c) + (learnedMin(m.mid, c.act) ? ' min (your usual)' : ' min')),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove', onclick: () => { weekly.splice(i, 1); saveMember({ weekly }); draw(); render(); } }, '✕'))));
     if (!pickW) wk.appendChild(h('button', { class: 'btn-ghost', type: 'button', onclick: () => { pickW = { act: 'pickleball', days: [6], min: 60 }; draw(); } }, '＋ Add a weekly class'));
     else {
