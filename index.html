@@ -127,6 +127,9 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .newfor-list { background: rgba(46,125,50,.07); border-color: rgba(46,125,50,.3); } .newfor-list .card-t .chip-btn { min-height: 44px; font-size: 13px; }
 .newfor-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid rgba(46,125,50,.2); font-size: 14px; } .newfor-row .ll { flex: 1; } .newfor-row small { display: block; color: var(--muted); font-size: 12px; }
 .chip-btn.same { border-style: dashed; }
+.quiz-q { font-size: 19px; margin: 6px 0 12px; text-align: center; } .quiz-a { display: block; width: 100%; min-height: 52px; margin: 0 0 8px; padding: 10px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel2); font: inherit; font-size: 16px; color: inherit; text-align: left; }
+.coach-tile { display: block; width: 100%; text-align: left; margin: 0 0 8px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); border-left: 6px solid var(--coach); background: var(--panel2); font: inherit; color: inherit; }
+.coach-tile.rec { outline: 3px solid var(--coach); } .coach-tile p { margin: 6px 0 4px; font-size: 14px; } .ct-head { display: flex; align-items: center; gap: 8px; } .ct-head b { color: var(--coach); font-size: 17px; } .ct-head small { opacity: .75; } .ct-focus { opacity: .7; font-size: 12px; }
 .idea-row { padding: 8px 0 10px; border-bottom: 1px solid var(--line); } .idea-row p { margin: 0 0 8px; }
 .three { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 8px; } .three button { min-height: 44px; }
 .coach-banner { align-items: stretch; } .cb-main { flex: 1; min-width: 0; }
@@ -1040,8 +1043,47 @@ const COACHES = {
   matteo: { name: 'Matteo', title: 'MATTEO ADVISES', icon: '🌸', house: 'Pink', color: '#be185d',
     voice: 'You are Matteo, a Pink from Red Rising who taught Darrow the manners and habits of the Golds. You are refined, precise and kind, and you think in terms of habits, strategy and positioning within the pack.',
     kid: 'With a child you are gentle and encouraging, like a favorite teacher.', open: ['Well done.', 'Consider this.', 'Habits, little by little.'] },
+  sevro: { name: 'Sevro', title: 'SEVRO HOWLS', icon: '🐺', house: 'Gold', color: '#8a6d0b',
+    voice: 'You are Sevro au Barca from Red Rising, the smallest and fiercest of the Howlers: loud, funny and fiercely loyal. You hype people up, love a challenge and a little friendly rivalry. You never swear or use crude words.',
+    kid: 'With a child you are a loud, funny, loyal big-sibling type: hype them up and tease playfully, never mean.', open: ['Ha!', 'Howl!', 'Look at you go.'] },
 };
+// What each coach is like, in plain words (the coach quiz and the coach picker show these)
+const COACH_FOCUS = {
+  dancer: { style: 'Straight talk', blurb: 'Tells it like it is and reminds you why you started. Tough, but he believes in you.', focus: 'Grit · Never giving up · Showing up' },
+  mickey: { style: 'Big cheers', blurb: 'Dramatic and delighted by every effort. Notices the details and calls your workouts works of art.', focus: 'Getting better · Doing it with style' },
+  matteo: { style: 'Calm and kind', blurb: 'Gentle and patient, like a favorite teacher. Small steps and good habits.', focus: 'Habits · Planning · Little by little' },
+  sevro: { style: 'Hype and fun', blurb: 'Loud, funny and loyal. Loves a challenge and a little friendly rivalry.', focus: 'Fun · Competition · Beating the others' },
+};
+const COACH_QUIZ = [
+  { q: 'On a lazy day, what gets you moving?', a: [['dancer', 'Someone saying it straight: get up, you can do this'], ['sevro', 'Someone making it fun or turning it into a race'], ['mickey', 'A big cheer about how good I am at it'], ['matteo', 'A gentle reminder and a small, easy plan']] },
+  { q: 'After a great workout, you\'d love to hear…', a: [['dancer', '"Good. Now do it again tomorrow."'], ['mickey', '"MAGNIFICENT! That was a work of art!"'], ['sevro', '"HA! Told you you\'d crush it. Who\'s next?"'], ['matteo', '"Well done. Little by little, it adds up."']] },
+  { q: 'What matters most to you?', a: [['dancer', 'Being tough and never giving up'], ['mickey', 'Getting better and doing it with style'], ['sevro', 'Having fun and beating the others'], ['matteo', 'Building good habits, step by step']] },
+  { q: 'When you miss a day, you want your coach to…', a: [['dancer', 'Remind me what I\'m working for'], ['sevro', 'Joke about it and challenge me to bounce back'], ['mickey', 'Remind me how great I was last time'], ['matteo', 'Say it\'s okay and help me plan tomorrow']] },
+];
 function coachOf(id) { return COACHES[M(id).coach] || COACHES.dancer; }
+// "What kind of encouragement do you like?" Four questions → the coach whose style fits; you can still pick any of them
+function openCoachQuiz(id, onDone) {
+  const body = h('div', { class: 'log-body quiz' }), picks = []; let i = 0;
+  function coachTile(k, rec) { const C = COACHES[k], F = COACH_FOCUS[k];
+    return h('button', { class: 'coach-tile' + (rec ? ' rec' : '') + (M(id).coach === k ? ' on' : ''), type: 'button', style: '--coach:' + C.color, onclick: () => { put(Object.assign({}, M(id), { coach: k, coachPicked: true })); delete coachMsg[id]; Local.set('coach_day', {}); close(); render(); toast(C.icon + ' ' + C.name + ' is your coach!'); if (onDone) onDone(); } },
+      h('div', { class: 'ct-head' }, h('span', { class: 'cb-av' }, C.icon), h('b', null, C.name), h('small', null, F.style + (rec ? ' · your match!' : ''))), h('p', null, F.blurb), h('small', { class: 'ct-focus' }, F.focus)); }
+  function draw() {
+    clear(body);
+    if (i < COACH_QUIZ.length) {
+      const Q = COACH_QUIZ[i]; body.appendChild(h('div', { class: 'tour-dots', 'aria-hidden': 'true' }, COACH_QUIZ.map((_, j) => h('i', { class: j === i ? 'on' : '' }))));
+      body.appendChild(h('h3', { class: 'quiz-q' }, Q.q));
+      Q.a.forEach(([k, txt]) => body.appendChild(h('button', { class: 'quiz-a', type: 'button', onclick: () => { picks[i] = k; i++; draw(); } }, txt)));
+      if (i) body.appendChild(h('button', { class: 'btn-ghost', type: 'button', style: 'margin-top:8px', onclick: () => { i--; draw(); } }, '‹ Back'));
+      return;
+    }
+    const n = {}; picks.forEach(k => n[k] = (n[k] || 0) + 1);
+    const best = Object.keys(COACHES).sort((a, b) => (n[b] || 0) - (n[a] || 0) || (picks[1] === b) - (picks[1] === a))[0];
+    body.appendChild(h('p', { class: 'hint', style: 'margin-top:0' }, 'Your match is ' + COACHES[best].name + '. Tap a coach to choose: your match or anyone else.'));
+    body.appendChild(coachTile(best, true)); Object.keys(COACHES).filter(k => k !== best).forEach(k => body.appendChild(coachTile(k, false)));
+    body.appendChild(h('button', { class: 'btn-ghost', type: 'button', style: 'margin-top:8px', onclick: () => { i = 0; picks.length = 0; draw(); } }, '↺ Take the quiz again'));
+  }
+  const close = openModal('🧭 Find your coach', body); draw();
+}
 function coachStats(id) {
   const sc = score(id), se = sc.se, wk = sc.cur, left = Math.max(0, wk.need - wk.active), today = AZ.today();
   const last = all('workout').filter(w => w.member === id && w.date <= today).sort((a, b) => a.date < b.date ? 1 : -1)[0];
@@ -1860,7 +1902,7 @@ function renderToday(main) {
   }
   main.appendChild(lc);
   syncQuestAwards();
-  [colorPrompt(), ideaPrompt(), questCard(), recapCard(), newForYou(), tkdPrompt(), ...classPrompts(), goalNudge()].forEach(x => { if (x) main.appendChild(x); });
+  [colorPrompt(), coachPrompt(), ideaPrompt(), questCard(), recapCard(), newForYou(), tkdPrompt(), ...classPrompts(), goalNudge()].forEach(x => { if (x) main.appendChild(x); });
   main.appendChild(raceCard(false));
   if (!preseason()) main.appendChild(primusCard());
   main.appendChild(challengeCard());
@@ -1897,6 +1939,12 @@ function recapBody(wk, opts) {
   const tog = new Set(all('workout').filter(w => w.group && weekKey(w.date) === wk).map(w => w.group)).size;
   if (tog) box.appendChild(h('p', { class: 'hint' }, '🤝 ' + tog + ' workout' + (tog > 1 ? 's' : '') + ' done together this week.'));
   return box;
+}
+function coachPrompt() {
+  const m = M(me()); if (m.coachPicked || PREVIEW) return null; const C = coachOf(me());
+  return h('div', { class: 'card prompt coach-prompt' }, h('p', null, '🧭 What kind of encouragement do you like? Take a 4-question quiz to find your coach. (Right now it\'s ' + C.name + '.)'),
+    h('div', { class: 'row' }, h('button', { class: 'yes', type: 'button', onclick: () => openCoachQuiz(me()) }, 'Find my coach'),
+      h('button', { type: 'button', onclick: () => { put(Object.assign({}, m, { coachPicked: true })); render(); } }, 'Keep ' + C.name)));
 }
 function colorPrompt() {
   const m = M(me()); if (m.colorPicked || PREVIEW) return null;
@@ -2388,6 +2436,7 @@ function openSettings() {
     if (PREVIEW) sec('SAMPLE DATA', 'You are looking at sample data. Nothing you do here is saved or synced.').appendChild(h('button', { class: 'btn-primary', type: 'button', onclick: () => { close(); exitPreview(); } }, 'Leave sample data'));
     sec('THIS PHONE', 'Who uses this phone. Set once; parents can still log for the kids.').appendChild(h('div', { class: 'chips' }, members().map(x => h('button', { class: 'chip-btn who' + (x.mid === id ? ' on' : ''), style: '--house:' + houseColor(x.mid), type: 'button', onclick: () => { Local.set('me', x.mid); draw(); render(); } }, (x.role === 'pup' ? '🐾 ' : '') + x.name))));
     const cs = sec('MY COACH', 'Your voice from the Council of Coaches.' + (pup ? ' Pups\' coaches only ever talk about moving and having fun.' : ''));
+    cs.appendChild(h('button', { class: 'btn-ghost', type: 'button', style: 'margin-bottom:8px', onclick: () => openCoachQuiz(m.mid, draw) }, '🧭 Take the coach quiz'));
     cs.appendChild(h('div', { class: 'chips' }, Object.keys(COACHES).map(k => h('button', { class: 'chip-btn' + (m.coach === k ? ' on' : ''), type: 'button', onclick: () => { saveMember({ coach: k }); delete coachMsg[id]; draw(); render(); } }, COACHES[k].icon + ' ' + COACHES[k].name))));
     if (!pup) {
       const ws = sec('MY WEIGHT GOAL', 'Private. Pounds never leave this phone. The family sees your % only if you turn sharing on.');
