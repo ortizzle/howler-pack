@@ -531,10 +531,10 @@ function memberIds() { return members().map(m => m.mid); }
 
 // ───────────────────────── Rules
 const RULES = {
-  // One Merit scale for everyone. Showing up pays the same; only the weekly Standard (days) and how effort is measured differ.
+  // One Merit scale and one 4-day Standard for everyone (kids too, Chris, Nov 26, 2026); only how effort is measured differs.
   proctor: { activeMin: 20, activeMetMin: 100, activeDay: 15, standardDays: 4, standard: 50, effortDiv: 10, effortCap: 60, goalMonth: 50, goalSeason: 150 },
   // Pups: effort by minutes, 1 per 2 min, so a 30-minute kid workout ≈ a 30-minute adult workout at average intensity (~5 MET)
-  pup:     { activeMin: 20, activeDay: 15, standardDays: 3, standard: 50, minPer: 2, minCap: 60, goalMonth: 50, goalSeason: 150 },
+  pup:     { activeMin: 20, activeDay: 15, standardDays: 4, standard: 50, minPer: 2, minCap: 60, goalMonth: 50, goalSeason: 150 },
   // Pups' growth points balance the parents' private weight-progress points; best week yet applies to everyone
   // (Pups: most minutes; Praetorians: most effort, so a harder week beats a longer easy one)
   growth: { bestWeek: 25, longest: 25, stripe: 25, belt: 100, pb: 25, pbWeeklyMax: 2 },

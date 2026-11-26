@@ -45,7 +45,8 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 ## Game rules (where to change them)
 
 - **Rules and Merit values:** `RULES`. **One Merit scale for everyone** (Chris chose this, Nov 25, 2026):
-  - Showing up pays the same: Active Day +15, Standard +50 (Praetorians 4 days, Pups 3), chain, together, cheers, goals, Primus, race.
+  - Showing up pays the same: Active Day +15, Standard +50, chain, together, cheers, goals, Primus, race.
+  - **The Standard is 4 Active Days a week for everyone, kids included** (Chris, Nov 26, 2026). A Dec–Mar simulation showed that with the old 3-day kids' Standard, the kids earned nearly twice the adults' Merit for the same workouts at 3 days a week and took almost every Primus crown. At 4 days for everyone, equal effort gives equal Merit (within ~10%) and the crowns spread out. Don't reintroduce a separate kids' Standard without re-running that comparison.
   - Effort: Praetorians use MET × min ÷ 10; Pups use 1 point per 2 minutes. **Both cap at 60 a day** (raised from 40, Chris, Nov 26, 2026), so a 30-min kid workout ≈ a 30-min adult one at average intensity.
   - **Intensity matters for the adults; volume for the kids** (Chris's goal). Harder efforts should clearly out-earn easier ones (a 60-min run ≈ 59 vs a walk ≈ 26), so don't flatten MET differences for Praetorians. Pups' effort stays minutes-based.
   - **Praetorians' best effort week yet** (+25, `RULES.growth.bestWeek`) rewards beating your own weekly effort (MET × min ÷ 10, uncapped), from your 3rd week on. A harder week counts as a better week.
@@ -94,7 +95,7 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - **★ Pinned usuals** (`pin: true`, toggled in Settings → My usuals) always come first.
   - **Pups get their own favorites:** their top 3 from history sit above the big buttons in `openPupChooser`.
 - **"⏱ Got a few minutes?" calculator** (`openCalc`, Chris, Nov 25, 2026): ranks every activity and class type by the Merit it would earn *today* for the chosen minutes.
-  - `previewGain` does a dry run through the real scoring (temporary `__calc` record, never saved), so Active Day, Standard, chain and the 40/day cap are all included.
+  - `previewGain` does a dry run through the real scoring (temporary `__calc` record, never saved), so Active Day, Standard, chain and the 60/day cap are all included.
   - It uses your own pace from your latest entry with speed/incline/watts (`myPace`).
   - Tapping a row opens the log sheet pre-filled.
   - When the 60/day effort cap makes several rows tie, it says so ("N left today") and each capped row shows **maxes out in N min**. Ties sort by that, so the hardest workout comes first.
