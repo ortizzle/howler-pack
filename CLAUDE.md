@@ -82,7 +82,9 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - **Park was folded into Active Play** (Chris's call). `park` stays in `ACTIVITIES` with `hidden: true` so old entries still read; don't show it in pickers.
   - **Meditation** (`mind: true`) earns 1 point per 10 min and is never movement: `moveMin()` returns 0 for it, so it doesn't count toward Active Days, week minutes, minutes goals or growth. **Stretch** is MET 2.3 (2024 Compendium). **Pickleball** is 4.1–6.5.
   - **Weekly classes** (`member.weekly: [{act, days, min}]`, Settings → My weekly class): `classPrompts()` checks in after noon on the day, or for up to two days after. Kat's Sunday pickleball is pre-set (`migrateWeekly`).
-  - `migrateUsuals()` adds a Walk usual once per parent; up to 6 usuals.
+  - **Usuals are suggestions, never blind logs** (Chris, Nov 25, 2026): tapping one opens the log sheet pre-filled (`quickUsual` → `openLog({ act, min, cls })`).
+  - `topUsuals(id)` ranks your most-logged activity + class type over the last 60 days (2+ times, at your most common length, rounded to 5 min). Usuals saved in Settings fill the spare spots, 6 in all; a saved Tread/Bike usual with no class type gives way once history has that machine.
+  - `migrateUsuals()` adds a Walk usual once per parent.
 - **Where & how far** (Chris, Nov 25, 2026): every log sheet, kids' included, shows a route/place box (`title`) and, for distance activities, miles (`detail.miles`) right after "When". They're visible, never required, and recent places (`recentPlaces`) are one-tap chips so they're nearly always answered. These fields are not in "More stats".
 - **Editing:** tapping an Annals entry calls `openLog({ edit: record })`, which updates that record in place.
   - **Only the person who logged a workout (`by`) can change its shared facts** (activity, class type, minutes, date, place, distance, dogs) and use Apply to everyone (Chris, Nov 25, 2026). `canChange` / `canApplyAll`.

@@ -1035,11 +1035,19 @@ function undoLog(ids) { ids.forEach(del); render(); }
 function isSolo(act) { return ACT[act] && ACT[act].group === 'Peloton'; }
 // Who joined you the last time you did this activity (for a one-tap "same as last time")
 function lastCrew(act) { const w = all('workout').filter(x => x.member === me() && x.act === act && x.group).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0]; return w ? all('workout').filter(x => x.group === w.group && x.member !== me()).map(x => x.member).filter(id => rec('member_' + id)) : []; }
-function quickUsual(u) {
-  if (!isSolo(u.act)) { openLog({ act: u.act, min: u.min }); return; }   // opens on "With anyone?" (just you, or same as last time)
-  const crew = [me()];
-  let ids; const g = gainFor(crew, () => { ids = logGroup(crew, { date: AZ.today(), act: u.act, min: u.min, felt: 'normal', by: me(), dogs: u.act === 'dogwalk' ? dogs().map(d => d.id) : null, detail: ACT[u.act].types ? { cls: u.cls || lastCls(u.act) } : null }); });
-  render(); toast(ACT[u.act].icon + ' ' + gainText(g), 'Undo', () => undoLog(ids));
+// A usual opens the log sheet pre-filled (never logs blind): check it, tweak it, tap Log it
+function quickUsual(u) { openLog({ act: u.act, min: u.min, cls: u.cls }); }
+// Today's usuals: your most-logged workouts of the last 60 days (activity + class type, at your most common length),
+// then the ones saved in Settings fill any spare spots
+function topUsuals(id) {
+  const since = addDays(AZ.today(), -60), by = {};
+  all('workout').filter(w => w.member === id && w.date >= since && w.date <= AZ.today() && ACT[w.act] && !ACT[w.act].hidden).forEach(w => {
+    const cls = (w.detail && w.detail.cls) || '', k = w.act + '|' + cls, g = by[k] = by[k] || { act: w.act, cls: cls || undefined, n: 0, mins: {}, last: '' };
+    const mm = Math.max(5, Math.round(w.min / 5) * 5); g.n++; g.mins[mm] = (g.mins[mm] || 0) + 1; if (w.date > g.last) g.last = w.date; });
+  const auto = Object.values(by).filter(g => g.n >= 2).sort((a, b) => b.n - a.n || (b.last > a.last ? 1 : b.last < a.last ? -1 : 0))
+    .map(g => ({ act: g.act, cls: g.cls, n: g.n, auto: true, min: +Object.keys(g.mins).sort((x, y) => g.mins[y] - g.mins[x] || y - x)[0] }));
+  const saved = (M(id).usuals || []).filter(u => ACT[u.act] && !auto.some(a => a.act === u.act && (!u.cls || a.cls === u.cls)));
+  return auto.concat(saved).slice(0, 6);
 }
 // openLog(preset): preset = { act, min } for a new entry, or { edit: workoutRecord } to change one
 // The places you've logged most recently, this activity first: one tap to answer "Where?"
@@ -1651,9 +1659,10 @@ function renderToday(main) {
   lc.appendChild(h('button', { class: 'log-big', type: 'button', onclick: () => pup ? openPupChooser() : openLog() }, h('img', { src: 'icon-192.png', alt: '', width: '46', height: '46' }), h('span', null, pup ? 'I moved!' : 'Log a workout')));
   if (!pup) {
     const us = h('div', { class: 'usuals' });
-    (M(id).usuals || []).forEach(u => us.appendChild(h('button', { class: 'usual', type: 'button', onclick: () => quickUsual(u) }, h('span', { class: 'ic' }, ACT[u.act].icon),
-      h('span', null, (u.act === 'dogwalk' ? dogs().map(x => x.name).join(' & ') : ACT[u.act].name + (u.cls ? ' ' + ACT[u.act].types.find(x => x.id === u.cls).name : '')) + ' ' + u.min + 'm', h('small', null, isSolo(u.act) ? 'one tap' : 'with anyone?')))));
-    if ((M(id).usuals || []).length) lc.appendChild(us);
+    const tops = topUsuals(id);
+    tops.forEach(u => us.appendChild(h('button', { class: 'usual', type: 'button', onclick: () => quickUsual(u) }, h('span', { class: 'ic' }, ACT[u.act].icon),
+      h('span', null, (u.act === 'dogwalk' ? dogs().map(x => x.name).join(' & ') : ACT[u.act].name + (u.cls ? ' ' + ACT[u.act].types.find(x => x.id === u.cls).name : '')) + ' ' + u.min + 'm', h('small', null, u.auto ? 'logged ' + u.n + '× lately' : 'your usual')))));
+    if (tops.length) lc.appendChild(us);
     lc.appendChild(h('button', { class: 'ai-btn', type: 'button', onclick: () => openReader() }, '✨ Paste or snap a Peloton summary'));
     lc.appendChild(weighRow());
   }
@@ -1939,7 +1948,7 @@ function openSettings() {
         h('button', { type: 'button', 'aria-label': 'Less', onclick: () => { saveMember({ goalPct: Math.max(1, (m.goalPct || 10) - 1) }); draw(); render(); } }, '−'), h('b', null, '−' + (m.goalPct || 10) + '%'),
         h('button', { type: 'button', 'aria-label': 'More', onclick: () => { saveMember({ goalPct: Math.min(20, (m.goalPct || 10) + 1) }); draw(); render(); } }, '+'))));
       ws.appendChild(toggle('Share my % lost with the family', !!m.share, () => { saveMember({ share: !m.share }); syncProgressAwards(); draw(); render(); }));
-      const us = sec('MY USUALS', 'Quick buttons on Today, up to 6. Peloton ones log in one tap; the rest ask who joined.'), usuals = (m.usuals || []).slice();
+      const us = sec('MY USUALS', 'Today shows your most-logged workouts from the last 60 days first; these fill any spare spots (6 in all). Tapping one opens the log sheet already filled in.'), usuals = (m.usuals || []).slice();
       usuals.forEach((u, i) => us.appendChild(h('div', { class: 'edit-row' }, h('span', { class: 'gi' }, ACT[u.act].icon), h('span', { class: 'gl' }, ACT[u.act].name + (u.cls ? ' ' + ACT[u.act].types.find(x => x.id === u.cls).name : '') + ' · ' + u.min + ' min'),
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove', onclick: () => { usuals.splice(i, 1); saveMember({ usuals }); draw(); render(); } }, '✕'))));
       if (usuals.length < 6) {
