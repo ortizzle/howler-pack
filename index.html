@@ -150,8 +150,9 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .cb-season { display: flex; justify-content: space-between; font-family: var(--fh); font-weight: 700; letter-spacing: .12em; font-size: 12px; color: #7a5a1c; margin: 8px 2px 8px; text-transform: uppercase; }
 .cb-note { display: flex; gap: 10px; align-items: flex-start; padding: 14px; border-radius: 4px 14px 6px 12px / 12px 5px 14px 6px; background: linear-gradient(180deg, #fffaf0, #f8eed6); border: 1px solid rgba(140,100,30,.35); outline: 1px solid rgba(201,162,39,.45); outline-offset: -6px; box-shadow: var(--shadow); }
 .cb-note .cb-word { margin: 2px 0 0; }
-.cb-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
-.cb-tile { text-align: center; padding: 10px 4px; border-radius: 12px; background: linear-gradient(180deg, #fdf9f0, #f3ead7); box-shadow: inset 0 1px 0 #fff, 0 2px 0 rgba(80,60,30,.18); } .cb-tile b { display: block; font-size: 22px; font-family: var(--fh); line-height: 1.2; } .cb-tile small { font-size: 12px; color: var(--muted); } .cb-tile.go b { color: #2e7d32; }
+.cb-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.cb-tile { text-align: center; min-height: 44px; padding: 5px 4px; font: inherit; color: inherit; cursor: pointer; border: 0; border-radius: 12px; background: linear-gradient(180deg, #fdf9f0, #f3ead7); box-shadow: inset 0 1px 0 #fff, 0 2px 0 rgba(80,60,30,.18); } .cb-tile b { display: block; font-size: 17px; font-family: var(--fh); line-height: 1.15; } .cb-tile small { font-size: 11px; color: var(--muted); line-height: 1.2; display: block; } .cb-tile:active { transform: translateY(1px); box-shadow: inset 0 1px 0 #fff, 0 1px 0 rgba(80,60,30,.18); }
+.flash { animation: flash 1.2s ease-out; } @keyframes flash { 0% { box-shadow: 0 0 0 3px rgba(201,162,39,.9); } 100% { box-shadow: 0 0 0 0 rgba(201,162,39,0); } } .cb-tile.go b { color: #2e7d32; }
 .coach-notes .cb-word { font-style: italic; font-size: 17px; line-height: 1.45; margin-bottom: 8px; } .cn-row { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line); } .cn-row span { font-size: 20px; } .cn-row p { margin: 0; } .cb-main { flex: 1; min-width: 0; }
 .cb-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .cb-head b { color: var(--coach); } .cb-head small { width: 100%; opacity: .7; }
 .cb-av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--panel); border: 2px solid var(--coach); font-size: 17px; }
@@ -1873,7 +1874,7 @@ function cheersForMe() {
   return c;
 }
 function myWeekCard() {
-  const id = me(), sc = score(id), r = R(id), left = Math.max(0, sc.cur.need - sc.cur.active), c = card('THIS WEEK · ' + M(id).name.toUpperCase(), 'Chain ×' + sc.cur.mult.toFixed(1));
+  const id = me(), sc = score(id), r = R(id), left = Math.max(0, sc.cur.need - sc.cur.active), c = card('THIS WEEK · ' + M(id).name.toUpperCase(), 'Chain ×' + sc.cur.mult.toFixed(1), 'my-week');
   c.appendChild(weekDots(id));
   c.appendChild(h('div', { class: 'metrics' }, h('div', { class: 'metric' + (sc.cur.standard ? ' go' : '') }, h('b', null, sc.cur.standard ? '✦' : sc.cur.active + '/' + sc.cur.need), h('span', null, sc.cur.standard ? 'STANDARD MET' : left + ' MORE TO GO')),
     h('div', { class: 'metric' }, h('b', null, sc.byWeek[sc.cur.key] || 0), h('span', null, 'MERIT THIS WEEK')), h('div', { class: 'metric' }, h('b', null, sc.year.toLocaleString()), h('span', null, sc.se.practice ? 'PRACTICE MERIT' : 'MERIT THIS YEAR'))));
@@ -1927,16 +1928,21 @@ async function refreshCoachWord(id, force) {
 function coachBanner(se) {
   const id = me(), c = coachOf(id), t = AZ.today(), sc = score(id), wk = sc.cur, pl = primusPlace(weekKey(t), id), lead = primusLeaders(weekKey(t));
   refreshCoachWord(id, false);
-  const tile = (big, small, cls) => h('div', { class: 'cb-tile' + (cls ? ' ' + cls : '') }, h('b', null, big), h('small', null, small));
+  const tile = (big, small, cls, go_, label) => h('button', { class: 'cb-tile' + (cls ? ' ' + cls : ''), type: 'button', 'aria-label': label, onclick: go_ }, h('b', null, big), h('small', null, small));
   // Same look as the Practice Week banner Chris liked: a title, one sentence, the days counter. Tap it for the coach's notes.
   return h('div', { class: 'coach-banner', style: '--coach:' + c.color },
     h('button', { class: 'season-banner cb-classic', type: 'button', 'aria-label': c.name + '\'s notes and insights', onclick: () => openCoachNotes(id) },
       h('div', null, h('b', null, se.name + ' · ' + se.sub), h('small', { class: 'cb-word' }, coachWord(id)), h('span', { class: 'cb-head' }, h('span', { class: 'cb-av' }, c.icon), h('b', null, '— ' + c.name), h('span', { class: 'cb-more' }, 'notes ›'))),
       h('div', { class: 'left' }, daysBetween(t, se.end), h('small', null, 'days left'))),
     h('div', { class: 'cb-tiles' },
-      tile(wk.standard ? '✦' : wk.active + '/' + wk.need, wk.standard ? 'Standard met' + (wk.hol ? ' 🎄' : '') : 'days this week' + (wk.hol ? ' 🎄' : ''), wk.standard ? 'go' : ''),
-      tile(lead.length === 1 && lead[0] === id ? '♛' : ordinal(pl), lead.length === 1 && lead[0] === id ? 'leading Primus' : 'Primus race'),
-      tile(sc.rank.next ? (sc.rank.next.min - sc.year).toLocaleString() : '✦', sc.rank.next ? 'to ' + sc.rank.next.icon + ' ' + sc.rank.next.name : 'Peerless Scarred')));
+      tile(wk.standard ? '✦' : wk.active + '/' + wk.need, wk.standard ? 'Standard met' + (wk.hol ? ' 🎄' : '') : 'days this week' + (wk.hol ? ' 🎄' : ''), wk.standard ? 'go' : '', () => jumpTo('progress', '.my-week'), 'My week: open it on Progress'),
+      tile(lead.length === 1 && lead[0] === id ? '♛' : ordinal(pl), lead.length === 1 && lead[0] === id ? 'leading Primus' : 'Primus race', '', () => { weekTab = 'primus'; jumpTo('today', '.week-tabs'); }, 'Primus race: open the Primus tab'),
+      tile(sc.rank.next ? (sc.rank.next.min - sc.year).toLocaleString() : '✦', sc.rank.next ? 'to ' + sc.rank.next.icon + ' ' + sc.rank.next.name : 'Peerless Scarred', '', () => { openCards[id] = true; jumpTo('today', '.player-card.me'); }, 'My rank: open my card')));
+}
+// Tiles are shortcuts: switch tab if needed, then bring the target into view (below the sticky header)
+function jumpTo(tab, sel) {
+  if (TAB !== tab) go(tab); else render();
+  setTimeout(() => { const el = document.querySelector(sel); if (!el) return; scrollTo({ top: el.getBoundingClientRect().top + scrollY - 70, behavior: 'smooth' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1200); }, 60);
 }
 // 💬: the coach's note, every insight, and (with a key) a fresh message
 function openCoachNotes(id) {
