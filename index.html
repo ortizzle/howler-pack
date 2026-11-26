@@ -1073,19 +1073,22 @@ function openCalc() {
       const fav = topUsuals(id).slice(0, 3); if (fav.length) body.appendChild(h('div', { class: 'big-acts', style: 'margin-top:10px' }, fav.map(u => h('button', { class: 'big-act', type: 'button', onclick: () => { close(); openLog({ act: u.act, min: mins, cls: u.cls }); } }, h('span', { class: 'ic' }, ACT[u.act].icon), ACT[u.act].name))));
       return;
     }
-    const rows = [];
+    const rows = [], P = RULES.proctor, today0 = (days(id, currentSeason())[AZ.today()] || {}).eff || 0, left = Math.max(0, P.effortCap - today0);
     ACTIVITIES.filter(a => !a.hidden && !a.mind).forEach(a => (a.types || [null]).forEach(ty => {
       const cls = ty ? ty.id : undefined, pace = myPace(id, a.id, cls), detail = Object.assign({}, cls ? { cls } : {}, pace || {});
       if (pace && pace.mph && a.detail === 'dist') { detail.miles = Math.round(pace.mph * mins / 60 * 100) / 100; delete detail.mph; }
       const rec = { act: a.id, min: mins, detail: Object.keys(detail).length ? detail : null }, mm = metFor(rec);
-      rows.push({ a, ty, cls, pace, met: mm.met, gain: previewGain(id, rec) });
+      const raw = Math.round(mm.met * mins / P.effortDiv), full = raw > left && left > 0 ? Math.ceil(left * P.effortDiv / mm.met) : 0;
+      rows.push({ a, ty, cls, pace, met: mm.met, raw, full, gain: previewGain(id, rec) });
     }));
-    rows.sort((x, y) => y.gain - x.gain || y.met - x.met);
-    const best = rows[0].gain, cap = rows.every(r => r.gain === best);
-    body.appendChild(h('p', { class: 'hint', style: 'margin:8px 0' }, cap ? 'You\'ve hit today\'s effort cap, so everything earns the same now. Any movement still keeps your streak going.' : 'Merit you\'d earn today, Active Day, Standard and the daily cap included. "Your pace" uses your last workout with speed or watts.'));
+    rows.sort((x, y) => y.gain - x.gain || (x.full || 999) - (y.full || 999) || y.met - x.met);
+    const capped = rows.filter(r => r.full).length;
+    body.appendChild(h('p', { class: 'hint', style: 'margin:8px 0' }, !left ? 'You\'ve hit today\'s effort cap (' + P.effortCap + '), so everything earns the same now. Any movement still keeps your streak going.'
+      : capped > 1 ? 'Effort tops out at ' + P.effortCap + ' a day (' + left + ' left today), so at ' + mins + ' minutes ' + capped + ' of these max it out and earn the same. The harder ones get there sooner: see "maxes out in".'
+      : 'Merit you\'d earn today, Active Day, Standard and the daily cap included. "Your pace" uses your last workout with speed or watts.'));
     const list = h('div', { class: 'calc-list' });
     rows.slice(0, 10).forEach((r, i) => list.appendChild(h('button', { class: 'calc-row' + (i === 0 ? ' top' : ''), type: 'button', onclick: () => { close(); openLog({ act: r.a.id, min: mins, cls: r.cls }); } },
-      h('span', { class: 'ic' }, r.a.icon), h('span', { class: 'nm' }, (r.ty ? r.a.long + ' · ' + r.ty.name : r.a.name), h('small', null, '≈ ' + r.met.toFixed(1) + ' MET' + (r.pace ? ' · your pace' : '') + (isSolo(r.a.id) ? '' : ' · +' + RULES.together + ' if someone joins'))),
+      h('span', { class: 'ic' }, r.a.icon), h('span', { class: 'nm' }, (r.ty ? r.a.long + ' · ' + r.ty.name : r.a.name), h('small', null, '≈ ' + r.met.toFixed(1) + ' MET' + (r.pace ? ' · your pace' : '') + (r.full ? ' · maxes out in ' + r.full + ' min' : '') + (isSolo(r.a.id) ? '' : ' · +' + RULES.together + ' if someone joins'))),
       h('b', null, '+' + r.gain))));
     body.appendChild(list);
   }

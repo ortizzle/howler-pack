@@ -95,6 +95,7 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - `previewGain` does a dry run through the real scoring (temporary `__calc` record, never saved), so Active Day, Standard, chain and the 40/day cap are all included.
   - It uses your own pace from your latest entry with speed/incline/watts (`myPace`).
   - Tapping a row opens the log sheet pre-filled.
+  - When the 40/day effort cap makes several rows tie, it says so ("N left today") and each capped row shows **maxes out in N min**. Ties sort by that, so the hardest workout comes first.
   - Pups see one line ("any N minutes = +X"; every activity counts the same for them) plus their favorites, with no MET talk.
 - **Where & how far** (Chris, Nov 25, 2026): every log sheet, kids' included, shows a route/place box (`title`) and, for distance activities, miles (`detail.miles`) right after "When". They're visible, never required, and recent places (`recentPlaces`) are one-tap chips so they're nearly always answered. These fields are not in "More stats".
 - **Editing:** tapping an Annals entry calls `openLog({ edit: record })`, which updates that record in place.
