@@ -134,7 +134,7 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .ex-tip { font-size: 13px; margin: 6px 0 0; min-height: 18px; } .ex-say { font-weight: 600; margin: 8px 0; } .ex-table { width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 6px; } .ex-table td, .ex-table th { padding: 4px; border-bottom: 1px solid var(--line); text-align: right; } .ex-table td:first-child, .ex-table th:first-child { text-align: left; }
 .ex-fav { margin-top: 10px; } .pt-row { display: grid; grid-template-columns: 1.2fr 2fr auto; gap: 8px; align-items: center; margin: 6px 0; font-size: 14px; } .pt-bar { height: 12px; background: var(--panel2); border-radius: 6px; overflow: hidden; } .pt-bar i { display: block; height: 100%; border-radius: 6px; }
 .needs-more, .ex-more { display: block; width: 100%; min-height: 44px; margin-top: 8px; border: 0; background: transparent; color: var(--accent, #9a1010); font: inherit; font-size: 14px; text-align: left; }
-.tools-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .tools-row .ai-btn { margin: 0; font-size: 14px; padding: 10px 8px; }
+.tools-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .tools-row .ai-btn { margin: 0; font-size: 14px; padding: 8px 10px; display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1.2; } .tools-row .tb-ic { font-size: 17px; line-height: 1; flex: 0 0 auto; }
 .needs .need + .need { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; } .needs .need > .card { box-shadow: none; border: 0; margin: 0; padding: 0; background: transparent; }
 .week-tabs .tab-panel > .card { box-shadow: none; border: 0; margin: 0; padding: 0; background: transparent; } .week-tabs .tab-panel > .card > .card-t:first-child { font-size: 12px; opacity: .8; }
 .seg { display: flex; gap: 4px; background: var(--panel2); border-radius: 12px; padding: 4px; margin: 4px 0 12px; } .seg-b { flex: 1; min-height: 44px; border: 0; border-radius: 9px; background: transparent; font: inherit; font-size: 14px; color: inherit; } .seg-b.on { background: var(--panel); box-shadow: 0 1px 4px rgba(0,0,0,.12); font-weight: 700; }
@@ -388,6 +388,31 @@ body.pup .fab { font-family: var(--fp); font-weight: 800; }
 .who-btn small { font-family: var(--fb); font-weight: 400; font-size: 12px; color: var(--muted); }
 .who-dot { width: 36px; height: 36px; border-radius: 50%; background: var(--house); color: #fff; display: grid; place-items: center; font-size: 16px; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ───────────────────────── Stone & Paper (Chris, Nov 26, 2026): parchment cards laid on warm carved stone.
+   Paper cards with a gold inner rule and hand-cut corners; ✦ + gold rule under headings; soft carved buttons; no rivets, no pennants. */
+:root { --bg: #e8e1d3; --panel: #fbf4e2; --panel2: #efe2c3; --line: rgba(140,100,30,.30);
+  --shadow: 0 1px 0 #e7d7b2, 0 3px 0 #efe3c6, 0 4px 1px rgba(120,90,30,.18), 0 10px 22px rgba(90,60,20,.14); }
+body { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.012' numOctaves='4' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.36 0 0 0 0 0.28 0 0 0 0.10 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23s)'/%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0 0.1 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(180deg, #ece6d9, #ddd3bf) !important; background-attachment: fixed; }
+.card, .zone, .player-card { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02 0.6' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.33 0 0 0 0 0.12 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23f)'/%3E%3C/svg%3E"), linear-gradient(180deg, #fffaf0, #f8eed6); }
+.card, .zone { border: 1px solid rgba(140,100,30,.35); outline: 1px solid rgba(201,162,39,.45); outline-offset: -6px; border-radius: 4px 14px 6px 12px / 12px 5px 14px 6px; }
+.player-card { box-shadow: 0 1px 0 #e7d7b2, 0 3px 0 #efe3c6, 0 4px 1px rgba(120,90,30,.18), 0 10px 18px rgba(90,60,20,.12); }
+.player-card.primus { box-shadow: 0 0 0 2px #c9a227, 0 0 0 4px #fbf4e2, 0 0 0 5px #c9a227, 0 10px 22px rgba(200,144,10,.25); }
+.card-t { color: #7a5a1c; border-bottom: 1px solid transparent; border-image: linear-gradient(90deg, transparent, #c9a227 15%, #e9cf72 50%, #c9a227 85%, transparent) 1; padding-bottom: 6px; }
+.card-t > span:first-child::before { content: '✦ '; color: #b8920f; }
+.need .card, .tab-panel .card { outline: none; box-shadow: none; border: 0; background: transparent; border-radius: 0; }
+.season-banner { background: linear-gradient(120deg, rgba(154,16,16,.12), rgba(201,162,39,.22)), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.012' numOctaves='4' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.36 0 0 0 0 0.28 0 0 0 0.10 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23s)'/%3E%3C/svg%3E"), #efe6d3; border: 2px solid rgba(90,70,40,.3); box-shadow: inset 0 2px 6px rgba(80,60,30,.18), 0 2px 0 rgba(255,255,255,.6); }
+/* the big button: rounded, embossed crimson (orange for the Pups) */
+.log-big { background: linear-gradient(180deg, #b31c1e, #7d0f10); border: 1px solid #5e0a0b; box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 -3px 0 rgba(0,0,0,.22), 0 3px 0 #5a0a0a, 0 10px 20px rgba(90,10,10,.25); text-shadow: 0 1px 0 rgba(0,0,0,.35); }
+body.pup .log-big { background: linear-gradient(180deg, #cc7a34, #9a5016); border-color: #7a3d0e; box-shadow: inset 0 1px 0 rgba(255,255,255,.25), inset 0 -3px 0 rgba(0,0,0,.2), 0 3px 0 #6f3a10, 0 10px 20px rgba(120,60,15,.25); }
+/* soft carved buttons */
+.usual, .chip-btn, .quiz-a, .coach-tile, .color-tile { box-shadow: inset 0 1px 0 #fff, 0 2px 0 rgba(80,60,30,.18); }
+.usual { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0 0.1 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(180deg, #fdf9f0, #f3ead7); }
+.tabbar { background: linear-gradient(180deg, #efe7d6, #e2d8c3) !important; border-top: 3px double rgba(120,90,40,.45) !important; }
+/* swipe rows: fade the edges so it's clear they scroll, smaller chips, no stray padding */
+.chips.ex-metrics, .chips.ex-scroll { gap: 6px; margin: 0 -16px 10px; padding: 2px 22px 6px 16px; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 28px), transparent); }
+.chips.ex-metrics .chip-btn, .chips.ex-scroll .chip-btn { font-size: 14px; padding: 0 14px; border-radius: 22px; }
+.ex-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .ex-controls .seg { margin: 0 0 8px; } .ex-controls .seg-b { font-size: 13px; padding: 0 4px; }
 </style>
 </head>
 <body>
@@ -1924,8 +1949,8 @@ function renderToday(main) {
     tops.forEach(u => us.appendChild(h('button', { class: 'usual', type: 'button', onclick: () => quickUsual(u) }, h('span', { class: 'ic' }, ACT[u.act].icon),
       h('span', null, (u.act === 'dogwalk' ? dogs().map(x => x.name).join(' & ') : ACT[u.act].name + (u.cls ? ' ' + ACT[u.act].types.find(x => x.id === u.cls).name : '')) + ' ' + u.min + 'm', h('small', null, u.auto ? 'logged ' + u.n + '× lately' : 'your usual')))));
     if (tops.length) lc.appendChild(us);
-    lc.appendChild(h('div', { class: 'tools-row' }, h('button', { class: 'ai-btn calc-btn', type: 'button', onclick: () => openCalc() }, '⏱ Got a few minutes?'),
-      h('button', { class: 'ai-btn', type: 'button', onclick: () => openReader() }, '✨ Paste or snap')));
+    lc.appendChild(h('div', { class: 'tools-row' }, h('button', { class: 'ai-btn calc-btn', type: 'button', onclick: () => openCalc() }, h('span', { class: 'tb-ic', 'aria-hidden': 'true' }, '⏱️'), h('span', null, 'Got a few minutes?')),
+      h('button', { class: 'ai-btn', type: 'button', onclick: () => openReader() }, h('span', { class: 'tb-ic', 'aria-hidden': 'true' }, '✨'), h('span', null, 'Paste or snap'))));
     lc.appendChild(weighRow());
   }
   main.appendChild(lc);
@@ -2276,8 +2301,7 @@ function exploreCard() {
   if (M_.id === 'faster') { c.appendChild(fasterChart(id)); }
   else if (M_.id === 'points') { c.appendChild(pointsChart(id, S.by)); c.appendChild(segRow([['week', 'This week'], ['month', 'This month']], S.by, v => set({ by: v }))); }
   else {
-    c.appendChild(segRow([['week', 'By week'], ['month', 'By month']], S.by, v => set({ by: v })));
-    c.appendChild(segRow([['me', 'Just me'], ['all', 'Me vs everyone']], S.who, v => set({ who: v })));
+    c.appendChild(h('div', { class: 'ex-controls' }, segRow([['week', 'Week'], ['month', 'Month']], S.by, v => set({ by: v })), segRow([['me', 'Just me'], ['all', 'Everyone']], S.who, v => set({ who: v }))));
     const per = exPeriods(S.by), who = S.who === 'all' ? memberIds() : [id];
     const data = who.map(m => ({ id: m, vals: per.map(pd => Math.round(M_.f(m, pd.a, pd.b, S.act) || 0)) }));
     const title = (M_.id === 'act' ? ACT[S.act].icon + ' ' + ACT[S.act].name + ' (times)' : M_.label) + ' · ' + (S.by === 'week' ? 'by week' : 'by month');

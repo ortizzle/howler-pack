@@ -148,6 +148,16 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - Pickers: by week (8) / by month (6), just me / me vs everyone (legend with names, tap a bar for its number, "Show the numbers" table). "☆ Make this my chart" saves `pack_explore_fav`, which opens first.
   - Kids get friendly emoji labels and never weight data.
 
+## Look: Stone & Paper (Chris, Nov 26, 2026)
+
+- **Parchment cards laid on warm carved stone.** It's one CSS block at the end of `<style>`, chosen from prototypes A–D.
+  - Paper cards have a faint fiber texture, a gold inner rule (`outline-offset: -6px`) and hand-cut corners. Headings get a ✦ and a gold rule.
+  - Soft carved buttons; a rounded, embossed **Log a workout** (crimson for parents, orange for Pups).
+  - Swipe rows (`.ex-metrics`, `.ex-scroll`) fade at the edges.
+- **Chris said no rivets, no pennant banners, and a regular button (not a banner shape).** Keep it that way.
+- Cards nested in Needs you / This week drop their frame (`.need .card`, `.tab-panel .card`), so there's no double border.
+- Textures are inline SVG noise data URIs; no image files.
+
 ## Family quests (Chris, Nov 26, 2026)
 
 - **"Something we all do together from time to time."** `quest` records, **designed only by parents in Settings → Family quests** (`openQuestPlanner`; Chris, Nov 26, 2026). Parents can also remove one there; its Merit goes with it. Everyone else sees quests read-only on Today and the Pack tab.
