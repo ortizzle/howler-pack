@@ -532,10 +532,11 @@ function memberIds() { return members().map(m => m.mid); }
 // ───────────────────────── Rules
 const RULES = {
   // One Merit scale for everyone. Showing up pays the same; only the weekly Standard (days) and how effort is measured differ.
-  proctor: { activeMin: 20, activeMetMin: 100, activeDay: 15, standardDays: 4, standard: 50, effortDiv: 10, effortCap: 40, goalMonth: 50, goalSeason: 150 },
+  proctor: { activeMin: 20, activeMetMin: 100, activeDay: 15, standardDays: 4, standard: 50, effortDiv: 10, effortCap: 60, goalMonth: 50, goalSeason: 150 },
   // Pups: effort by minutes, 1 per 2 min, so a 30-minute kid workout ≈ a 30-minute adult workout at average intensity (~5 MET)
-  pup:     { activeMin: 20, activeDay: 15, standardDays: 3, standard: 50, minPer: 2, minCap: 40, goalMonth: 50, goalSeason: 150 },
-  // Pups' growth points balance the parents' private weight-progress points
+  pup:     { activeMin: 20, activeDay: 15, standardDays: 3, standard: 50, minPer: 2, minCap: 60, goalMonth: 50, goalSeason: 150 },
+  // Pups' growth points balance the parents' private weight-progress points; best week yet applies to everyone
+  // (Pups: most minutes; Praetorians: most effort, so a harder week beats a longer easy one)
   growth: { bestWeek: 25, longest: 25, stripe: 25, belt: 100, pb: 25, pbWeeklyMax: 2 },
   chainStep: 0.10, chainMax: 5, together: 5, togetherDailyMax: 2, cheer: 2, cheerDailyMax: 5,
   weighIn: 5, stepPct: 0.5, stepPts: 25, weeklyPctCap: 1.0, milestones: [[5, 100], [10, 150], [15, 200]],
@@ -775,6 +776,15 @@ function score(id, se) {
       Object.keys(wkMin).sort().forEach(k => { const wEnd = addDays(k, 6); if (wEnd >= today) return;
         if (nW >= 2 && wkMin[k] > bestW && wEnd >= se.start && wEnd <= se.end) add(wEnd, 'progress', 'Best week yet · ' + wkMin[k] + ' min', G.bestWeek);
         bestW = Math.max(bestW, wkMin[k]); nW++; });
+    }
+    // Praetorians: best effort week yet (intensity × minutes), so pushing harder pays as well as doing more
+    if (!pup && !se.practice) {
+      const wk = {}; all('workout').filter(w => w.member === id && w.date >= SEASONS[0].start && w.date <= end && !(ACT[w.act] && ACT[w.act].mind))
+        .forEach(w => { const k = weekKey(w.date); wk[k] = (wk[k] || 0) + metFor(w).met * w.min / r.effortDiv; });
+      let bestW = 0, nW = 0;
+      Object.keys(wk).sort().forEach(k => { const wEnd = addDays(k, 6); if (wEnd >= today) return; const v = Math.round(wk[k]);
+        if (nW >= 2 && v > bestW && wEnd >= se.start && wEnd <= se.end) add(wEnd, 'progress', 'Best effort week yet · ' + v + ' effort', RULES.growth.bestWeek);
+        bestW = Math.max(bestW, v); nW++; });
     }
     // milestones (taekwondo stripes and belts, personal bests)
     const pbWk = {};
@@ -1974,9 +1984,10 @@ function openCodex() {
     ['Weekly Primus', '+' + RULES.primus],
     ['Monthly goal · Season goal', '+' + P.goalMonth + ' · +' + P.goalSeason],
     ['Race checkpoint on time · Reaching the destination (everyone)', '+' + RULES.raceCheckpoint + ' · +' + RULES.raceFinish]]);
-  sec('Progress points', 'Praetorians earn progress from their private weight trend (pounds never leave their phone); Pups earn growth points for beating their own bests.');
+  sec('Progress points', 'Praetorians earn progress from their private weight trend (pounds never leave their phone) and from their best effort week; Pups earn growth points for beating their own bests.');
   table([['Praetorians: weekly weigh-in', '+' + RULES.weighIn], ['Praetorians: each new ' + RULES.stepPct + '% low on the trend line (max ' + RULES.weeklyPctCap + '% a week)', '+' + RULES.stepPts],
     ['Praetorians: 5% · 10% · 15% milestones', RULES.milestones.map(m => '+' + m[1]).join(' · ')], ['Praetorians: Holiday Hold (December)', '+' + RULES.hold],
+    ['Praetorians: best effort week yet (intensity × minutes, uncapped; from your 3rd week)', '+' + G.bestWeek],
     ['Pups: best week of minutes yet', '+' + G.bestWeek], ['Pups: longest single outing yet (30+ min, once a week)', '+' + G.longest],
     ['Pups: taekwondo stripe · belt test passed', '+' + G.stripe + ' · +' + G.belt], ['Pups: personal best (up to ' + G.pbWeeklyMax + ' a week)', '+' + G.pb]]);
   sec('Ranks: built all year', 'Your rank grows from Dec 1 through the whole year and never resets. Each color takes more than the last; Peerless takes beating your Standard week after week.');
