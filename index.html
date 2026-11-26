@@ -127,6 +127,12 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .newfor-list { background: rgba(46,125,50,.07); border-color: rgba(46,125,50,.3); } .newfor-list .card-t .chip-btn { min-height: 44px; font-size: 13px; }
 .newfor-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid rgba(46,125,50,.2); font-size: 14px; } .newfor-row .ll { flex: 1; } .newfor-row small { display: block; color: var(--muted); font-size: 12px; }
 .chip-btn.same { border-style: dashed; }
+.tour-card { text-align: center; padding: 4px 4px 8px; min-height: 300px; } .tour-card h2 { font-size: 22px; margin: 6px 0 10px; } .tour-card p { font-size: 16px; line-height: 1.45; margin: 0 0 10px; }
+.tour-ic { font-size: 52px; line-height: 1.1; } .tour-list { text-align: left; font-size: 16px; line-height: 1.7; padding-left: 4px; list-style: none; margin: 0; }
+.tour-dots { display: flex; justify-content: center; gap: 6px; margin: 6px 0 12px; } .tour-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); } .tour-dots i.on { background: #9a1010; }
+.tour-ladder { display: flex; flex-direction: column; gap: 4px; text-align: left; } .tour-ladder .tl { display: flex; justify-content: space-between; padding: 6px 10px; border-left: 5px solid var(--rc); border-radius: 8px; background: var(--panel2); }
+.tour-ladder .tl.me { outline: 2px solid var(--rc); font-weight: 700; } .tour-ladder small { opacity: .7; }
+.tour-bar { position: relative; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: var(--panel2); overflow: hidden; font-size: 14px; text-align: left; } .tour-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(201,162,39,.35); } .tour-bar span { position: relative; }
 .pin-btn { font-size: 20px; color: var(--muted, #8a7a5a); } .pin-btn.on { color: #b8920f; }
 .big-act small { font-size: 12px; opacity: .75; } .big-act.fav-act { border-color: #c9a227; }
 .calc-list { display: flex; flex-direction: column; gap: 6px; }
@@ -543,6 +549,12 @@ const RULES = {
   primus: 25, raceFinish: 50, raceCheckpoint: 25, hold: 100,
 };
 const TKD_MIN = 35;   // the girls' taekwondo class is about 35 minutes of actual training
+const HOLIDAYS = [
+  { from: '2026-12-21', to: '2027-01-03', name: 'Christmas & New Year', icon: '🎄', days: 3 },
+  // add the girls' spring break here once the dates are known
+];
+function holidayFor(wk) { return HOLIDAYS.find(x => wk >= weekKey(x.from) && wk <= x.to) || null; }
+function stdDays(id, wk) { const hol = holidayFor(wk || weekKey(AZ.today())); return hol ? Math.min(hol.days, R(id).standardDays) : R(id).standardDays; }
 function R(id) { return isPup(id) ? RULES.pup : RULES.proctor; }
 
 // MET values ≈ Compendium of Physical Activities [easy, normal, brutal]; Tread/run/walk use ACSM equations when pace is known.
@@ -749,15 +761,15 @@ function score(id, se) {
     const weeks = []; let chain = 0;
     if (se.start <= end) for (let wk = weekKey(se.start); wk <= end; wk = addDays(wk, 7)) {
       const wEnd = addDays(wk, 6), complete = wEnd < today, ds = range(wk, wEnd).filter(d => d >= se.start && d <= end);
-      let active = 0, std = false, base = 0;
+      let active = 0, std = false, base = 0; const hol = holidayFor(wk), need = stdDays(id, wk);
       ds.forEach(d => { const di = dm[d];
         if (di && di.active) { active++; add(d, 'consistency', 'Active Day', r.activeDay); base += r.activeDay;
-          if (active === r.standardDays) { std = true; add(d, 'consistency', 'Weekly Standard met', r.standard); base += r.standard; } }
+          if (active === need) { std = true; add(d, 'consistency', 'Weekly Standard met', r.standard); base += r.standard; } }
         if (di) base += di.eff; });
       const mult = 1 + RULES.chainStep * chain, bonus = Math.round(base * (mult - 1));
       add(complete ? (wEnd < se.end ? wEnd : se.end) : end, 'consistency', 'Chain bonus ×' + mult.toFixed(1), bonus);
-      weeks.push({ key: wk, end: wEnd, complete, active, standard: std, mult, chainIn: chain });
-      if (complete) chain = std ? Math.min(chain + 1, RULES.chainMax) : Math.max(chain - 1, 0);
+      weeks.push({ key: wk, end: wEnd, complete, active, standard: std, mult, chainIn: chain, need, hol });
+      if (complete) chain = std ? Math.min(chain + 1, RULES.chainMax) : hol ? chain : Math.max(chain - 1, 0);   // holiday weeks never cost a link
     }
     // cheers given
     const cheerDays = {};
@@ -795,7 +807,7 @@ function score(id, se) {
     let total = 0; const byWeek = {}, cats = { consistency: 0, effort: 0, progress: 0, together: 0, bonus: 0 };
     ledger.forEach(e => { total += e.pts; byWeek[weekKey(e.date)] = (byWeek[weekKey(e.date)] || 0) + e.pts; cats[e.cat] = (cats[e.cat] || 0) + e.pts; });
     ledger.sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
-    const cur = weeks[weeks.length - 1] || { key: weekKey(today), active: 0, standard: false, mult: 1, chainIn: 0, complete: false };
+    const cur = weeks[weeks.length - 1] || { key: weekKey(today), active: 0, standard: false, mult: 1, chainIn: 0, complete: false, need: stdDays(id, weekKey(today)), hol: holidayFor(weekKey(today)) };
     // Rank builds all year: this season plus every earlier season since Dec 1 (Practice Week stands alone)
     const year = se.practice ? total : SEASONS.filter(x => x.start < se.start).reduce((a, x) => a + score(id, x).total, 0) + total;
     return { id, se, total, year, ledger, weeks, cur, chain: cur.chainIn, byWeek, cats, days: dm, rank: rankOf(year) };
@@ -835,7 +847,8 @@ function primusScores(wk, se) {
     const mins = weekMinutes(id, wk), prev = [1, 2, 3, 4].map(n => weekMinutes(id, addDays(wk, -7 * n))).filter(x => x > 0);
     const avg = prev.length ? prev.reduce((a, b) => a + b, 0) / prev.length : 0, vsSelf = avg ? Math.min(mins / avg, 2) : (mins ? 1 : 0);
     const together = new Set(all('workout').filter(w => w.member === id && w.group && weekKey(w.date) === wk).map(w => w.group)).size;
-    return { id, active, std: r.standardDays, mins, avg, score: Math.min(active / r.standardDays, 1.5) + 0.25 * vsSelf + 0.01 * together };
+    const need = stdDays(id, wk);
+    return { id, active, std: need, mins, avg, score: Math.min(active / need, 1.5) + 0.25 * vsSelf + 0.01 * together };
   }).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)));
 }
 // A tie at the top means no crown yet; if the week ends tied, everyone tied shares it. Never broken alphabetically.
@@ -974,11 +987,11 @@ const COACHES = {
 };
 function coachOf(id) { return COACHES[M(id).coach] || COACHES.dancer; }
 function coachStats(id) {
-  const sc = score(id), se = sc.se, wk = sc.cur, left = Math.max(0, R(id).standardDays - wk.active), today = AZ.today();
+  const sc = score(id), se = sc.se, wk = sc.cur, left = Math.max(0, wk.need - wk.active), today = AZ.today();
   const last = all('workout').filter(w => w.member === id && w.date <= today).sort((a, b) => a.date < b.date ? 1 : -1)[0];
   const ps = primusScores(weekKey(today)), place = ps.findIndex(x => x.id === id) + 1, rs = raceState(se);
   const o = { name: M(id).name, role: isPup(id) ? 'kid' : 'parent', season: se.name + (se.trial ? ' (December trial run)' : se.practice ? ' (practice; points reset Dec 1)' : ''),
-    activeDaysThisWeek: wk.active, weeklyTarget: R(id).standardDays, daysLeftInWeek: 6 - dow(today), standardMet: wk.standard, moreDaysNeeded: left,
+    activeDaysThisWeek: wk.active, weeklyTarget: wk.need, daysLeftInWeek: 6 - dow(today), standardMet: wk.standard, moreDaysNeeded: left,
     chainWeeks: sc.chain, seasonMerit: sc.total, yearMerit: sc.year, rank: sc.rank.rank.name, primusRacePlace: place + ' of ' + ps.length, timesPrimus: primusCount(id),
     lastWorkout: last ? actLabel(last) + ' on ' + fmtDow(last.date) : 'none yet', packRace: rs.steps + ' of ' + rs.goal + ' ' + se.race.unit + ' toward ' + se.race.name,
     cheersReceivedThisWeek: all('cheer').filter(c => c.to === id && c.date >= weekKey(today)).length };
@@ -1511,7 +1524,7 @@ function playerCard(sc, isPrimus, place, stand) {
       isPrimus ? h('div', { class: 'card-arch' }, '♛ PRIMUS') : null)));
   cardEl.appendChild(h('button', { class: 'card-summary', type: 'button', 'aria-expanded': openCards[id] ? 'true' : 'false', onclick: () => { openCards[id] = !openCards[id]; cardEl.classList.toggle('card-open', !!openCards[id]); } },
     h('div', { class: 'card-name-block' }, h('div', { class: 'card-name' }, (isPrimus ? '♛ ' : '') + m.name + (mine ? ' (you)' : '')),
-      h('div', { class: 'card-sub' }, (sc.cur.standard ? '✦ Standard met' : sc.cur.active + ' of ' + R(id).standardDays + ' days this week') + (crowns ? ' · ♛×' + crowns : ''))),
+      h('div', { class: 'card-sub' }, (sc.cur.standard ? '✦ Standard met' : sc.cur.active + ' of ' + sc.cur.need + ' days this week' + (sc.cur.hol ? ' ' + sc.cur.hol.icon : '')) + (crowns ? ' · ♛×' + crowns : ''))),
     h('div', { class: 'card-quick-stats' },
       h('div', { class: 'card-qstat' }, h('div', { class: 'card-qstat-val standing' + (stand.place === 1 && stand.pct > 0 ? ' first' : '') }, sc.year.toLocaleString()), h('div', { class: 'card-qstat-label' }, 'Merit · ' + (stand.tied ? '=' : '') + ordinal(stand.place))),
       nextRankStat(sc)),
@@ -1700,9 +1713,9 @@ function cheersForMe() {
   return c;
 }
 function myWeekCard() {
-  const id = me(), sc = score(id), r = R(id), left = Math.max(0, r.standardDays - sc.cur.active), c = card('THIS WEEK · ' + M(id).name.toUpperCase(), 'Chain ×' + sc.cur.mult.toFixed(1));
+  const id = me(), sc = score(id), r = R(id), left = Math.max(0, sc.cur.need - sc.cur.active), c = card('THIS WEEK · ' + M(id).name.toUpperCase(), 'Chain ×' + sc.cur.mult.toFixed(1));
   c.appendChild(weekDots(id));
-  c.appendChild(h('div', { class: 'metrics' }, h('div', { class: 'metric' + (sc.cur.standard ? ' go' : '') }, h('b', null, sc.cur.standard ? '✦' : sc.cur.active + '/' + r.standardDays), h('span', null, sc.cur.standard ? 'STANDARD MET' : left + ' MORE TO GO')),
+  c.appendChild(h('div', { class: 'metrics' }, h('div', { class: 'metric' + (sc.cur.standard ? ' go' : '') }, h('b', null, sc.cur.standard ? '✦' : sc.cur.active + '/' + sc.cur.need), h('span', null, sc.cur.standard ? 'STANDARD MET' : left + ' MORE TO GO')),
     h('div', { class: 'metric' }, h('b', null, sc.byWeek[sc.cur.key] || 0), h('span', null, 'MERIT THIS WEEK')), h('div', { class: 'metric' }, h('b', null, sc.year.toLocaleString()), h('span', null, sc.se.practice ? 'PRACTICE MERIT' : 'MERIT THIS YEAR'))));
   c.appendChild(h('div', { class: 'rank-line' }, h('b', { style: 'color:' + sc.rank.rank.color + ';font-family:var(--fh);font-size:20px' }, sc.rank.rank.name), h('span', { class: 'rank-pts' }, sc.rank.next ? (sc.rank.next.min - sc.year) + ' to ' + sc.rank.next.name : 'Peerless Scarred')));
   c.appendChild(ladderEl(sc)); return c;
@@ -1733,7 +1746,7 @@ function seasonBanner() {
   if (preseason()) return h('div', { class: 'season-banner' }, h('div', null, h('b', null, se.name + ' · ' + se.sub), h('small', null, 'Our December trial run starts ' + fmtDow(se.start) + '. Set your goals, log a practice walk, and get the app on everyone\'s phone.')),
     h('div', { class: 'left' }, daysBetween(t, se.start), h('small', null, 'days to go')));
   const nx = nextSeason(se);
-  return h('div', { class: 'season-banner' }, h('div', null, h('b', null, se.name + ' · ' + se.sub), h('small', null, se.trial ? 'December is practice. Everyone starts fresh Jan 1 for ' + (nx ? nx.name + ': ' + nx.sub : 'the new season') + '.' : fmtShort(se.start) + ' – ' + fmtShort(se.end) + ' · ranks reset each season')),
+  return h('div', { class: 'season-banner' }, h('div', null, h('b', null, se.name + ' · ' + se.sub), h('small', null, se.trial ? 'Merit and ranks count from Dec 1 and build all year. ' + (nx ? nx.name + ': ' + nx.sub : 'The next season') + ' starts ' + (nx ? fmtShort(nx.start) : 'soon') + ' with a new race.' : fmtShort(se.start) + ' – ' + fmtShort(se.end) + ' · ranks reset each season')),
     h('div', { class: 'left' }, daysBetween(t, se.end), h('small', null, 'days left')));
 }
 
@@ -1966,13 +1979,67 @@ const GLOSSARY = [
   ['🎭', 'Carvers', 'Violets who reshape people with incredible skill. Mickey is one, and he coaches here.'],
   ['🌸', 'Pinks', 'Experts in manners and the art of fitting in. Matteo is one, and he coaches here.'],
 ];
+function tourCard(icon, title, ...body) { return h('div', { class: 'tour-card' }, h('div', { class: 'tour-ic' }, icon), h('h2', null, title), ...body); }
+function tourCards(id, mode) {
+  const m = M(id), pup = isPup(id), sc = score(id), names = members().filter(x => x.mid !== id).map(x => x.name), dg = dogs().map(d => d.name);
+  const pack = names.slice(0, -1).join(', ') + (names.length > 1 ? ' and ' : '') + names[names.length - 1];
+  const ladder = h('div', { class: 'tour-ladder' }, RANKS.map(r => h('span', { class: 'tl' + (sc.rank.rank.name === r.name ? ' me' : ''), style: '--rc:' + r.color }, h('b', null, r.name), h('small', null, r.min.toLocaleString()))));
+  const weekBar = h('div', { class: 'tour-bar' }, h('span', null, 'You this week: ' + sc.cur.active + ' of ' + sc.cur.need + ' days'), h('i', { style: 'width:' + Math.min(100, Math.round(sc.cur.active / sc.cur.need * 100)) + '%' }));
+  const passage = tourCard('🎆', 'The Passage begins!', h('p', null, 'Practice Week is over, so everyone starts at 0 Merit today. From now on, your Merit and your color build all year.'),
+    h('p', null, 'Together we race to New Year\'s Eve: every Active Day moves the pack one step (75 to go, with a Christmas Eve checkpoint at 55). Season 1, Iron Rain, starts January 1.'),
+    h('p', null, '🎄 Dec 21 – Jan 3 are holiday weeks: the Standard is just 3 days, and missing it won\'t break your chain.'));
+  if (mode === 'passage') return [passage];
+  const practiceNote = practice() ? h('p', { class: 'hint' }, 'This week is Practice Week: try everything out. Points restart at 0 on December 1.') : null;
+  const cards = pup ? [
+    tourCard('🐺', 'Welcome to the Howler Pack, ' + m.name + '!', h('p', null, 'Your pack: ' + pack + (dg.length ? ', plus ' + dg.join(' & ') : '') + '.'), h('p', null, 'In Red Rising, Darrow\'s Howlers look out for each other. That\'s us. Swipe through to see how it works.'), practiceNote),
+    tourCard('⏱', 'Every minute counts', h('p', null, 'Move for 2 minutes = 1 Merit (our points). Taekwondo, dog walks, bike rides, playing outside: it all counts the same.'), h('p', null, 'Move 20+ minutes in a day and it\'s an ', h('b', null, 'Active Day: +' + R(id).activeDay), '.')),
+    tourCard('📅', 'The Standard: ' + R(id).standardDays + ' days a week', h('p', null, 'Get ' + R(id).standardDays + ' Active Days in a week (Monday to Sunday) and earn ', h('b', null, '+' + R(id).standard), '. It\'s the same Standard as Mom and Dad.'), h('p', null, 'Do it again the next week and your chain grows: everything earns 10% more for each week in a row, up to ×1.5.'), weekBar),
+    tourCard('🎨', 'Climb the colors', h('p', null, 'Your Merit adds up all year and never resets. You\'re ' + sc.rank.rank.name + ' right now. How far can you climb?'), ladder),
+    tourCard('♛', 'Yes, you can beat Mom and Dad', h('p', null, 'Every week the Primus crown (+' + RULES.primus + ') goes to whoever beats their own goal by the most.'), h('p', null, 'Everyone plays by the same rules, so the crown can absolutely be yours.')),
+    tourCard('✨', 'More ways to earn', h('ul', { class: 'tour-list' },
+      h('li', null, '🥋 Taekwondo stripe +' + RULES.growth.stripe + ', new belt +' + RULES.growth.belt), h('li', null, '⚡ Personal best +' + RULES.growth.pb), h('li', null, '📈 Your best week yet +' + RULES.growth.bestWeek),
+      h('li', null, '🤝 Doing it together +' + RULES.together), h('li', null, '📣 Cheering someone on +' + RULES.cheer), h('li', null, '🏁 Our family race to the next holiday'))),
+    tourCard('🐾', 'How to log', h('p', null, 'Tap ', h('b', null, 'I moved!'), ', pick what you did, then ', h('b', null, 'Log it'), '. Mom or Dad can add things for you too.'), h('p', null, 'Want every rule? Tap "How points work ›" on the Pack tab anytime.')),
+  ] : [
+    tourCard('🐺', 'Welcome, ' + m.name, h('p', null, 'You\'re a Praetorian of the Howler Pack. Everyone, the girls included, earns Merit on one scale and climbs one ladder all year.'), practiceNote),
+    tourCard('🔥', 'Harder pays more', h('p', null, 'Effort is intensity × minutes (up to ' + RULES.proctor.effortCap + ' a day): a 60-minute run earns about twice a 60-minute walk. Add speed, incline or watts for exact points.'),
+      h('p', null, 'Hit ' + RULES.proctor.standardDays + ' Active Days a week for +' + RULES.proctor.standard + ', keep the chain going, and beat your best effort week for +' + RULES.growth.bestWeek + '.')),
+    tourCard('🧭', 'Handy tools', h('ul', { class: 'tour-list' }, h('li', null, '⏱ "Got a few minutes?" shows what earns the most today'), h('li', null, '⭐ Your usuals learn what you do most'),
+      h('li', null, '📥 Import your Peloton CSV in Settings'), h('li', null, '📜 "How points work ›" shows every rule'), h('li', null, '🔒 Your weight stays on your phone'))),
+  ];
+  if (mode === 'welcome+passage') cards.push(passage);
+  return cards.filter(Boolean);
+}
+let tourOpen = false;
+function openTour(id, mode) {
+  const cards = tourCards(id, mode), body = h('div', { class: 'tour' }); let i = 0; tourOpen = true;
+  const done = () => { const s = Local.get('tour', {}); s['w_' + id] = 1; if (mode !== 'welcome' || AZ.today() >= SEASONS[0].start) s['p_' + id] = 1; Local.set('tour', s); tourOpen = false; };
+  function draw() {
+    clear(body).appendChild(cards[i]);
+    body.appendChild(h('div', { class: 'tour-dots', 'aria-hidden': 'true' }, cards.map((_, j) => h('i', { class: j === i ? 'on' : '' }))));
+    body.appendChild(h('div', { class: 'two' }, i ? h('button', { class: 'btn-ghost', type: 'button', onclick: () => { i--; draw(); } }, '‹ Back') : h('button', { class: 'btn-ghost', type: 'button', onclick: () => close() }, 'Skip'),
+      h('button', { class: 'btn-primary', type: 'button', onclick: () => { if (i < cards.length - 1) { i++; draw(); } else close(); } }, i < cards.length - 1 ? 'Next ›' : 'Let\'s go!')));
+  }
+  let x0 = null; body.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  body.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) < 50) return; if (dx < 0 && i < cards.length - 1) i++; else if (dx > 0 && i) i--; else return; draw(); });
+  const close = openModal(mode === 'passage' ? 'December 1' : isPup(id) ? 'Welcome, Pup! 🐾' : 'Welcome to the Pack', body, { onClose: done }); draw();
+}
+// First open shows the welcome; on/after Dec 1 everyone also gets "The Passage begins" once. Automated browsers skip it (tests opt in with tour_test).
+function maybeTour(id) {
+  if (PREVIEW || tourOpen || (navigator.webdriver && !Local.get('tour_test', false)) || document.querySelector('.modal-back')) return;
+  const s = Local.get('tour', {}), dec = AZ.today() >= SEASONS[0].start;
+  const mode = !s['w_' + id] ? (dec ? 'welcome+passage' : 'welcome') : dec && !s['p_' + id] ? 'passage' : null;
+  if (mode) { tourOpen = true; setTimeout(() => { tourOpen = false; if (me() === id && !document.querySelector('.modal-back')) openTour(id, mode); }, 400); }
+}
 function openCodex() {
   const P = RULES.proctor, K = RULES.pup, G = RULES.growth, body = h('div', { class: 'log-body codex' });
   const sec = (title, intro) => { body.appendChild(h('h3', null, title)); if (intro) body.appendChild(h('p', null, intro)); };
   const table = rows => { const tb = h('table', null); rows.forEach(r => tb.appendChild(h('tr', null, h('td', null, r[0]), h('td', null, r[1])))); body.appendChild(tb); };
-  sec('Merit: one scale for everyone', 'Everyone earns the same for showing up. Only the weekly target and how effort is measured differ, so kids and parents compete fairly on one total.');
+  body.appendChild(h('button', { class: 'btn-ghost', type: 'button', style: 'margin-bottom:8px', onclick: () => { closeCx(); openTour(me(), 'welcome'); } }, '▶ Replay the welcome tour'));
+  sec('Merit: one scale for everyone', 'Everyone earns the same for showing up and has the same weekly Standard. Only how effort is measured differs, so kids and parents compete fairly on one total.');
   table([['Active Day: ' + P.activeMin + '+ minutes of anything (parents: or a hard shorter workout)', '+' + P.activeDay],
-    ['Weekly Standard: ' + P.standardDays + ' Active Days for Praetorians, ' + K.standardDays + ' for Pups (Mon–Sun)', '+' + P.standard],
+    ['Weekly Standard: ' + P.standardDays + ' Active Days (Mon–Sun), the same for everyone', '+' + P.standard],
+    ...HOLIDAYS.map(x => [x.icon + ' Holiday weeks, ' + x.name + ' (' + fmtShort(x.from) + '–' + fmtShort(x.to) + '): the Standard is ' + x.days + ' days, and missing it doesn\'t cost a chain link', x.days + ' days']),
     ['Chain: each week in a row you meet your Standard adds ' + Math.round(RULES.chainStep * 100) + '% to that week. A missed week drops one link.', 'up to ×' + (1 + RULES.chainStep * RULES.chainMax).toFixed(1)],
     ['Effort, Praetorians: activity intensity (MET) × minutes ÷ ' + P.effortDiv + '. Speed, incline, watts or distance make it exact.', 'up to ' + P.effortCap + '/day'],
     ['Effort, Pups: 1 point per ' + K.minPer + ' minutes of anything', 'up to ' + K.minCap + '/day'],
@@ -1996,7 +2063,7 @@ function openCodex() {
   sec('Weekly Primus', 'The crown goes to whoever beats their own target by the most: days moved against your Standard, plus minutes against your own usual. A tie means no crown yet; if the week ends tied, everyone tied shares it.');
   sec('The race', 'Every Active Day moves the pack one step; every activity done together adds one more. Hit a holiday checkpoint on time and everyone earns a bonus.');
   sec('Practice Week (Nov 23–30)', 'Points count for practice, then everything resets on Dec 1 when The Passage begins.');
-  openModal('📜 The Codex: how the Pack works', body);
+  const closeCx = openModal('📜 The Codex: how the Pack works', body);
 }
 function openLoreLibrary() {
   const body = h('div', { class: 'log-body' });
@@ -2198,6 +2265,7 @@ function render() {
     if (TAB === 'progress') renderProgress(main); else if (TAB === 'goals') renderGoals(main); else if (TAB === 'pack') renderPack(main); else renderToday(main);
   } catch (e) { console.error(e); main.appendChild(card('SOMETHING WENT WRONG', null)).appendChild(h('p', null, 'This screen hit an error: ' + e.message + '. Your data is safe. Try another tab or reload.')); }
   Sync.set(Sync.on() ? (Sync.state === 'off' ? 'ok' : Sync.state) : 'off');
+  maybeTour(id);
 }
 async function handleShare() {
   if (!/[?&]share=1/.test(location.search) || !('caches' in window)) return;

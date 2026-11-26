@@ -47,6 +47,7 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 - **Rules and Merit values:** `RULES`. **One Merit scale for everyone** (Chris chose this, Nov 25, 2026):
   - Showing up pays the same: Active Day +15, Standard +50, chain, together, cheers, goals, Primus, race.
   - **The Standard is 4 Active Days a week for everyone, kids included** (Chris, Nov 26, 2026). A Dec–Mar simulation showed that with the old 3-day kids' Standard, the kids earned nearly twice the adults' Merit for the same workouts at 3 days a week and took almost every Primus crown. At 4 days for everyone, equal effort gives equal Merit (within ~10%) and the crowns spread out. Don't reintroduce a separate kids' Standard without re-running that comparison.
+  - **Holiday weeks** (`HOLIDAYS`, `holidayFor` / `stdDays`): the Standard drops to 3 days for everyone, and missing it doesn't cost a chain link. Dec 21 – Jan 3 is listed; add the girls' spring break when the dates are known. Cards show "of 3 days 🎄" and the Codex lists them.
   - Effort: Praetorians use MET × min ÷ 10; Pups use 1 point per 2 minutes. **Both cap at 60 a day** (raised from 40, Chris, Nov 26, 2026), so a 30-min kid workout ≈ a 30-min adult one at average intensity.
   - **Intensity matters for the adults; volume for the kids** (Chris's goal). Harder efforts should clearly out-earn easier ones (a 60-min run ≈ 59 vs a walk ≈ 26), so don't flatten MET differences for Praetorians. Pups' effort stays minutes-based.
   - **Praetorians' best effort week yet** (+25, `RULES.growth.bestWeek`) rewards beating your own weekly effort (MET × min ÷ 10, uncapped), from your 3rd week on. A harder week counts as a better week.
@@ -119,6 +120,15 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 - **Weekly Primus:** `primusScores`. It goes to whoever beats their own target by the most, so kids and parents compete fairly.
   - **Ties are never broken alphabetically.** A tie at the top (`primusLeaders`) shows no crown and an "anyone can take it" note. If the week ends tied, each tied person gets a shared crown (`aw_primus_<week>_<id>`, "(shared)") and the +25.
 - **Coaches:** `COACHES` (Dancer, Mickey, Matteo, as in the original Howlers). The model is `claude-opus-5-5` with effort `low`, browser-direct, with server-side fallbacks.
+
+## Welcome tour
+
+- **`openTour(id, mode)`:** swipeable cards (Back/Next, dots) shown once per person per phone (`pack_tour` → `w_<id>` / `p_<id>`).
+  - Pups get 7 kid-language cards: the pack and dogs, minutes → Merit, the 4-day Standard with their own bar, the color ladder, "Yes, you can beat Mom and Dad" (Primus), more ways to earn, and how to log. No weight, food or body words.
+  - Praetorians get 3 cards.
+- **"The Passage begins"** card shows once for everyone on/after Dec 1. It's appended to the welcome for anyone opening for the first time then.
+- **Replay** from the Codex ("▶ Replay the welcome tour").
+- **`maybeTour` runs at the end of `render()`.** It skips sample-data mode and automated browsers (`navigator.webdriver`) unless `pack_tour_test` is set, so other tests aren't blocked by the modal.
 
 ## Testing
 
