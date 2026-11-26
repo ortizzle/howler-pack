@@ -57,9 +57,11 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 - **Activities and MET values:** `ACTIVITIES`.
 - **Taekwondo is about 35 minutes of actual training** (`TKD_MIN`), used by the kids' big button, the TKD check-in and sample data.
 - **Ranks:** `RANKS`, **one ladder for everyone, built all year** from Dec 1 and never reset (`score().year` = this season plus earlier seasons; Practice Week stands alone).
+  - **Names** (Chris, Nov 26, 2026): 🔗 Lowborn → 🐺 Howler → 🗡 Lancer → 🛡 Centurion → ⚔️ Legate → 👑 Gold → ✦ Peerless Scarred. They're book-flavored but explain themselves to non-readers: each has an icon and a one-line `motto` shown in the tour, the Codex and the badge tooltip.
+    - They replaced the old color names, which clashed with everyone's chosen Color, and the original Howlers' Latin ranks (Tiro, Decurion…), which meant little to non-readers. Keep `Gold` as a rank name: `goldEarned` looks for it.
   - It's progressively harder, like the original Howlers: 0 / 600 / 2,000 / 4,500 / 8,000 / 12,500 / 18,000. Peerless by year's end takes beating the Standard (~300 Merit a week).
   - Seasons keep things fresh with races, monthly and season goals, and the Hall of Honors (the color at each season's end).
-- **Pack cards** are sorted by year Merit and show it with the place ("Merit · =1st" on ties), plus progress to the next rank (`nextRankStat`, e.g. "18 to Gray" with a bar in that rank's color). The % to Peerless is inside the expanded card.
+- **Pack cards** are sorted by year Merit and show it with the place ("Merit · =1st" on ties), plus progress to the next rank (`nextRankStat`, e.g. "18 to Howler" with a bar in that rank's color). The % to Peerless is inside the expanded card.
 - **Cheers** go through `sendCheer` (5 s Undo). Your own cheers can be taken back from the Cheer Wall; the +2 goes with them.
 - **Practice Week:** `PRACTICE` (Nov 23–30, 2026).
   - It's deliberately not in `SEASONS`. `seasonFor` / `currentSeason` return it for those dates.

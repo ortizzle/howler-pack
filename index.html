@@ -147,7 +147,7 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .tour-ic { font-size: 52px; line-height: 1.1; } .tour-list { text-align: left; font-size: 16px; line-height: 1.7; padding-left: 4px; list-style: none; margin: 0; }
 .tour-dots { display: flex; justify-content: center; gap: 6px; margin: 6px 0 12px; } .tour-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); } .tour-dots i.on { background: #9a1010; }
 .tour-ladder { display: flex; flex-direction: column; gap: 4px; text-align: left; } .tour-ladder .tl { display: flex; justify-content: space-between; padding: 6px 10px; border-left: 5px solid var(--rc); border-radius: 8px; background: var(--panel2); }
-.tour-ladder .tl.me { outline: 2px solid var(--rc); font-weight: 700; } .tour-ladder small { opacity: .7; }
+.tour-ladder .tl.me { outline: 2px solid var(--rc); font-weight: 700; } .tour-ladder small { opacity: .7; } .tour-ladder .tm { display: block; font-size: 12px; font-weight: 400; }
 .tour-bar { position: relative; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: var(--panel2); overflow: hidden; font-size: 14px; text-align: left; } .tour-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(201,162,39,.35); } .tour-bar span { position: relative; }
 .pin-btn { font-size: 20px; color: var(--muted, #8a7a5a); } .pin-btn.on { color: #b8920f; }
 .big-act small { font-size: 12px; opacity: .75; } .big-act.fav-act { border-color: #c9a227; }
@@ -691,13 +691,14 @@ function metFor(w) {
 // One ladder for everyone. Rank builds all year from Dec 1 (The Passage) and never resets; each color takes more than the last.
 // Reaching Peerless by year's end takes beating your Standard, not just meeting it (about 300 Merit a week).
 const RANKS = [
-  { name: 'Red', color: '#b3261e', min: 0, motto: 'Break the chains.' },
-  { name: 'Gray', color: '#6b7078', min: 600, motto: 'Discipline, every day.' },
-  { name: 'Obsidian', color: '#2c3e57', min: 2000, motto: 'Strength that endures.' },
-  { name: 'Copper', color: '#a0572a', min: 4500, motto: 'Steady hands, steady work.' },
-  { name: 'Silver', color: '#8a929e', min: 8000, motto: 'Shine through effort.' },
-  { name: 'Gold', color: '#b8920f', min: 12500, motto: 'Rise above.' },
-  { name: 'Peerless', color: '#d4a82a', min: 18000, motto: 'Scarred, and unbroken.' },
+  // Book-flavored, but each name explains itself for non-readers (Chris, Nov 26, 2026). Reaching Gold makes your Color Gold.
+  { name: 'Lowborn', icon: '🔗', color: '#7a3b2e', min: 0, motto: 'Everyone starts here, like Darrow in the mines.' },
+  { name: 'Howler', icon: '🐺', color: '#5b6470', min: 600, motto: 'You\'re part of the pack.' },
+  { name: 'Lancer', icon: '🗡', color: '#2c5d8a', min: 2000, motto: 'A trusted fighter others follow.' },
+  { name: 'Centurion', icon: '🛡', color: '#a0572a', min: 4500, motto: 'Leader of a hundred.' },
+  { name: 'Legate', icon: '⚔️', color: '#5e3b96', min: 8000, motto: 'Commander of a whole legion.' },
+  { name: 'Gold', icon: '👑', color: '#b8920f', min: 12500, motto: 'You\'ve earned Gold. Your card turns Gold.' },
+  { name: 'Peerless Scarred', icon: '✦', color: '#d4a82a', min: 18000, motto: 'The best of the best.' },
 ];
 function rankOf(pts) { let i = 0; RANKS.forEach((r, j) => { if (pts >= r.min) i = j; }); return { i, rank: RANKS[i], next: RANKS[i + 1] || null, list: RANKS }; }
 
@@ -1538,12 +1539,12 @@ function rankPct(sc) { const L = sc.rank.list; return Math.min(1, sc.year / L[L.
 // Everyone earns on one scale and climbs one ladder, so Merit itself is the standing.
 function standingPct(sc) { const L = sc.rank.list; return sc.year / L[L.length - 1].min; }
 function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
-// "18 to Gray" with a short bar in the next rank's color: progress through the current rank band
+// "18 to Howler" with a short bar in the next rank's color: progress through the current rank band
 function nextRankStat(sc) {
   const r = sc.rank;
   if (!r.next) return h('div', { class: 'card-qstat next-rank' }, h('div', { class: 'card-qstat-val', style: 'font-size:17px;color:' + r.rank.color }, 'Peerless ✦'), h('div', { class: 'card-qstat-label' }, 'top rank'));
   const band = Math.max(0, Math.min(1, (sc.year - r.rank.min) / (r.next.min - r.rank.min)));
-  return h('div', { class: 'card-qstat next-rank' }, h('div', { class: 'card-qstat-val', style: 'font-size:17px' }, (r.next.min - sc.year) + ' to ' + r.next.name),
+  return h('div', { class: 'card-qstat next-rank' }, h('div', { class: 'card-qstat-val', style: 'font-size:17px' }, (r.next.min - sc.year).toLocaleString() + ' to ' + r.next.name),
     h('div', { class: 'nr-bar', role: 'img', 'aria-label': Math.round(band * 100) + '% of the way to ' + r.next.name }, h('i', { style: 'width:' + Math.max(4, band * 100) + '%;background:' + r.next.color })));
 }
 function fmtPct(x) { const v = x * 100; return (v > 0 && v < 10 ? v.toFixed(1) : Math.round(v)) + '%'; }
@@ -1561,7 +1562,7 @@ function playerCard(sc, isPrimus, place, stand) {
     h('div', { class: 'card-rank-right' },
       all('cheer').some(c => c.to === id && c.date === AZ.today()) ? h('span', { title: 'Cheered today' }, '🐺') : null,
       quiet >= 3 && quiet < 99 ? h('span', { class: 'card-quiet' }, '🌙 ' + quiet + 'd quiet') : null,
-      h('div', { class: 'card-rank-pill', style: 'background:' + sc.rank.rank.color }, sc.rank.rank.name),
+      h('div', { class: 'card-rank-pill', style: 'background:' + sc.rank.rank.color, title: sc.rank.rank.motto }, sc.rank.rank.icon + ' ' + sc.rank.rank.name),
       isPrimus ? h('div', { class: 'card-arch' }, '♛ PRIMUS') : null)));
   cardEl.appendChild(h('button', { class: 'card-summary', type: 'button', 'aria-expanded': openCards[id] ? 'true' : 'false', onclick: () => { openCards[id] = !openCards[id]; cardEl.classList.toggle('card-open', !!openCards[id]); } },
     h('div', { class: 'card-name-block' }, h('div', { class: 'card-name' }, (isPrimus ? '♛ ' : '') + m.name + (mine ? ' (you)' : '')),
@@ -2036,7 +2037,7 @@ function renderGoals(main) {
     c.appendChild(h('p', { class: 'hint' }, 'On Jan 1 you will get a quick goal check-in with these pre-filled.')); main.appendChild(c); }
   const hon = h('div', { class: 'honors' });
   SEASONS.forEach(x => { const past = x.end < AZ.today(), cur = x === se && !preseason(), fin = past ? score(id, x).rank.rank : null;
-    hon.appendChild(h('div', null, h('div', { class: 'crest' + (cur ? ' cur' : ''), style: fin ? 'background:' + fin.color + ';border-color:' + fin.color + ';color:#fff' : '' }, fin ? fin.name[0] : cur ? '⏳' : '·'), x.trial ? 'Trial' : x.name.replace('Season ', 'S'))); });
+    hon.appendChild(h('div', null, h('div', { class: 'crest' + (cur ? ' cur' : ''), style: fin ? 'background:' + fin.color + ';border-color:' + fin.color + ';color:#fff;font-size:18px' : '' }, fin ? fin.icon : cur ? '⏳' : '·'), x.trial ? 'Trial' : x.name.replace('Season ', 'S'))); });
   const hc = card('HALL OF HONORS', 'your finishing color each season'); hc.appendChild(hon); main.appendChild(hc);
 }
 
@@ -2091,7 +2092,7 @@ const GLOSSARY = [
   ['🐾', 'Pups', 'Young wolves still learning the pack\'s ways. The kids are Pups, with their own ladder.'],
   ['🎖', 'Merit', 'Our points. Earned by showing up, effort, time together, cheering, and hitting goals.'],
   ['🌈', 'The Colors', 'In Red Rising everyone is born into a Color with a job. Our ranks climb the Colors: Red, Gray, Obsidian, Copper, Silver, Gold, then Peerless.'],
-  ['✦', 'Peerless Scarred', 'Golds who finish the Institute earn a scar and this title. It is the top rank of each season.'],
+  ['✦', 'Peerless Scarred', 'Golds who finish the Institute earn a scar and this title. It is the top rank of the year.'],
   ['⚒', 'Sons of Ares', 'A secret group working for a fairer world. Dancer is one of their leaders and one of our coaches.'],
   ['🎭', 'Carvers', 'Violets who reshape people with incredible skill. Mickey is one, and he coaches here.'],
   ['🌸', 'Pinks', 'Experts in manners and the art of fitting in. Matteo is one, and he coaches here.'],
@@ -2100,7 +2101,7 @@ function tourCard(icon, title, ...body) { return h('div', { class: 'tour-card' }
 function tourCards(id, mode) {
   const m = M(id), pup = isPup(id), sc = score(id), names = members().filter(x => x.mid !== id).map(x => x.name), dg = dogs().map(d => d.name);
   const pack = names.slice(0, -1).join(', ') + (names.length > 1 ? ' and ' : '') + names[names.length - 1];
-  const ladder = h('div', { class: 'tour-ladder' }, RANKS.map(r => h('span', { class: 'tl' + (sc.rank.rank.name === r.name ? ' me' : ''), style: '--rc:' + r.color }, h('b', null, r.name), h('small', null, r.min.toLocaleString()))));
+  const ladder = h('div', { class: 'tour-ladder' }, RANKS.map(r => h('span', { class: 'tl' + (sc.rank.rank.name === r.name ? ' me' : ''), style: '--rc:' + r.color }, h('span', null, h('b', null, r.icon + ' ' + r.name), h('small', { class: 'tm' }, r.motto)), h('small', null, r.min.toLocaleString()))));
   const weekBar = h('div', { class: 'tour-bar' }, h('span', null, 'You this week: ' + sc.cur.active + ' of ' + sc.cur.need + ' days'), h('i', { style: 'width:' + Math.min(100, Math.round(sc.cur.active / sc.cur.need * 100)) + '%' }));
   const passage = tourCard('🎆', 'The Passage begins!', h('p', null, 'Practice Week is over, so everyone starts at 0 Merit today. From now on, your Merit and your color build all year.'),
     h('p', null, 'Together we race to New Year\'s Eve: every Active Day moves the pack one step (75 to go, with a Christmas Eve checkpoint at 55). Season 1, Iron Rain, starts January 1.'),
@@ -2114,7 +2115,7 @@ function tourCards(id, mode) {
     tourCard('⏱', 'Every minute counts', h('p', null, 'Move for 2 minutes = 1 Merit (our points). Taekwondo, dog walks, bike rides, playing outside: it all counts the same.'), h('p', null, 'Move 20+ minutes in a day and it\'s an ', h('b', null, 'Active Day: +' + R(id).activeDay), '.')),
     tourCard('📅', 'The Standard: ' + R(id).standardDays + ' days a week', h('p', null, 'Get ' + R(id).standardDays + ' Active Days in a week (Monday to Sunday) and earn ', h('b', null, '+' + R(id).standard), '. It\'s the same Standard as Mom and Dad.'), h('p', null, 'Do it again the next week and your chain grows: everything earns 10% more for each week in a row, up to ×1.5.'), weekBar),
     colorCard(),
-    tourCard('📈', 'Climb the ranks', h('p', null, 'Your Merit adds up all year and never resets. You\'re ' + sc.rank.rank.name + ' right now. How far can you climb?'), ladder),
+    tourCard('📈', 'Climb the ranks', h('p', null, 'Your Merit adds up all year and never resets, and your rank climbs with it. You\'re ' + sc.rank.rank.icon + ' ' + sc.rank.rank.name + ' right now. Reach Gold and your Color turns Gold!'), ladder),
     tourCard('♛', 'Yes, you can beat Mom and Dad', h('p', null, 'Every week the Primus crown (+' + RULES.primus + ') goes to whoever beats their own goal by the most.'), h('p', null, 'Everyone plays by the same rules, so the crown can absolutely be yours.')),
     tourCard('✨', 'More ways to earn', h('ul', { class: 'tour-list' },
       h('li', null, '🥋 Taekwondo stripe +' + RULES.growth.stripe + ', new belt +' + RULES.growth.belt), h('li', null, '⚡ Personal best +' + RULES.growth.pb), h('li', null, '📈 Your best week yet +' + RULES.growth.bestWeek),
@@ -2178,8 +2179,8 @@ function openCodex() {
     ['Praetorians: best effort week yet (intensity × minutes, uncapped; from your 3rd week)', '+' + G.bestWeek],
     ['Pups: best week of minutes yet', '+' + G.bestWeek], ['Pups: longest single outing yet (30+ min, once a week)', '+' + G.longest],
     ['Pups: taekwondo stripe · belt test passed', '+' + G.stripe + ' · +' + G.belt], ['Pups: personal best (up to ' + G.pbWeeklyMax + ' a week)', '+' + G.pb]]);
-  sec('Ranks: built all year', 'Your rank grows from Dec 1 through the whole year and never resets. Each color takes more than the last; Peerless takes beating your Standard week after week.');
-  table(RANKS.map(r => [h('span', null, h('b', { style: 'color:' + r.color }, r.name), ' · ', h('i', null, r.motto)), r.min.toLocaleString()]));
+  sec('Ranks: built all year', 'Your rank grows from Dec 1 through the whole year and never resets. Each rank takes more than the last; reaching Gold turns your Color Gold, and Peerless Scarred takes beating your Standard week after week.');
+  table(RANKS.map(r => [h('span', null, h('b', { style: 'color:' + r.color }, r.icon + ' ' + r.name), ' · ', h('i', null, r.motto)), r.min.toLocaleString()]));
   sec('Seasons keep it fresh', 'Each quarter brings a new race toward a holiday, new season goals and lore to unlock; goals also reset every month. Your color at the end of each season goes in the Hall of Honors.');
   sec('Weekly Primus', 'The crown goes to whoever beats their own target by the most: days moved against your Standard, plus minutes against your own usual. A tie means no crown yet; if the week ends tied, everyone tied shares it.');
   sec('The race', 'Every Active Day moves the pack one step; every activity done together adds one more. Hit a holiday checkpoint on time and everyone earns a bonus.');
