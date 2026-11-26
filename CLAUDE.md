@@ -128,7 +128,7 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 
 ## Family quests (Chris, Nov 26, 2026)
 
-- **"Something we all do together from time to time."** `quest` records, planned by anyone from the Pack tab (`openQuestPlanner`).
+- **"Something we all do together from time to time."** `quest` records, **designed only by parents in Settings → Family quests** (`openQuestPlanner`; Chris, Nov 26, 2026). Parents can also remove one there; its Merit goes with it. Everyone else sees quests read-only on Today and the Pack tab.
   - **Special outing** (`kind: 'event'`): the listed members do one activity together (a single group entry) by the date. The whole pack earns +50 each; if it ends with only some of them, +15 each for those who came.
   - **Team total** (`kind: 'total'`): the family's minutes reach a target by the date, +30 each for everyone who moved.
   - Values are in `QUEST`.
