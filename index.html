@@ -41,7 +41,7 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .sync-dot::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #b9ad94; }
 .sync-dot.ok::after { background: var(--green); } .sync-dot.error::after { background: #c62828; } .sync-dot.pending::after, .sync-dot.busy::after { background: var(--gold); animation: pulse 1s infinite alternate; }
 @keyframes pulse { to { opacity: .3; } }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-top: 14px; box-shadow: var(--shadow); }
+.card, .zone { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-top: 14px; box-shadow: var(--shadow); }
 .card-t { font-family: var(--fh); font-size: 14px; font-weight: 700; letter-spacing: .14em; color: var(--muted); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .card-t .r { font-family: var(--fb); font-weight: 400; letter-spacing: 0; font-size: 13px; text-align: right; }
 .hint { font-size: 13px; color: var(--muted); margin-top: 6px; }
@@ -127,6 +127,17 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .newfor-list { background: rgba(46,125,50,.07); border-color: rgba(46,125,50,.3); } .newfor-list .card-t .chip-btn { min-height: 44px; font-size: 13px; }
 .newfor-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid rgba(46,125,50,.2); font-size: 14px; } .newfor-row .ll { flex: 1; } .newfor-row small { display: block; color: var(--muted); font-size: 12px; }
 .chip-btn.same { border-style: dashed; }
+.chips.ex-metrics, .chips.ex-scroll { display: flex; flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px 8px; padding: 2px 16px 6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; } .ex-metrics::-webkit-scrollbar, .ex-scroll::-webkit-scrollbar { display: none; } .ex-metrics .chip-btn, .ex-scroll .chip-btn { flex: 0 0 auto; white-space: nowrap; } .ex-title { font-weight: 700; font-size: 14px; margin: 8px 0 4px; } .ex-wrap { position: relative; }
+.ex-chart { width: 100%; height: auto; display: block; } .ex-grid { stroke: var(--line); stroke-width: 1; } .ex-ax { font-size: 10px; fill: var(--muted, #7a6c55); font-family: inherit; }
+.ex-bar.sel { stroke: var(--ink, #222); stroke-width: 1.5; } .ex-trend { stroke: var(--muted, #7a6c55); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.ex-legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; margin-top: 4px; } .ex-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+.ex-tip { font-size: 13px; margin: 6px 0 0; min-height: 18px; } .ex-say { font-weight: 600; margin: 8px 0; } .ex-table { width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 6px; } .ex-table td, .ex-table th { padding: 4px; border-bottom: 1px solid var(--line); text-align: right; } .ex-table td:first-child, .ex-table th:first-child { text-align: left; }
+.ex-fav { margin-top: 10px; } .pt-row { display: grid; grid-template-columns: 1.2fr 2fr auto; gap: 8px; align-items: center; margin: 6px 0; font-size: 14px; } .pt-bar { height: 12px; background: var(--panel2); border-radius: 6px; overflow: hidden; } .pt-bar i { display: block; height: 100%; border-radius: 6px; }
+.needs-more, .ex-more { display: block; width: 100%; min-height: 44px; margin-top: 8px; border: 0; background: transparent; color: var(--accent, #9a1010); font: inherit; font-size: 14px; text-align: left; }
+.tools-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .tools-row .ai-btn { margin: 0; font-size: 14px; padding: 10px 8px; }
+.needs .need + .need { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; } .needs .need > .card { box-shadow: none; border: 0; margin: 0; padding: 0; background: transparent; }
+.week-tabs .tab-panel > .card { box-shadow: none; border: 0; margin: 0; padding: 0; background: transparent; } .week-tabs .tab-panel > .card > .card-t:first-child { font-size: 12px; opacity: .8; }
+.seg { display: flex; gap: 4px; background: var(--panel2); border-radius: 12px; padding: 4px; margin: 4px 0 12px; } .seg-b { flex: 1; min-height: 44px; border: 0; border-radius: 9px; background: transparent; font: inherit; font-size: 14px; color: inherit; } .seg-b.on { background: var(--panel); box-shadow: 0 1px 4px rgba(0,0,0,.12); font-weight: 700; }
 .quiz-q { font-size: 19px; margin: 6px 0 12px; text-align: center; } .quiz-a { display: block; width: 100%; min-height: 52px; margin: 0 0 8px; padding: 10px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel2); font: inherit; font-size: 16px; color: inherit; text-align: left; }
 .coach-tile { display: block; width: 100%; text-align: left; margin: 0 0 8px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); border-left: 6px solid var(--coach); background: var(--panel2); font: inherit; color: inherit; }
 .coach-tile.rec { outline: 3px solid var(--coach); } .coach-tile p { margin: 6px 0 4px; font-size: 14px; } .ct-head { display: flex; align-items: center; gap: 8px; } .ct-head b { color: var(--coach); font-size: 17px; } .ct-head small { opacity: .75; } .ct-focus { opacity: .7; font-size: 12px; }
@@ -1913,19 +1924,40 @@ function renderToday(main) {
     tops.forEach(u => us.appendChild(h('button', { class: 'usual', type: 'button', onclick: () => quickUsual(u) }, h('span', { class: 'ic' }, ACT[u.act].icon),
       h('span', null, (u.act === 'dogwalk' ? dogs().map(x => x.name).join(' & ') : ACT[u.act].name + (u.cls ? ' ' + ACT[u.act].types.find(x => x.id === u.cls).name : '')) + ' ' + u.min + 'm', h('small', null, u.auto ? 'logged ' + u.n + '× lately' : 'your usual')))));
     if (tops.length) lc.appendChild(us);
-    lc.appendChild(h('button', { class: 'ai-btn calc-btn', type: 'button', onclick: () => openCalc() }, '⏱ Got a few minutes? See what earns the most'));
-    lc.appendChild(h('button', { class: 'ai-btn', type: 'button', onclick: () => openReader() }, '✨ Paste or snap a Peloton summary'));
+    lc.appendChild(h('div', { class: 'tools-row' }, h('button', { class: 'ai-btn calc-btn', type: 'button', onclick: () => openCalc() }, '⏱ Got a few minutes?'),
+      h('button', { class: 'ai-btn', type: 'button', onclick: () => openReader() }, '✨ Paste or snap')));
     lc.appendChild(weighRow());
   }
   main.appendChild(lc);
   syncQuestAwards();
-  [colorPrompt(), coachPrompt(), ideaPrompt(), questCard(), recapCard(), newForYou(), tkdPrompt(), ...stripePrompt(), ...classPrompts(), goalNudge()].forEach(x => { if (x) main.appendChild(x); });
-  main.appendChild(raceCard(false));
-  if (!preseason()) main.appendChild(primusCard());
-  main.appendChild(challengeCard());
+  // Zone 3: everything that wants an answer, in one card. Time-sensitive first; one-time setup (Color, coach) last.
+  const needs = [newForYou(), tkdPrompt(), ...stripePrompt(), ...classPrompts(), ...challengeInvites(), ideaPrompt(), questCard(), recapCard(), colorPrompt(), coachPrompt(), goalNudge()].filter(Boolean);
+  if (needs.length) main.appendChild(needsCard(needs));
+  // Zone 4: this week in one tabbed card
+  main.appendChild(weekTabs());
   if (practice() || preseason()) main.appendChild(coachCard(id));   // after Practice Week the coach lives in the banner
-  main.appendChild(myWeekCard());
-  [cheersForMe(), fuelCard()].forEach(x => { if (x) main.appendChild(x); });
+}
+let needsOpen = false, weekTab = null;
+function needsCard(items) {
+  const c = h('div', { class: 'zone needs' }, h('div', { class: 'card-t' }, h('span', null, '🔔 NEEDS YOU'), h('span', { class: 'r' }, items.length + (items.length === 1 ? ' thing' : ' things'))));
+  items.forEach((x, i) => { const wrap = h('div', { class: 'need' }, x); if (i >= 2 && !needsOpen) wrap.hidden = true; c.appendChild(wrap); });
+  if (items.length > 2) c.appendChild(h('button', { class: 'needs-more', type: 'button', 'aria-expanded': needsOpen ? 'true' : 'false', onclick: () => { needsOpen = !needsOpen; render(); } }, needsOpen ? '▴ Show less' : '▾ Show ' + (items.length - 2) + ' more'));
+  return c;
+}
+function challengeInvites() {
+  const id = me(); return challengesFor(weekKey(AZ.today()), id).filter(x => x.status === 'open' && x.to === id).map(x => h('div', { class: 'ch-row' }, h('p', null, '⚔️ ' + M(x.from).name + ' challenged you: ' + CH_METRICS[x.metric].label + ' this week!'),
+    h('div', { class: 'two' }, h('button', { class: 'btn-ghost', type: 'button', onclick: () => { put(Object.assign({}, x, { status: 'no' })); render(); } }, 'Not this week'),
+      h('button', { class: 'btn-primary', type: 'button', onclick: () => { put(Object.assign({}, x, { status: 'on' })); weekTab = 'ch'; render(); toast('⚔️ Challenge on!'); } }, 'Accept'))));
+}
+function weekTabs() {
+  const tabs = (preseason() ? [] : [['primus', '♛ Primus']]).concat([['race', '🏁 Race'], ['ch', '⚔️ Challenges']]);
+  const live = challengesFor(weekKey(AZ.today()), me()).some(x => x.status === 'on');
+  const cur = tabs.some(x => x[0] === weekTab) ? weekTab : tabs[0][0];
+  const panels = { primus: () => primusCard(), race: () => raceCard(false), ch: () => challengeCard(true) };
+  const c = h('div', { class: 'zone week-tabs' }, h('div', { class: 'card-t' }, h('span', null, 'THIS WEEK')),
+    h('div', { class: 'seg', role: 'tablist' }, tabs.map(([k, label]) => h('button', { class: 'seg-b' + (cur === k ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': cur === k ? 'true' : 'false', onclick: () => { weekTab = k; render(); } }, label + (k === 'ch' && live ? ' •' : '')))));
+  tabs.forEach(([k]) => { const pnl = h('div', { class: 'tab-panel', role: 'tabpanel' }, panels[k]()); if (k !== cur) pnl.hidden = true; c.appendChild(pnl); });
+  return c;
 }
 // ───────────────────────── Weekly recap and head-to-head challenges
 function weekActiveDays(id, wk) { return range(wk, addDays(wk, 6)).filter(d => d <= AZ.today() && seasonFor(d) && isActive(id, d, seasonFor(d))).length; }
@@ -1978,8 +2010,8 @@ function recapCard() {
   return c;
 }
 function openRecap(wk) { openModal('🗞 Week in review · ' + fmtWeek(wk), recapBody(wk)); }
-function challengeCard() {
-  const id = me(), wk = weekKey(AZ.today()), list = challengesFor(wk, id), c = card('⚔️ CHALLENGES · THIS WEEK', null, 'ch-card');
+function challengeCard(inTab) {
+  const id = me(), wk = weekKey(AZ.today()), list = challengesFor(wk, id).filter(x => !(inTab && x.status === 'open' && x.to === id)), c = card('⚔️ CHALLENGES · THIS WEEK', null, 'ch-card');
   list.forEach(x => { const other = x.from === id ? x.to : x.from, U = CH_METRICS[x.metric];
     if (x.status === 'open' && x.to === id) c.appendChild(h('div', { class: 'ch-row' }, h('p', null, M(x.from).name + ' challenged you: ' + U.label + ' this week!'),
       h('div', { class: 'two' }, h('button', { class: 'btn-ghost', type: 'button', onclick: () => { put(Object.assign({}, x, { status: 'no' })); render(); } }, 'Not this week'),
@@ -2192,7 +2224,128 @@ function scorecards(id, se) {
   c.appendChild(h('div', { class: 'legend' }, Object.keys(CAT_LABEL).map(k => h('span', null, h('i', { style: 'background:' + CAT_COLORS[k] }), CAT_LABEL[k]))));
   return c;
 }
+// ───────────────────────── Data explorer: one chart, you pick what it shows
+const EX_SEASONS = () => [PRACTICE].concat(SEASONS).filter(se => se.start <= AZ.today());
+function rangeEff(id, a, b) { let v = 0; EX_SEASONS().forEach(se => { const dm = days(id, se); for (const d in dm) if (d >= a && d <= b && d >= se.start && d <= se.end) v += dm[d].eff; }); return v; }
+function rangeMerit(id, a, b) { let v = 0; EX_SEASONS().forEach(se => score(id, se).ledger.forEach(e => { if (e.date >= a && e.date <= b && e.date >= se.start && e.date <= se.end) v += e.pts; })); return Math.round(v); }
+function rangeDays(id, a, b) { const end = b < AZ.today() ? b : AZ.today(); return a > end ? 0 : range(a, end).filter(d => seasonFor(d) && isActive(id, d, seasonFor(d))).length; }
+const EX_METRICS = [
+  { id: 'minutes', icon: '⏱', label: 'Active minutes', kid: '⏱ Minutes moved', unit: 'min', f: (id, a, b) => workoutsOf(id, a, b).reduce((x, w) => x + moveMin(w), 0) },
+  { id: 'days', icon: '📅', label: 'Active Days', kid: '📅 Active Days', unit: 'days', f: rangeDays },
+  { id: 'effort', icon: '🔥', label: 'Effort points', adult: true, unit: 'effort', f: rangeEff },
+  { id: 'merit', icon: '🎖', label: 'Merit', kid: '🎖 Merit', unit: 'Merit', f: rangeMerit },
+  { id: 'together', icon: '🤝', label: 'Together workouts', kid: '🤝 Together', unit: 'together', f: (id, a, b) => new Set(workoutsOf(id, a, b).filter(w => w.group).map(w => w.group)).size },
+  { id: 'dogwalks', icon: '🐕', label: 'Dog walks', kid: '🐕 Dog walks', unit: 'walks', f: (id, a, b) => workoutsOf(id, a, b).filter(w => w.act === 'dogwalk').length },
+  { id: 'act', icon: '🏷', label: 'One activity', kid: '🏷 One activity', unit: 'times', f: (id, a, b, act) => workoutsOf(id, a, b).filter(w => w.act === act).length },
+  { id: 'quests', icon: '🏔', label: 'Family quests', kid: '🏔 Family quests', unit: 'quests', f: (id, a, b) => all('award').filter(x => x.kind === 'quest' && x.member === id && x.date >= a && x.date <= b).length },
+  { id: 'crowns', icon: '♛', label: 'Primus crowns', kid: '♛ Crowns', unit: 'crowns', f: (id, a, b) => all('award').filter(x => x.kind === 'primus' && x.member === id && x.date >= a && x.date <= b).length },
+  { id: 'wins', icon: '⚔️', label: 'Challenges won', kid: '⚔️ Challenges won', unit: 'wins', f: (id, a, b) => all('challenge').filter(c => c.status === 'on' && c.week >= weekKey(a) && c.week <= b && addDays(c.week, 6) < AZ.today() && chResult(c).winner === id).length },
+  { id: 'stripes', icon: '🥋', label: 'Stripes & belts', kid: '🥋 Stripes & belts', kidOnly: true, unit: 'earned', f: (id, a, b) => all('milestone').filter(x => x.member === id && (x.kind === 'stripe' || x.kind === 'belt') && x.date >= a && x.date <= b).length },
+  { id: 'faster', icon: '⚡', label: 'Am I getting faster?', kid: '⚡ Am I faster?', special: true },
+  { id: 'points', icon: '🧩', label: 'Where my points came from', kid: '🧩 Where my points came from', special: true },
+];
+function exPeriods(by) {
+  const today = AZ.today(), first = PRACTICE.start, out = [];
+  if (by === 'month') { let y = +today.slice(0, 4), m = +today.slice(5, 7); for (let i = 0; i < 6; i++) { const a = y + '-' + String(m).padStart(2, '0') + '-01'; if (a < first.slice(0, 7) + '-01') break;
+      const nm = m === 12 ? (y + 1) + '-01-01' : y + '-' + String(m + 1).padStart(2, '0') + '-01'; out.unshift({ a: a < first ? first : a, b: addDays(nm, -1), label: MONTHS[m - 1] }); m--; if (!m) { m = 12; y--; } } return out; }
+  let wk = weekKey(today); for (let i = 0; i < 8 && addDays(wk, 6) >= first; i++, wk = addDays(wk, -7)) out.unshift({ a: wk, b: addDays(wk, 6), label: fmtShort(wk) });
+  return out;
+}
+// "Am I getting faster?": the same exercise over time. Speed (mph) for anything with speed or miles; watts for the Bike.
+function fastOptions(id) {
+  const ws = all('workout').filter(w => w.member === id && w.date <= AZ.today()).sort((a, b) => a.date < b.date ? -1 : 1), opts = {};
+  ws.forEach(w => { const d = w.detail || {}, A = ACT[w.act]; if (!A) return; const cls = d.cls && A.types ? A.types.find(x => x.id === d.cls) : null, key = w.act + (cls ? ':' + cls.id : ''), name = (A.group === 'Peloton' ? A.long : A.name) + (cls ? ' · ' + cls.name : '');
+    let v = null, unit = '';
+    if (w.act === 'bike') { const watts = d.watts || (d.kj && w.min ? Math.round(d.kj * 1000 / (w.min * 60)) : 0); if (watts && (!cls || cls.id !== 'bootcamp')) { v = watts; unit = 'W'; } }
+    else { const mph = d.mph || (d.miles && w.min ? d.miles / (w.min / 60) : 0); if (mph && (!cls || cls.id !== 'bootcamp')) { v = Math.round(mph * 10) / 10; unit = 'mph'; } }
+    if (v) (opts[key] = opts[key] || { key, name, unit, pts: [] }).pts.push({ date: w.date, v }); });
+  return Object.values(opts).filter(o => o.pts.length >= 2).sort((a, b) => b.pts.length - a.pts.length);
+}
+let exState = null;
+function unitN(n, u) { return n + ' ' + (n === 1 && /s$/.test(u) && u !== 'wins' ? u.slice(0, -1) : n === 1 && u === 'wins' ? 'win' : u); }
+function exportState() { Local.set('explore', exState); }
+function exploreCard() {
+  const id = me(), pup = isPup(id);
+  if (!exState) exState = Object.assign({ m: 'minutes', by: 'week', who: 'me', act: pup ? 'tkd' : 'tread', fx: null, sel: null, table: false }, Local.get('explore_fav', null) || {});
+  const S = exState, set = patch => { Object.assign(S, patch, 'sel' in patch ? {} : { sel: null }); exportState(); render(); };
+  const ms = EX_METRICS.filter(m => !(pup && m.adult) && !(!pup && m.kidOnly)), M_ = ms.find(m => m.id === S.m) || ms[0];
+  const c = card('📊 EXPLORE MY DATA', null, 'explore');
+  setTimeout(() => { const on = document.querySelector('.ex-metrics .chip-btn.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'center' }); }, 0);
+  c.appendChild(h('div', { class: 'chips ex-metrics' }, ms.map(m => h('button', { class: 'chip-btn' + (m.id === M_.id ? ' on' : ''), type: 'button', onclick: () => set({ m: m.id }) }, pup ? m.kid : m.icon + ' ' + m.label))));
+  if (M_.id === 'act') c.appendChild(h('div', { class: 'chips ex-scroll' }, ACTIVITIES.filter(a => !a.hidden && !(pup && (a.id === 'strength' || a.id === 'bootcamp'))).map(a => h('button', { class: 'chip-btn' + (S.act === a.id ? ' on' : ''), type: 'button', 'aria-label': a.name, onclick: () => set({ act: a.id }) }, a.icon))));
+  if (M_.id === 'faster') { c.appendChild(fasterChart(id)); }
+  else if (M_.id === 'points') { c.appendChild(pointsChart(id, S.by)); c.appendChild(segRow([['week', 'This week'], ['month', 'This month']], S.by, v => set({ by: v }))); }
+  else {
+    c.appendChild(segRow([['week', 'By week'], ['month', 'By month']], S.by, v => set({ by: v })));
+    c.appendChild(segRow([['me', 'Just me'], ['all', 'Me vs everyone']], S.who, v => set({ who: v })));
+    const per = exPeriods(S.by), who = S.who === 'all' ? memberIds() : [id];
+    const data = who.map(m => ({ id: m, vals: per.map(pd => Math.round(M_.f(m, pd.a, pd.b, S.act) || 0)) }));
+    const title = (M_.id === 'act' ? ACT[S.act].icon + ' ' + ACT[S.act].name + ' (times)' : M_.label) + ' · ' + (S.by === 'week' ? 'by week' : 'by month');
+    c.appendChild(h('div', { class: 'ex-title' }, title));
+    c.appendChild(barChart(per, data, M_.unit, S));
+    const mine = data.find(d => d.id === id).vals, last = mine[mine.length - 1], prev = mine[mine.length - 2];
+    if (prev !== undefined) c.appendChild(h('p', { class: 'ex-say' }, (S.by === 'week' ? 'This week: ' : 'This month: ') + unitN(last, M_.unit) + (last > prev ? ', up from ' + prev + '. Nice!' : last < prev ? ' so far (last ' + S.by + ': ' + prev + ').' : ', same as last ' + S.by + '.')));
+    c.appendChild(h('button', { class: 'ex-more', type: 'button', 'aria-expanded': S.table ? 'true' : 'false', onclick: () => set({ table: !S.table }) }, (S.table ? '▾ ' : '▸ ') + 'Show the numbers'));
+    if (S.table) { const tb = h('table', { class: 'ex-table' }, h('tr', null, h('th', null, ''), ...who.map(m => h('th', null, M(m).name))));
+      per.forEach((pd, i) => tb.appendChild(h('tr', null, h('td', null, pd.label), ...data.map(d => h('td', null, String(d.vals[i])))))); c.appendChild(tb); }
+  }
+  const fav = Local.get('explore_fav', null), isFav = fav && fav.m === S.m && fav.by === S.by && fav.who === S.who && (S.m !== 'act' || fav.act === S.act);
+  c.appendChild(h('button', { class: 'btn-ghost ex-fav', type: 'button', onclick: () => { Local.set('explore_fav', { m: S.m, by: S.by, who: S.who, act: S.act, fx: S.fx }); toast('★ This chart opens first now'); render(); } }, isFav ? '★ My chart' : '☆ Make this my chart'));
+  return c;
+}
+function segRow(opts, cur, pick) { return h('div', { class: 'seg' }, opts.map(([v, label]) => h('button', { class: 'seg-b' + (cur === v ? ' on' : ''), type: 'button', 'aria-pressed': cur === v ? 'true' : 'false', onclick: () => pick(v) }, label))); }
+function niceMax(v) { if (v <= 4) return 4; const p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p; }
+function barChart(per, data, unit, S) {
+  const W = 360, H = 190, L = 34, B = 26, T = 10, pw = W - L - 6, ph = H - B - T, max = niceMax(Math.max(1, ...data.flatMap(d => d.vals))), slot = pw / per.length, gap = 2;
+  const bw = Math.max(4, Math.min(28, (slot - 10) / data.length - gap)), svg = s('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'ex-chart', role: 'img', 'aria-label': 'Bar chart' });
+  [0, .5, 1].forEach(f => { const y = T + ph - f * ph; svg.appendChild(s('line', { x1: L, x2: W - 4, y1: y, y2: y, class: 'ex-grid' })); svg.appendChild(s('text', { x: L - 6, y: y + 4, class: 'ex-ax', 'text-anchor': 'end' }, String(Math.round(max * f)))); });
+  per.forEach((pd, i) => { const x0 = L + i * slot + (slot - data.length * (bw + gap)) / 2;
+    data.forEach((d, j) => { const v = d.vals[i], hgt = v ? Math.max(3, v / max * ph) : 0, x = x0 + j * (bw + gap), y = T + ph - hgt, r = Math.min(4, bw / 2, hgt);
+      const path = hgt ? 'M' + x + ',' + (T + ph) + 'V' + (y + r) + 'Q' + x + ',' + y + ' ' + (x + r) + ',' + y + 'H' + (x + bw - r) + 'Q' + (x + bw) + ',' + y + ' ' + (x + bw) + ',' + (y + r) + 'V' + (T + ph) + 'Z' : null;
+      const sel = S.sel && S.sel.i === i && S.sel.id === d.id;
+      if (path) svg.appendChild(s('path', { d: path, fill: houseColor(d.id), class: 'ex-bar' + (sel ? ' sel' : '') }));
+      svg.appendChild(s('rect', { x: x - 2, y: T, width: bw + 4, height: ph, fill: 'transparent', class: 'ex-hit', 'data-i': i, 'data-id': d.id })); });
+    if (per.length <= 8) svg.appendChild(s('text', { x: L + i * slot + slot / 2, y: H - 8, class: 'ex-ax', 'text-anchor': 'middle' }, pd.label)); });
+  svg.addEventListener('click', e => { const t = e.target.closest('.ex-hit'); if (!t) return; exState.sel = { i: +t.getAttribute('data-i'), id: t.getAttribute('data-id') }; render(); });
+  const box = h('div', { class: 'ex-wrap' }, svg);
+  if (data.length > 1) box.appendChild(h('div', { class: 'ex-legend' }, data.map(d => h('span', null, h('i', { style: 'background:' + houseColor(d.id) }), M(d.id).name))));
+  if (S.sel && per[S.sel.i]) { const d = data.find(x => x.id === S.sel.id); if (d) box.appendChild(h('p', { class: 'ex-tip' }, (S.by === 'week' ? 'Week of ' : '') + per[S.sel.i].label + ' · ' + M(d.id).name + ': ' + unitN(d.vals[S.sel.i], unit))); }
+  else box.appendChild(h('p', { class: 'ex-tip hint' }, 'Tap a bar to see its number.'));
+  return box;
+}
+function fasterChart(id) {
+  const opts = fastOptions(id), box = h('div', null);
+  if (!opts.length) { box.appendChild(h('p', { class: 'hint' }, isPup(id) ? 'Log the same kind of run, walk or ride with its miles a couple of times, and you\'ll see if you\'re getting faster!' : 'Log the same exercise twice with speed, miles or watts (or import your Peloton CSV) to see your trend.')); return box; }
+  const o = opts.find(x => x.key === exState.fx) || opts[0];
+  box.appendChild(h('div', { class: 'chips' }, opts.map(x => h('button', { class: 'chip-btn' + (x.key === o.key ? ' on' : ''), type: 'button', onclick: () => { exState.fx = x.key; exportState(); render(); } }, x.name))));
+  const pts = o.pts, W = 360, H = 190, L = 40, B = 26, T = 12, pw = W - L - 10, ph = H - B - T, vs = pts.map(x => x.v), lo = Math.min(...vs), hi = Math.max(...vs), pad = Math.max(.5, (hi - lo) * .2), y0 = Math.max(0, lo - pad), y1 = hi + pad;
+  const X = i => L + (pts.length === 1 ? pw / 2 : i / (pts.length - 1) * pw), Y = v => T + ph - (v - y0) / (y1 - y0) * ph, col = houseColor(id);
+  const svg = s('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'ex-chart', role: 'img', 'aria-label': o.name + ' over time' });
+  [y0, (y0 + y1) / 2, y1].forEach(v => { svg.appendChild(s('line', { x1: L, x2: W - 4, y1: Y(v), y2: Y(v), class: 'ex-grid' })); svg.appendChild(s('text', { x: L - 6, y: Y(v) + 4, class: 'ex-ax', 'text-anchor': 'end' }, (o.unit === 'W' ? Math.round(v) : v.toFixed(1)))); });
+  // least-squares trend
+  const n = pts.length, mx = (n - 1) / 2, my = vs.reduce((a, b) => a + b, 0) / n, sl = vs.reduce((a, v, i) => a + (i - mx) * (v - my), 0) / (vs.reduce((a, v, i) => a + (i - mx) * (i - mx), 0) || 1);
+  svg.appendChild(s('line', { x1: X(0), y1: Y(my - sl * mx), x2: X(n - 1), y2: Y(my + sl * (n - 1 - mx)), class: 'ex-trend' }));
+  svg.appendChild(s('polyline', { points: pts.map((x, i) => X(i) + ',' + Y(x.v)).join(' '), fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-linejoin': 'round' }));
+  pts.forEach((x, i) => svg.appendChild(s('circle', { cx: X(i), cy: Y(x.v), r: 4.5, fill: col, stroke: 'var(--panel)', 'stroke-width': 2 })));
+  [0, n - 1].forEach(i => svg.appendChild(s('text', { x: X(i), y: H - 8, class: 'ex-ax', 'text-anchor': i ? 'end' : 'start' }, fmtShort(pts[i].date))));
+  box.appendChild(h('div', { class: 'ex-title' }, o.name + ' · ' + (o.unit === 'W' ? 'average watts' : 'speed (mph)')));
+  box.appendChild(h('div', { class: 'ex-wrap' }, svg));
+  const k = Math.min(3, Math.floor(n / 2)), a = vs.slice(0, k).reduce((x, y) => x + y, 0) / k, b2 = vs.slice(-k).reduce((x, y) => x + y, 0) / k, diff = b2 - a, U = o.unit === 'W' ? ' watts' : ' mph';
+  box.appendChild(h('p', { class: 'ex-say' }, Math.abs(diff) < (o.unit === 'W' ? 3 : .1) ? 'About the same as when you started (' + fmtShort(pts[0].date) + '). Steady is good!' : diff > 0 ? '⚡ ' + (o.unit === 'W' ? Math.round(diff) : diff.toFixed(1)) + U + ' faster than your first ' + (k > 1 ? k + ' ' : '') + 'time' + (k > 1 ? 's' : '') + ' (since ' + fmtShort(pts[0].date) + ')!' : 'A little slower than at the start lately (' + (o.unit === 'W' ? Math.round(-diff) : (-diff).toFixed(1)) + U + '). Easy days count too.'));
+  return box;
+}
+function pointsChart(id, by) {
+  const today = AZ.today(), a = by === 'month' ? today.slice(0, 8) + '01' : weekKey(today), cats = {};
+  EX_SEASONS().forEach(se => score(id, se).ledger.forEach(e => { if (e.date >= a && e.date <= today && e.date >= se.start && e.date <= se.end) cats[e.cat] = (cats[e.cat] || 0) + e.pts; }));
+  const rows = Object.keys(CAT_LABEL).map(k => [k, Math.round(cats[k] || 0)]).filter(r => r[1] > 0), max = Math.max(1, ...rows.map(r => r[1])), box = h('div', { class: 'ex-points' });
+  if (!rows.length) { box.appendChild(h('p', { class: 'hint' }, 'No Merit yet ' + (by === 'month' ? 'this month' : 'this week') + '. Your first workout will show up here.')); return box; }
+  rows.sort((x, y) => y[1] - x[1]).forEach(([k, v]) => box.appendChild(h('div', { class: 'pt-row' }, h('span', { class: 'pt-l' }, CAT_LABEL[k]), h('span', { class: 'pt-bar' }, h('i', { style: 'width:' + Math.round(v / max * 100) + '%;background:' + CAT_COLORS[k] })), h('b', null, '+' + v))));
+  return box;
+}
 function renderProgress(main) {
+  main.appendChild(myWeekCard());
+  main.appendChild(exploreCard());
+  if (!isPup(me())) { const fc = fuelCard(); if (fc) main.appendChild(fc); }
   const id = me(), se = currentSeason(), sc = score(id, se);
   if (!isPup(id)) {
     const t = trendSeries(se.start, se.end), goalPct = goalPctFor(id, t), c = card('THE ASCENT', 'trend line, not daily noise');
@@ -2298,6 +2451,7 @@ function renderPack(main) {
   main.appendChild(packSection(true));
   main.appendChild(raceCard(true));
   main.appendChild(questPackCard());
+  { const cf = cheersForMe(); if (cf) main.appendChild(cf); }
   main.appendChild(cheerFeed());
   const lw = addDays(weekKey(AZ.today()), -7);
   main.appendChild(h('div', { class: 'two', style: 'margin:0 0 12px' }, h('button', { class: 'btn-ghost', type: 'button', onclick: () => openRecap(weekKey(AZ.today())) }, '🗞 This week so far'), h('button', { class: 'btn-ghost', type: 'button', onclick: () => openRecap(lw) }, '🗞 Last week')));

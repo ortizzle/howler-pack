@@ -129,6 +129,25 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
     - It shows the coach's word for the day (`coachWord`: one Claude message a day saved in `pack_coach_day` when there's a key, else the built-in `coachLine`), the days-left counter, an **Ask** button, and insights you tap **›** to flip through (`bannerInsights`): holiday week, Standard, challenge, family quest, next rank, Primus race, chain, race checkpoint.
     - The separate coach card shows only before Dec 1. Kids' banner content follows the no-weight/food/body rule.
 
+## Today and Progress layout (Chris, Nov 26, 2026)
+
+- **Today has three zones (option A).** Chris also liked B (a Me | Pack switch) and C (choose your own cards) for later.
+  1. **The coach banner.**
+  2. **The Pack and the log box**: Log a workout, usuals, a two-button tools row (⏱ Got a few minutes? / ✨ Paste or snap), and the weigh-in for parents.
+  3. **🔔 Needs you** (`needsCard`, a `.zone`, not a `.card`): every prompt in one place, time-sensitive first (added for you, taekwondo, stripes, weekly class, challenge invites, quest ideas, active quests, recap), then setup (Color, coach), then goals. Two show; the rest sit behind "Show N more" (`.needs-more`).
+  4. **This week** (`weekTabs`): Primus | Race | Challenges tabs. Inactive panels stay in the DOM but hidden; challenge invites live in Needs you.
+  - Cheers moved to the Pack tab. "This week" (`myWeekCard`) and Fuel (parents) moved to Progress.
+  - Don't reuse `.more-btn` for anything but the log sheet's "More stats"; tests and the sheet depend on it.
+- **Progress starts with 📊 Explore my data** (`exploreCard`): one chart and a swipeable row of choices (`EX_METRICS`).
+  - **Moving:** minutes, Active Days, effort (parents), Merit.
+  - **Together:** together workouts, dog walks, family quests.
+  - **Activities:** one activity (pick its icon).
+  - **Wins:** Primus crowns, challenges won, stripes & belts (kids).
+  - **⚡ Am I getting faster?** (`fastOptions`: mph from speed or miles ÷ time, watts for the Bike; bootcamps skipped; a dashed least-squares trend, plus a plain sentence comparing the first and last up-to-3 workouts).
+  - **🧩 Where my points came from** (by category, this week or this month).
+  - Pickers: by week (8) / by month (6), just me / me vs everyone (legend with names, tap a bar for its number, "Show the numbers" table). "☆ Make this my chart" saves `pack_explore_fav`, which opens first.
+  - Kids get friendly emoji labels and never weight data.
+
 ## Family quests (Chris, Nov 26, 2026)
 
 - **"Something we all do together from time to time."** `quest` records, **designed only by parents in Settings → Family quests** (`openQuestPlanner`; Chris, Nov 26, 2026). Parents can also remove one there; its Merit goes with it. Everyone else sees quests read-only on Today and the Pack tab.
