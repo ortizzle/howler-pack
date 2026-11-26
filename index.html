@@ -127,6 +127,14 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .newfor-list { background: rgba(46,125,50,.07); border-color: rgba(46,125,50,.3); } .newfor-list .card-t .chip-btn { min-height: 44px; font-size: 13px; }
 .newfor-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid rgba(46,125,50,.2); font-size: 14px; } .newfor-row .ll { flex: 1; } .newfor-row small { display: block; color: var(--muted); font-size: 12px; }
 .chip-btn.same { border-style: dashed; }
+.recap-crown { text-align: center; font-weight: 700; font-size: 17px; padding: 10px; border-radius: 12px; margin-bottom: 8px; background: var(--panel2); }
+.recap-row { display: grid; grid-template-columns: 1fr auto auto 54px; gap: 10px; align-items: center; padding: 8px 2px; border-bottom: 1px solid var(--line); font-size: 15px; } .recap-row b { text-align: right; } .recap-row .rd, .recap-row .rm { font-size: 13px; opacity: .8; }
+.recap-ch { margin: 8px 0 0; font-weight: 600; } .ch-row { margin: 6px 0 10px; } .ch-row p { margin: 0 0 8px; font-weight: 600; }
+.ch-vs { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; } .ch-vs span { font-size: 12px; opacity: .7; }
+.ch-bar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: var(--line); margin: 6px 0 4px; } .ch-bar i { display: block; height: 100%; }
+.gold-shimmer { background: linear-gradient(100deg, #8a6d0b 0%, #d4a82a 35%, #fff3c4 50%, #d4a82a 65%, #8a6d0b 100%); background-size: 250% 100%; color: #2b2004; animation: shimmer 3.2s linear infinite; }
+@keyframes shimmer { from { background-position: 125% 0; } to { background-position: -125% 0; } }
+@media (prefers-reduced-motion: reduce) { .gold-shimmer { animation: none; background-position: 50% 0; } }
 .tour-card { text-align: center; padding: 4px 4px 8px; min-height: 300px; } .tour-card h2 { font-size: 22px; margin: 6px 0 10px; } .tour-card p { font-size: 16px; line-height: 1.45; margin: 0 0 10px; }
 .tour-ic { font-size: 52px; line-height: 1.1; } .tour-list { text-align: left; font-size: 16px; line-height: 1.7; padding-left: 4px; list-style: none; margin: 0; }
 .tour-dots { display: flex; justify-content: center; gap: 6px; margin: 6px 0 12px; } .tour-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); } .tour-dots i.on { background: #9a1010; }
@@ -1767,12 +1775,80 @@ function renderToday(main) {
     lc.appendChild(weighRow());
   }
   main.appendChild(lc);
-  [newForYou(), tkdPrompt(), ...classPrompts(), goalNudge()].forEach(x => { if (x) main.appendChild(x); });
+  [recapCard(), newForYou(), tkdPrompt(), ...classPrompts(), goalNudge()].forEach(x => { if (x) main.appendChild(x); });
   main.appendChild(raceCard(false));
   if (!preseason()) main.appendChild(primusCard());
+  main.appendChild(challengeCard());
   main.appendChild(coachCard(id));
   main.appendChild(myWeekCard());
   [cheersForMe(), fuelCard()].forEach(x => { if (x) main.appendChild(x); });
+}
+// ───────────────────────── Weekly recap and head-to-head challenges
+function weekActiveDays(id, wk) { return range(wk, addDays(wk, 6)).filter(d => d <= AZ.today() && seasonFor(d) && isActive(id, d, seasonFor(d))).length; }
+function weekMerit(id, wk) { const se = seasonFor(wk) || seasonFor(addDays(wk, 6)) || currentSeason(); return Math.round(score(id, se).byWeek[wk] || 0); }
+function fmtWeek(wk) { const a = fmtShort(wk), b = fmtShort(addDays(wk, 6)); return a.split(' ')[0] === b.split(' ')[0] ? a + '–' + b.split(' ')[1] : a + '–' + b; }
+// Sunday from 5pm the recap is this week's; Monday and Tuesday it's last week's (until dismissed)
+function recapWeek() { const t = AZ.today(), d = dow(t); return d === 6 && AZ.hour() >= 17 ? weekKey(t) : d <= 1 ? addDays(weekKey(t), -7) : null; }
+const CH_METRICS = {
+  minutes: { label: 'most active minutes', unit: 'min', val: (id, wk) => weekMinutes(id, wk) },
+  days: { label: 'most Active Days', unit: 'days', val: (id, wk) => weekActiveDays(id, wk) },
+  merit: { label: 'most Merit', unit: 'Merit', val: (id, wk) => weekMerit(id, wk) },
+};
+function challengesFor(wk, id) { return all('challenge').filter(c => c.week === wk && c.status !== 'no' && (!id || c.from === id || c.to === id)); }
+function chResult(c) { const M_ = CH_METRICS[c.metric], a = M_.val(c.from, c.week), b = M_.val(c.to, c.week), done = addDays(c.week, 6) < AZ.today();
+  return { a, b, done, winner: a === b ? null : a > b ? c.from : c.to }; }
+function recapRows(wk) {
+  return members().map(m => { const id = m.mid; return { id, name: m.name, days: weekActiveDays(id, wk), need: stdDays(id, wk), mins: weekMinutes(id, wk), merit: weekMerit(id, wk) }; }).sort((a, b) => b.merit - a.merit);
+}
+function recapBody(wk, opts) {
+  const box = h('div', { class: 'recap' }), done = addDays(wk, 6) < AZ.today(), L = primusLeaders(wk);
+  box.appendChild(h('div', { class: 'recap-crown' + (L.length ? ' gold-shimmer' : '') }, L.length === 1 ? '♛ ' + M(L[0]).name + (done ? ' is Primus!' : ' leads for Primus') : L.length > 1 ? '♛ Tied for Primus: ' + L.slice(0, -1).map(x => M(x).name).join(', ') + ' & ' + M(L[L.length - 1]).name : '♛ No Primus yet this week'));
+  recapRows(wk).forEach(r => box.appendChild(h('div', { class: 'recap-row' }, h('span', { class: 'rn', style: 'color:' + houseColor(r.id) }, r.name),
+    h('span', { class: 'rd' }, r.days >= r.need ? '✦ Standard' : r.days + '/' + r.need + ' days'), h('span', { class: 'rm' }, r.mins + ' min'), h('b', null, '+' + r.merit))));
+  const ch = challengesFor(wk).filter(c => c.status === 'on');
+  ch.forEach(c => { const R_ = chResult(c), U = CH_METRICS[c.metric].unit;
+    box.appendChild(h('p', { class: 'recap-ch' }, '⚔️ ' + (R_.winner ? M(R_.winner).name + (done ? ' beat ' : ' leads ') + M(R_.winner === c.from ? c.to : c.from).name : M(c.from).name + ' and ' + M(c.to).name + (done ? ' tied' : ' are tied')) + ': ' + Math.max(R_.a, R_.b) + ' to ' + Math.min(R_.a, R_.b) + ' ' + U)); });
+  const tog = new Set(all('workout').filter(w => w.group && weekKey(w.date) === wk).map(w => w.group)).size;
+  if (tog) box.appendChild(h('p', { class: 'hint' }, '🤝 ' + tog + ' workout' + (tog > 1 ? 's' : '') + ' done together this week.'));
+  return box;
+}
+function recapCard() {
+  const wk = recapWeek(), seen = Local.get('recap_seen', {}); if (!wk || seen[wk] || !all('workout').some(w => weekKey(w.date) === wk)) return null;
+  const c = card('🗞 WEEK IN REVIEW · ' + fmtWeek(wk).toUpperCase(), null, 'recap-card'); c.appendChild(recapBody(wk));
+  const met = recapRows(wk).filter(r => r.days >= r.need && r.id !== me());
+  c.appendChild(h('div', { class: 'two' }, met.length ? h('button', { class: 'btn-ghost', type: 'button', onclick: () => { met.slice(0, RULES.cheerDailyMax).forEach(r => cheer(r.id, '🔥', 'Great week! You met the Standard.')); const s = Local.get('recap_seen', {}); s[wk] = 1; Local.set('recap_seen', s); render(); toast('📣 Cheered ' + met.map(r => r.name).join(', ')); } }, '📣 Cheer the pack') : null,
+    h('button', { class: 'btn-primary', type: 'button', onclick: () => { const s = Local.get('recap_seen', {}); s[wk] = 1; Local.set('recap_seen', s); render(); } }, 'Got it')));
+  return c;
+}
+function openRecap(wk) { openModal('🗞 Week in review · ' + fmtWeek(wk), recapBody(wk)); }
+function challengeCard() {
+  const id = me(), wk = weekKey(AZ.today()), list = challengesFor(wk, id), c = card('⚔️ CHALLENGES · THIS WEEK', null, 'ch-card');
+  list.forEach(x => { const other = x.from === id ? x.to : x.from, U = CH_METRICS[x.metric];
+    if (x.status === 'open' && x.to === id) c.appendChild(h('div', { class: 'ch-row' }, h('p', null, M(x.from).name + ' challenged you: ' + U.label + ' this week!'),
+      h('div', { class: 'two' }, h('button', { class: 'btn-ghost', type: 'button', onclick: () => { put(Object.assign({}, x, { status: 'no' })); render(); } }, 'Not this week'),
+        h('button', { class: 'btn-primary', type: 'button', onclick: () => { put(Object.assign({}, x, { status: 'on' })); render(); toast('⚔️ Challenge on!'); } }, 'Accept'))));
+    else if (x.status === 'open') c.appendChild(h('p', { class: 'ch-row hint' }, 'Waiting for ' + M(other).name + ' to accept: ' + U.label + '.'));
+    else { const R_ = chResult(x), mine = x.from === id ? R_.a : R_.b, theirs = x.from === id ? R_.b : R_.a, tot = Math.max(1, mine + theirs);
+      c.appendChild(h('div', { class: 'ch-row' }, h('div', { class: 'ch-vs' }, h('b', null, 'You ' + mine), h('span', null, U.label), h('b', null, theirs + ' ' + M(other).name)),
+        h('div', { class: 'ch-bar' }, h('i', { style: 'width:' + Math.round(mine / tot * 100) + '%;background:' + houseColor(id) }), h('i', { style: 'width:' + Math.round(theirs / tot * 100) + '%;background:' + houseColor(other) })),
+        h('small', { class: 'hint' }, mine > theirs ? 'You\'re ahead!' : mine < theirs ? (dow(AZ.today()) === 6 ? 'Last day to catch up!' : (6 - dow(AZ.today())) + ' day' + (dow(AZ.today()) === 5 ? '' : 's') + ' left to catch up') : 'Neck and neck'))); } });
+  c.appendChild(h('button', { class: 'ai-btn', type: 'button', onclick: () => openChallenge() }, list.length ? '⚔️ Challenge someone else' : '⚔️ Challenge someone this week'));
+  return c;
+}
+function openChallenge() {
+  const id = me(), wk = weekKey(AZ.today()), taken = challengesFor(wk, id).map(x => x.from === id ? x.to : x.from), f = { to: null, metric: 'minutes' }, body = h('div', { class: 'log-body' });
+  function draw() {
+    clear(body).appendChild(h('div', { class: 'fld', style: 'margin-top:0' }, 'Who?'));
+    const others = members().filter(m => m.mid !== id && !taken.includes(m.mid));
+    if (!others.length) { body.appendChild(h('p', null, 'You\'ve already got a challenge going with everyone this week!')); return; }
+    body.appendChild(h('div', { class: 'chips' }, others.map(m => h('button', { class: 'chip-btn who' + (f.to === m.mid ? ' on' : ''), type: 'button', style: '--house:' + houseColor(m.mid), onclick: () => { f.to = m.mid; draw(); } }, (m.role === 'pup' ? '🐾 ' : '') + m.name))));
+    body.appendChild(h('div', { class: 'fld' }, 'Who gets the…'));
+    body.appendChild(h('div', { class: 'chips' }, Object.keys(CH_METRICS).map(k => h('button', { class: 'chip-btn' + (f.metric === k ? ' on' : ''), type: 'button', onclick: () => { f.metric = k; draw(); } }, CH_METRICS[k].label))));
+    body.appendChild(h('p', { class: 'hint' }, 'Runs Monday to Sunday this week. Bragging rights only: no Merit changes hands.'));
+    body.appendChild(h('button', { class: 'btn-primary', type: 'button', onclick: () => { if (!f.to) { toast('Pick who to challenge'); return; }
+      put({ id: 'ch_' + wk + '_' + id + '_' + f.to, type: 'challenge', week: wk, from: id, to: f.to, metric: f.metric, status: 'open', createdAt: Date.now() }); close(); render(); toast('⚔️ Challenge sent to ' + M(f.to).name); } }, f.to ? 'Challenge ' + M(f.to).name : 'Send challenge'));
+  }
+  const close = openModal('⚔️ Challenge someone', body); draw();
 }
 function goalNudge() {
   if (goalsOf(me(), 'month')) return null;
@@ -1950,6 +2026,8 @@ function renderPack(main) {
   main.appendChild(packSection(true));
   main.appendChild(raceCard(true));
   main.appendChild(cheerFeed());
+  const lw = addDays(weekKey(AZ.today()), -7);
+  main.appendChild(h('div', { class: 'two', style: 'margin:0 0 12px' }, h('button', { class: 'btn-ghost', type: 'button', onclick: () => openRecap(weekKey(AZ.today())) }, '🗞 This week so far'), h('button', { class: 'btn-ghost', type: 'button', onclick: () => openRecap(lw) }, '🗞 Last week')));
   const crowns = all('award').filter(a => a.kind === 'primus').sort((a, b) => a.week < b.week ? 1 : -1);
   const pc = card('PRIMUS HISTORY', crowns.length + ' crowned');
   if (!crowns.length) pc.appendChild(h('p', { class: 'hint' }, 'The first Primus is crowned at the end of the first week.'));

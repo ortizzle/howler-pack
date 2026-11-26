@@ -121,6 +121,17 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - **Ties are never broken alphabetically.** A tie at the top (`primusLeaders`) shows no crown and an "anyone can take it" note. If the week ends tied, each tied person gets a shared crown (`aw_primus_<week>_<id>`, "(shared)") and the +25.
 - **Coaches:** `COACHES` (Dancer, Mickey, Matteo, as in the original Howlers). The model is `claude-opus-5-5` with effort `low`, browser-direct, with server-side fallbacks.
 
+## Weekly recap and challenges
+
+- **Week in review** (`recapCard` / `recapBody`): on Today from Sunday 5pm, and through Monday and Tuesday for the week just ended, until dismissed (`pack_recap_seen`).
+  - Shows the Primus line (gold shimmer), each person's days vs Standard, minutes and week Merit (`weekMerit` = `score().byWeek`), challenge results, and workouts done together.
+  - **📣 Cheer the pack** cheers everyone who met the Standard (within the daily cheer limit).
+  - The Pack tab has "This week so far" / "Last week" buttons.
+- **Head-to-head challenges** (`challenge` records: `ch_<week>_<from>_<to>`, `metric` minutes|days|merit, `status` open|on|no).
+  - Anyone can challenge anyone for the current Mon–Sun week, once per pair. The other person accepts or picks "Not this week".
+  - The Today card shows live standings.
+  - **Bragging rights only: no Merit changes hands** (keeps the scoring simulation valid).
+
 ## Welcome tour
 
 - **`openTour(id, mode)`:** swipeable cards (Back/Next, dots) shown once per person per phone (`pack_tour` → `w_<id>` / `p_<id>`).
