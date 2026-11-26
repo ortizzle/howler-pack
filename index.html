@@ -127,6 +127,12 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .newfor-list { background: rgba(46,125,50,.07); border-color: rgba(46,125,50,.3); } .newfor-list .card-t .chip-btn { min-height: 44px; font-size: 13px; }
 .newfor-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid rgba(46,125,50,.2); font-size: 14px; } .newfor-row .ll { flex: 1; } .newfor-row small { display: block; color: var(--muted); font-size: 12px; }
 .chip-btn.same { border-style: dashed; }
+.pin-btn { font-size: 20px; color: var(--muted, #8a7a5a); } .pin-btn.on { color: #b8920f; }
+.big-act small { font-size: 12px; opacity: .75; } .big-act.fav-act { border-color: #c9a227; }
+.calc-list { display: flex; flex-direction: column; gap: 6px; }
+.calc-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel2); text-align: left; width: 100%; font: inherit; color: inherit; }
+.calc-row .ic { font-size: 24px; } .calc-row .nm { flex: 1; display: flex; flex-direction: column; } .calc-row .nm small { font-size: 12px; opacity: .75; }
+.calc-row b { font-size: 20px; } .calc-row.top { border: 2px solid #c9a227; }
 .locked-card { margin-top: 0; }
 .where-row { display: grid; grid-template-columns: 1fr 104px; gap: 8px; } .where-row.one { grid-template-columns: 1fr; } .where-row .edited-in { border-color: var(--accent); }
 .place-chips { margin-top: 8px; } .place-chips .chip-btn { font-size: 14px; }
@@ -1035,6 +1041,49 @@ function undoLog(ids) { ids.forEach(del); render(); }
 function isSolo(act) { return ACT[act] && ACT[act].group === 'Peloton'; }
 // Who joined you the last time you did this activity (for a one-tap "same as last time")
 function lastCrew(act) { const w = all('workout').filter(x => x.member === me() && x.act === act && x.group).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0]; return w ? all('workout').filter(x => x.group === w.group && x.member !== me()).map(x => x.member).filter(id => rec('member_' + id)) : []; }
+// What a workout would earn today, scored by the real rules (dry run: nothing is saved or synced)
+function previewGain(id, rec) {
+  let g; try { g = gainFor([id], () => { DB.records.__calc = Object.assign({ id: '__calc', type: 'workout', member: id, date: AZ.today(), felt: 'normal', by: id, createdAt: Date.now() }, rec); _ver++; }); }
+  finally { delete DB.records.__calc; _ver++; } return g[id];
+}
+// Your usual intensity for an activity/class: speed, incline or watts from your latest entry that had them
+function myPace(id, act, cls) {
+  const w = all('workout').filter(x => x.member === id && x.act === act && ((x.detail && x.detail.cls) || '') === (cls || '') && x.detail && (x.detail.mph || x.detail.watts || (x.detail.miles && x.min)))
+    .sort((a, b) => (b.date + (b.createdAt || 0)) > (a.date + (a.createdAt || 0)) ? 1 : -1)[0];
+  if (!w) return null; const d = w.detail, out = {};
+  if (d.mph || (d.miles && w.min)) out.mph = d.mph || Math.round(d.miles / (w.min / 60) * 10) / 10;
+  if (d.incline) out.incline = d.incline; if (d.watts) out.watts = d.watts; return out;
+}
+function openCalc() {
+  const id = me(), pup = isPup(id), body = h('div', { class: 'log-body' }); let mins = Local.get('calc_min', 20);
+  function draw() {
+    clear(body);
+    body.appendChild(h('div', { class: 'fld', style: 'margin-top:0' }, 'How much time do you have?'));
+    body.appendChild(h('div', { class: 'chips' }, [10, 15, 20, 30, 45, 60].map(n => h('button', { class: 'chip-btn' + (mins === n ? ' on' : ''), type: 'button', onclick: () => { mins = n; Local.set('calc_min', n); draw(); } }, n + 'm'))));
+    if (pup) {
+      const g = previewGain(id, { act: 'play', min: mins });
+      body.appendChild(h('div', { class: 'card calc-pup' }, h('b', null, 'Any ' + mins + ' minutes = +' + g + ' Merit today'), h('p', { class: 'hint', style: 'margin:6px 0 0' }, 'For Pups every activity counts the same, so pick what\'s fun' + (mins >= RULES.pup.activeMin ? '.' : '. Make it ' + RULES.pup.activeMin + '+ minutes and it counts as an Active Day too!'))));
+      const fav = topUsuals(id).slice(0, 3); if (fav.length) body.appendChild(h('div', { class: 'big-acts', style: 'margin-top:10px' }, fav.map(u => h('button', { class: 'big-act', type: 'button', onclick: () => { close(); openLog({ act: u.act, min: mins, cls: u.cls }); } }, h('span', { class: 'ic' }, ACT[u.act].icon), ACT[u.act].name))));
+      return;
+    }
+    const rows = [];
+    ACTIVITIES.filter(a => !a.hidden && !a.mind).forEach(a => (a.types || [null]).forEach(ty => {
+      const cls = ty ? ty.id : undefined, pace = myPace(id, a.id, cls), detail = Object.assign({}, cls ? { cls } : {}, pace || {});
+      if (pace && pace.mph && a.detail === 'dist') { detail.miles = Math.round(pace.mph * mins / 60 * 100) / 100; delete detail.mph; }
+      const rec = { act: a.id, min: mins, detail: Object.keys(detail).length ? detail : null }, mm = metFor(rec);
+      rows.push({ a, ty, cls, pace, met: mm.met, gain: previewGain(id, rec) });
+    }));
+    rows.sort((x, y) => y.gain - x.gain || y.met - x.met);
+    const best = rows[0].gain, cap = rows.every(r => r.gain === best);
+    body.appendChild(h('p', { class: 'hint', style: 'margin:8px 0' }, cap ? 'You\'ve hit today\'s effort cap, so everything earns the same now. Any movement still keeps your streak going.' : 'Merit you\'d earn today, Active Day, Standard and the daily cap included. "Your pace" uses your last workout with speed or watts.'));
+    const list = h('div', { class: 'calc-list' });
+    rows.slice(0, 10).forEach((r, i) => list.appendChild(h('button', { class: 'calc-row' + (i === 0 ? ' top' : ''), type: 'button', onclick: () => { close(); openLog({ act: r.a.id, min: mins, cls: r.cls }); } },
+      h('span', { class: 'ic' }, r.a.icon), h('span', { class: 'nm' }, (r.ty ? r.a.long + ' · ' + r.ty.name : r.a.name), h('small', null, '≈ ' + r.met.toFixed(1) + ' MET' + (r.pace ? ' · your pace' : '') + (isSolo(r.a.id) ? '' : ' · +' + RULES.together + ' if someone joins'))),
+      h('b', null, '+' + r.gain))));
+    body.appendChild(list);
+  }
+  const close = openModal('⏱ Got ' + 'a few minutes?', body); draw();
+}
 // A usual opens the log sheet pre-filled (never logs blind): check it, tweak it, tap Log it
 function quickUsual(u) { openLog({ act: u.act, min: u.min, cls: u.cls }); }
 // Today's usuals: your most-logged workouts of the last 60 days (activity + class type, at your most common length),
@@ -1046,8 +1095,9 @@ function topUsuals(id) {
     const mm = Math.max(5, Math.round(w.min / 5) * 5); g.n++; g.mins[mm] = (g.mins[mm] || 0) + 1; if (w.date > g.last) g.last = w.date; });
   const auto = Object.values(by).filter(g => g.n >= 2).sort((a, b) => b.n - a.n || (b.last > a.last ? 1 : b.last < a.last ? -1 : 0))
     .map(g => ({ act: g.act, cls: g.cls, n: g.n, auto: true, min: +Object.keys(g.mins).sort((x, y) => g.mins[y] - g.mins[x] || y - x)[0] }));
-  const saved = (M(id).usuals || []).filter(u => ACT[u.act] && !auto.some(a => a.act === u.act && (!u.cls || a.cls === u.cls)));
-  return auto.concat(saved).slice(0, 6);
+  const all_ = (M(id).usuals || []).filter(u => ACT[u.act]), pinned = all_.filter(u => u.pin), same = (a, u) => a.act === u.act && (!u.cls || !a.cls || a.cls === u.cls);
+  const saved = all_.filter(u => !u.pin && !auto.some(a => same(a, u)));
+  return pinned.concat(auto.filter(a => !pinned.some(u => same(a, u))), saved).slice(0, 6);
 }
 // openLog(preset): preset = { act, min } for a new entry, or { edit: workoutRecord } to change one
 // The places you've logged most recently, this activity first: one tap to answer "Where?"
@@ -1227,12 +1277,17 @@ function openMilestone(id) {
 }
 // Kids' chooser: big buttons first
 function openPupChooser() {
-  const grid = h('div', { class: 'big-acts' });
+  const wrap = h('div', null), grid = h('div', { class: 'big-acts' }), fav = topUsuals(me()).filter(u => u.auto).slice(0, 3);
+  if (fav.length) { wrap.appendChild(h('div', { class: 'fld', style: 'margin-top:0' }, '⭐ Your favorites'));
+    wrap.appendChild(h('div', { class: 'big-acts fav-acts' }, fav.map(u => h('button', { class: 'big-act fav-act', type: 'button', onclick: () => { close(); quickUsual(u); } }, h('span', { class: 'ic' }, ACT[u.act].icon), (u.act === 'dogwalk' ? dogs().map(d => d.name).join(' & ') : ACT[u.act].name), h('small', null, u.min + ' min')))));
+    wrap.appendChild(h('div', { class: 'fld' }, 'Everything')); }
+  wrap.appendChild(grid);
   PUP_BUTTONS.forEach(a => grid.appendChild(h('button', { class: 'big-act', type: 'button', onclick: () => { close(); openLog({ act: a, min: a === 'tkd' || a === 'park' || a === 'hike' ? 60 : 30 }); } },
     h('span', { class: 'ic' }, ACT[a].icon), a === 'bike' ? 'Peloton Bike' : a === 'tread' ? 'Peloton Tread' : a === 'dogwalk' ? dogs().map(d => d.name).join(' & ') : ACT[a].name)));
   grid.appendChild(h('button', { class: 'big-act', type: 'button', onclick: () => { close(); openLog(); } }, h('span', { class: 'ic' }, '➕'), 'Other'));
   grid.appendChild(h('button', { class: 'big-act milestone-tile', type: 'button', onclick: () => { close(); openMilestone(me()); } }, h('span', { class: 'ic' }, '🏅'), 'I earned something'));
-  const close = openModal('I moved! 🐾', grid);
+  wrap.appendChild(h('button', { class: 'ai-btn calc-btn', type: 'button', style: 'margin-top:12px', onclick: () => { close(); openCalc(); } }, '⏱ How many points for my time?'));
+  const close = openModal('I moved! 🐾', wrap);
 }
 
 // ───────────────────────── AI workout reader: paste text, snap/share a Peloton summary
@@ -1663,6 +1718,7 @@ function renderToday(main) {
     tops.forEach(u => us.appendChild(h('button', { class: 'usual', type: 'button', onclick: () => quickUsual(u) }, h('span', { class: 'ic' }, ACT[u.act].icon),
       h('span', null, (u.act === 'dogwalk' ? dogs().map(x => x.name).join(' & ') : ACT[u.act].name + (u.cls ? ' ' + ACT[u.act].types.find(x => x.id === u.cls).name : '')) + ' ' + u.min + 'm', h('small', null, u.auto ? 'logged ' + u.n + '× lately' : 'your usual')))));
     if (tops.length) lc.appendChild(us);
+    lc.appendChild(h('button', { class: 'ai-btn calc-btn', type: 'button', onclick: () => openCalc() }, '⏱ Got a few minutes? See what earns the most'));
     lc.appendChild(h('button', { class: 'ai-btn', type: 'button', onclick: () => openReader() }, '✨ Paste or snap a Peloton summary'));
     lc.appendChild(weighRow());
   }
@@ -1948,8 +2004,8 @@ function openSettings() {
         h('button', { type: 'button', 'aria-label': 'Less', onclick: () => { saveMember({ goalPct: Math.max(1, (m.goalPct || 10) - 1) }); draw(); render(); } }, '−'), h('b', null, '−' + (m.goalPct || 10) + '%'),
         h('button', { type: 'button', 'aria-label': 'More', onclick: () => { saveMember({ goalPct: Math.min(20, (m.goalPct || 10) + 1) }); draw(); render(); } }, '+'))));
       ws.appendChild(toggle('Share my % lost with the family', !!m.share, () => { saveMember({ share: !m.share }); syncProgressAwards(); draw(); render(); }));
-      const us = sec('MY USUALS', 'Today shows your most-logged workouts from the last 60 days first; these fill any spare spots (6 in all). Tapping one opens the log sheet already filled in.'), usuals = (m.usuals || []).slice();
-      usuals.forEach((u, i) => us.appendChild(h('div', { class: 'edit-row' }, h('span', { class: 'gi' }, ACT[u.act].icon), h('span', { class: 'gl' }, ACT[u.act].name + (u.cls ? ' ' + ACT[u.act].types.find(x => x.id === u.cls).name : '') + ' · ' + u.min + ' min'),
+      const us = sec('MY USUALS', 'Today shows your most-logged workouts from the last 60 days; these fill any spare spots (6 in all). ★ pins one to the top no matter what. Tapping a usual opens the log sheet already filled in.'), usuals = (m.usuals || []).slice();
+      usuals.forEach((u, i) => us.appendChild(h('div', { class: 'edit-row' }, h('button', { class: 'icon-btn pin-btn' + (u.pin ? ' on' : ''), type: 'button', 'aria-label': u.pin ? 'Unpin' : 'Pin to the top of Today', 'aria-pressed': u.pin ? 'true' : 'false', onclick: () => { usuals[i] = Object.assign({}, u, { pin: !u.pin }); saveMember({ usuals }); draw(); render(); } }, u.pin ? '★' : '☆'), h('span', { class: 'gi' }, ACT[u.act].icon), h('span', { class: 'gl' }, ACT[u.act].name + (u.cls ? ' ' + ACT[u.act].types.find(x => x.id === u.cls).name : '') + ' · ' + u.min + ' min'),
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove', onclick: () => { usuals.splice(i, 1); saveMember({ usuals }); draw(); render(); } }, '✕'))));
       if (usuals.length < 6) {
         if (!pick) us.appendChild(h('button', { class: 'btn-ghost', type: 'button', onclick: () => { pick = { act: 'tread', cls: 'run', min: 30 }; draw(); } }, '＋ Add a usual'));

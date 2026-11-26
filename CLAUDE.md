@@ -85,6 +85,13 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - **Usuals are suggestions, never blind logs** (Chris, Nov 25, 2026): tapping one opens the log sheet pre-filled (`quickUsual` → `openLog({ act, min, cls })`).
   - `topUsuals(id)` ranks your most-logged activity + class type over the last 60 days (2+ times, at your most common length, rounded to 5 min). Usuals saved in Settings fill the spare spots, 6 in all; a saved Tread/Bike usual with no class type gives way once history has that machine.
   - `migrateUsuals()` adds a Walk usual once per parent.
+  - **★ Pinned usuals** (`pin: true`, toggled in Settings → My usuals) always come first.
+  - **Pups get their own favorites:** their top 3 from history sit above the big buttons in `openPupChooser`.
+- **"⏱ Got a few minutes?" calculator** (`openCalc`, Chris, Nov 25, 2026): ranks every activity and class type by the Merit it would earn *today* for the chosen minutes.
+  - `previewGain` does a dry run through the real scoring (temporary `__calc` record, never saved), so Active Day, Standard, chain and the 40/day cap are all included.
+  - It uses your own pace from your latest entry with speed/incline/watts (`myPace`).
+  - Tapping a row opens the log sheet pre-filled.
+  - Pups see one line ("any N minutes = +X"; every activity counts the same for them) plus their favorites, with no MET talk.
 - **Where & how far** (Chris, Nov 25, 2026): every log sheet, kids' included, shows a route/place box (`title`) and, for distance activities, miles (`detail.miles`) right after "When". They're visible, never required, and recent places (`recentPlaces`) are one-tap chips so they're nearly always answered. These fields are not in "More stats".
 - **Editing:** tapping an Annals entry calls `openLog({ edit: record })`, which updates that record in place.
   - **Only the person who logged a workout (`by`) can change its shared facts** (activity, class type, minutes, date, place, distance, dogs) and use Apply to everyone (Chris, Nov 25, 2026). `canChange` / `canApplyAll`.
