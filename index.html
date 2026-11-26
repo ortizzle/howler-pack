@@ -127,6 +127,8 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .newfor-list { background: rgba(46,125,50,.07); border-color: rgba(46,125,50,.3); } .newfor-list .card-t .chip-btn { min-height: 44px; font-size: 13px; }
 .newfor-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid rgba(46,125,50,.2); font-size: 14px; } .newfor-row .ll { flex: 1; } .newfor-row small { display: block; color: var(--muted); font-size: 12px; }
 .chip-btn.same { border-style: dashed; }
+.idea-row { padding: 8px 0 10px; border-bottom: 1px solid var(--line); } .idea-row p { margin: 0 0 8px; }
+.three { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 8px; } .three button { min-height: 44px; }
 .coach-banner { align-items: stretch; } .cb-main { flex: 1; min-width: 0; }
 .cb-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .cb-head b { color: var(--coach); } .cb-head small { width: 100%; opacity: .7; }
 .cb-av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--panel); border: 2px solid var(--coach); font-size: 17px; }
@@ -1858,7 +1860,7 @@ function renderToday(main) {
   }
   main.appendChild(lc);
   syncQuestAwards();
-  [colorPrompt(), questCard(), recapCard(), newForYou(), tkdPrompt(), ...classPrompts(), goalNudge()].forEach(x => { if (x) main.appendChild(x); });
+  [colorPrompt(), ideaPrompt(), questCard(), recapCard(), newForYou(), tkdPrompt(), ...classPrompts(), goalNudge()].forEach(x => { if (x) main.appendChild(x); });
   main.appendChild(raceCard(false));
   if (!preseason()) main.appendChild(primusCard());
   main.appendChild(challengeCard());
@@ -1943,7 +1945,39 @@ function openChallenge() {
 // ───────────────────────── Family quests: something special the pack does together now and then
 // event: everyone listed does one activity together (one group entry) by the date. total: the team adds up minutes by the date.
 const QUEST = { eventAll: 50, eventSome: 15, total: 30 };
-function quests() { return all('quest').sort((a, b) => a.to < b.to ? -1 : 1); }
+function quests() { return all('quest').filter(q => q.status !== 'suggested' && q.status !== 'declined').sort((a, b) => a.to < b.to ? -1 : 1); }
+// The girls can suggest a quest; a parent approves it (as is, or edited first) or says "maybe another time"
+function questIdeas() { return all('quest').filter(q => q.status === 'suggested').sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)); }
+function approveIdea(q) { put(Object.assign({}, q, { status: 'on', from: AZ.today() < q.from ? q.from : AZ.today(), to: q.to < AZ.today() ? addDays(weekKey(AZ.today()), 6) : q.to, members: q.members || memberIds(), approvedBy: me() })); }
+function ideaRow(q, after) {
+  return h('div', { class: 'idea-row' }, h('p', null, '💡 ' + M(q.by).name + ' suggests: ', h('b', null, (q.act && ACT[q.act] ? ACT[q.act].icon + ' ' : '') + q.title), ' · by ' + fmtDow(q.to)),
+    h('div', { class: 'three' },
+      h('button', { class: 'btn-ghost', type: 'button', onclick: () => { put(Object.assign({}, q, { status: 'declined', declinedBy: me() })); after(); toast('Maybe another time'); } }, 'Not now'),
+      h('button', { class: 'btn-ghost', type: 'button', onclick: () => openQuestPlanner(after, q) }, 'Edit'),
+      h('button', { class: 'btn-primary', type: 'button', onclick: () => { approveIdea(q); after(); toast('🏔 Quest on: ' + q.title); } }, 'Approve')));
+}
+function ideaPrompt() {
+  if (isPup(me())) return null; const ids = questIdeas(); if (!ids.length) return null;
+  const c = card('💡 QUEST IDEA' + (ids.length > 1 ? 'S' : '') + ' FROM THE GIRLS', null, 'idea-card'); ids.forEach(q => c.appendChild(ideaRow(q, render))); return c;
+}
+function openQuestSuggest() {
+  const today = AZ.today(), sun = addDays(weekKey(today), 6), body = h('div', { class: 'log-body' }), f = { title: '', act: 'hike', to: sun };
+  const mine = questIdeas().filter(q => q.by === me());
+  function draw() {
+    clear(body).appendChild(h('p', { class: 'hint', style: 'margin-top:0' }, 'What should the whole pack do together? A parent will say yes, tweak it, or save it for another time.'));
+    body.appendChild(h('div', { class: 'chips' }, ['Family hike', 'Bike ride together', 'Park & play day', 'Walk the dogs together', 'Swim day'].map(s => h('button', { class: 'chip-btn' + (f.title === s ? ' on' : ''), type: 'button', onclick: () => { f.title = s; f.act = s.includes('hike') ? 'hike' : s.includes('Bike') ? 'ride' : s.includes('dogs') ? 'dogwalk' : s.includes('Swim') ? 'swim' : 'play'; draw(); } }, s))));
+    body.appendChild(h('div', { class: 'fld' }, 'Or your own idea'));
+    body.appendChild(h('input', { class: 'txt', type: 'text', maxlength: '60', value: f.title, placeholder: 'e.g. Sunset walk to the park', 'aria-label': 'Your quest idea', oninput: e => { f.title = e.target.value; } }));
+    body.appendChild(h('div', { class: 'fld' }, 'When'));
+    body.appendChild(h('div', { class: 'chips' }, [[sun, 'This weekend'], [addDays(sun, 7), 'Next weekend']].map(x => h('button', { class: 'chip-btn' + (f.to === x[0] ? ' on' : ''), type: 'button', onclick: () => { f.to = x[0]; draw(); } }, x[1]))));
+    body.appendChild(h('button', { class: 'btn-primary', type: 'button', style: 'margin-top:12px', onclick: () => {
+      const title = f.title.trim(); if (!title) { toast('Pick or type an idea'); return; }
+      if (mine.length >= 2) { toast('You already have 2 ideas waiting. Give the parents a moment!'); return; }
+      put({ id: rid('q'), type: 'quest', status: 'suggested', kind: 'event', title, act: f.act, from: today, to: f.to, members: memberIds(), by: me(), createdAt: Date.now() });
+      close(); render(); toast('💡 Sent to Mom and Dad!'); } }, 'Suggest it'));
+  }
+  const close = openModal('💡 Suggest a family quest', body); draw();
+}
 function questStatus(q) {
   const today = AZ.today(), inWin = w => w.date >= q.from && w.date <= q.to && w.date <= today, mem = q.members || memberIds();
   if (q.kind === 'total') {
@@ -1985,12 +2019,16 @@ function questPackCard() {
   const c = card('🏔 FAMILY QUESTS', 'something special, together'), qs = quests().slice().reverse().slice(0, 6);
   if (!qs.length) c.appendChild(h('p', { class: 'hint' }, 'Every so often a parent plans a special family hike, ride or outing. When the whole pack does it together, everyone gets +' + QUEST.eventAll + ' Merit.'));
   qs.forEach(q => c.appendChild(questRow(q, true)));
+  if (isPup(me())) {
+    all('quest').filter(q => q.by === me() && (q.status === 'suggested' || q.status === 'declined') && (q.createdAt || 0) > Date.now() - 21 * 864e5).forEach(q => c.appendChild(h('p', { class: 'hint idea-mine' }, '💡 ' + q.title + ': ' + (q.status === 'suggested' ? 'waiting for a parent' : 'maybe another time'))));
+    c.appendChild(h('button', { class: 'ai-btn', type: 'button', onclick: () => openQuestSuggest() }, '💡 Suggest a family quest'));
+  }
   return c;
 }
-function openQuestPlanner(onDone) {
+function openQuestPlanner(onDone, idea) {
   if (isPup(me())) return;   // parents design quests (Settings → Family)
   const today = AZ.today(), sun = addDays(weekKey(today), 6), body = h('div', { class: 'log-body' });
-  const f = { kind: 'event', title: '', act: 'hike', to: sun, target: 500, members: memberIds(), place: '' };
+  const f = idea ? { kind: 'event', title: idea.title, act: idea.act || 'any', to: idea.to < today ? sun : idea.to, target: 500, members: (idea.members || memberIds()).slice(), place: idea.place || '' } : { kind: 'event', title: '', act: 'hike', to: sun, target: 500, members: memberIds(), place: '' };
   const outside = ACTIVITIES.filter(a => !a.hidden && !a.mind && a.group !== 'Peloton');
   function draw() {
     clear(body).appendChild(h('div', { class: 'chips' }, [['event', '🏔 Special outing, together'], ['total', '➕ Team total minutes']].map(k => h('button', { class: 'chip-btn' + (f.kind === k[0] ? ' on' : ''), type: 'button', onclick: () => { f.kind = k[0]; draw(); } }, k[1]))));
@@ -2014,10 +2052,10 @@ function openQuestPlanner(onDone) {
     body.appendChild(h('div', { class: 'chips' }, members().map(m => h('button', { class: 'chip-btn who' + (f.members.includes(m.mid) ? ' on' : ''), type: 'button', style: '--house:' + houseColor(m.mid), onclick: () => { f.members = f.members.includes(m.mid) ? f.members.filter(x => x !== m.mid) : f.members.concat(m.mid); if (f.members.length < 2) { toast('A family quest needs at least two of you'); f.members = memberIds(); } draw(); } }, m.name))));
     body.appendChild(h('button', { class: 'btn-primary', type: 'button', style: 'margin-top:12px', onclick: () => {
       const title = f.title.trim() || (f.kind === 'event' ? (f.act === 'any' ? 'Family day out' : 'Family ' + ACT[f.act].name.toLowerCase()) : f.target + ' family minutes');
-      put({ id: rid('q'), type: 'quest', kind: f.kind, title, act: f.kind === 'event' ? f.act : null, place: f.place.trim() || null, from: today, to: f.to, target: f.kind === 'total' ? f.target : null, members: f.members.slice(), by: me(), createdAt: Date.now() });
+      put(Object.assign({ id: idea ? idea.id : rid('q'), type: 'quest', kind: f.kind, title, act: f.kind === 'event' ? f.act : null, place: f.place.trim() || null, from: today, to: f.to, target: f.kind === 'total' ? f.target : null, members: f.members.slice(), by: idea ? idea.by : me(), createdAt: idea ? idea.createdAt : Date.now() }, idea ? { status: 'on', approvedBy: me() } : {}));
       close(); render(); if (onDone) onDone(); toast('🏔 Quest on: ' + title); } }, 'Start the quest'));
   }
-  const close = openModal('🏔 Plan a family quest', body); draw();
+  const close = openModal(idea ? '🏔 ' + M(idea.by).name + '\'s idea' : '🏔 Plan a family quest', body); draw();
 }
 function goalNudge() {
   if (goalsOf(me(), 'month')) return null;
@@ -2373,6 +2411,7 @@ function openSettings() {
                     us.appendChild(h('button', { class: 'btn-primary', type: 'button', onclick: () => { usuals.push(pick); pick = null; saveMember({ usuals }); draw(); render(); } }, 'Save ' + ACT[pick.act].name + (pick.cls ? ' ' + ACT[pick.act].types.find(x => x.id === pick.cls).name : '') + ' ' + pick.min + 'm')); }
       }
       const qs = sec('FAMILY QUESTS', 'Design something special the pack does together now and then: a family hike, a ride, a team-minutes goal. Everyone sees it on Today.');
+      questIdeas().forEach(q => qs.appendChild(ideaRow(q, () => { draw(); render(); })));
       quests().slice().reverse().slice(0, 6).forEach(q => { const s = questStatus(q); qs.appendChild(h('div', { class: 'edit-row' }, h('span', { class: 'gi' }, q.act && ACT[q.act] ? ACT[q.act].icon : '🏔'),
         h('span', { class: 'gl' }, q.title + ' · ' + (s.done ? '✓ done' : s.over ? 'ended ' + fmtShort(q.to) : 'by ' + fmtDow(q.to))),
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove ' + q.title, onclick: () => confirmModal('Remove this quest?', q.title + (s.done ? ' and its Merit' : '') + ' will be removed for everyone.', 'Remove', () => { del(q.id); syncQuestAwards(); draw(); render(); }) }, '✕'))); });
