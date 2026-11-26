@@ -507,7 +507,7 @@ const HOUSES = { Red: '#9a1010', Obsidian: '#1e3858', Violet: '#4a1878', Copper:
 const DEFAULT_ROSTER = [
   { id: 'chris', name: 'Chris', role: 'proctor', house: 'Red', coach: 'dancer', pronouns: '', goalPct: 10, share: false, order: 1,
     usuals: [{ act: 'tread', min: 30 }, { act: 'bike', min: 45 }, { act: 'strength', min: 20 }, { act: 'dogwalk', min: 30, together: true }, { act: 'walk', min: 30, together: true }] },
-  { id: 'kat', name: 'Kat', role: 'proctor', house: 'Obsidian', coach: 'matteo', pronouns: '', goalPct: 8, share: false, order: 2, weekly: [{ act: 'pickleball', days: [6], min: 90 }],
+  { id: 'kat', name: 'Kat', role: 'proctor', house: 'Obsidian', coach: 'matteo', pronouns: '', goalPct: 8, share: false, order: 2, weekly: [{ act: 'pickleball', days: [6], min: 45 }],
     usuals: [{ act: 'bike', min: 30 }, { act: 'yoga', min: 20 }, { act: 'dogwalk', min: 30, together: true }, { act: 'play', min: 60, together: true }, { act: 'walk', min: 30, together: true }] },
   { id: 'sedona', name: 'Sedona', role: 'pup', house: 'Violet', coach: 'mickey', pronouns: 'she/her', order: 3, usuals: [] },
   { id: 'river', name: 'River', role: 'pup', house: 'Copper', coach: 'dancer', pronouns: 'she/her', order: 4, usuals: [] },
@@ -1645,7 +1645,11 @@ function classPrompts() {
 }
 // Kat plays pickleball most Sunday mornings: pre-set once, editable in Settings → My weekly class
 function migrateWeekly() {
-  const k = rec('member_kat'); if (k && !('weekly' in k)) put(Object.assign({}, k, { weekly: [{ act: 'pickleball', days: [6], min: 90 }] }));
+  const k = rec('member_kat'); if (!k) return;
+  if (!('weekly' in k)) { put(Object.assign({}, k, { weekly: [{ act: 'pickleball', days: [6], min: 45 }] })); return; }
+  // Kat plays about 45 minutes, not the 90 first pre-set: fix that preset once (a length she picked herself is left alone)
+  const w = k.weekly || [], i = w.findIndex(c => c.act === 'pickleball' && c.min === 90 && String(c.days) === '6');
+  if (i >= 0) put(Object.assign({}, k, { weekly: w.map((c, j) => j === i ? Object.assign({}, c, { min: 45 }) : c) }));
 }
 function tkdPrompt() {
   const kidsIds = memberIds().filter(isPup), seen = Local.get('seen', {});
