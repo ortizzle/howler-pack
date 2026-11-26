@@ -128,8 +128,10 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - **After Practice Week the coach lives in the season banner** (`coachBanner`), the place Chris hopes everyone reads daily (Nov 26, 2026).
     - **Split layout (option 1, Chris, Nov 26, 2026):**
       - **The banner keeps the Practice Week banner's look** (Chris preferred it, Nov 26, 2026): the season as the title, the coach's note as the one sentence (`coachWord`: one Claude message a day saved in `pack_coach_day` when there's a key, else the built-in `coachLine`), "— Dancer · notes ›" underneath, and the days-left counter on the right (`.cb-classic`). Tapping it opens the notes. Don't turn it back into a busier card.
-      - **Three tiles that never move:** days this week (✦ when the Standard is met, 🎄 in holiday weeks), Primus place (♛ when leading), Merit to the next rank.
-      - **The tiles are small shortcut buttons** (44px, `jumpTo`). Days opens My week on Progress (`.my-week`), Primus opens the Primus tab under This week, and the next-rank tile opens your own Pack card. The target flashes gold.
+      - **Three tiles that never move:** days this week (✦ when the Standard is met, 🎄 in holiday weeks), Primus place (♛ when leading), and **a goal** (Chris, Nov 26, 2026; it replaced "Merit to next rank").
+        - The goal tile (`goalTile` / `bannerGoal`) shows the goal you 📌 pinned on the Goals tab (`pack_banner_goal`, per phone), else your first unfinished monthly goal, else a season goal, e.g. "3/8 🐕 dog walks".
+        - With no goals it shows "🎯 Set a goal".
+      - **The tiles are small shortcut buttons** (44px, `jumpTo`). Days opens My week on Progress (`.my-week`), Primus opens the Primus tab under This week, and the goal tile opens that goal on the Goals tab (`.goal-<scope>-<type>`). The target flashes gold.
     - Tapping the banner opens `openCoachNotes`: the note, every insight (`bannerInsights`: holiday week, Standard, challenge, family quest, next rank, Primus race, chain, race checkpoint) and, with a key, "Ask for a fresh note".
     - The separate coach card shows only before Dec 1. Kids' banner content follows the no-weight/food/body rule.
 

@@ -150,6 +150,7 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .cb-season { display: flex; justify-content: space-between; font-family: var(--fh); font-weight: 700; letter-spacing: .12em; font-size: 12px; color: #7a5a1c; margin: 8px 2px 8px; text-transform: uppercase; }
 .cb-note { display: flex; gap: 10px; align-items: flex-start; padding: 14px; border-radius: 4px 14px 6px 12px / 12px 5px 14px 6px; background: linear-gradient(180deg, #fffaf0, #f8eed6); border: 1px solid rgba(140,100,30,.35); outline: 1px solid rgba(201,162,39,.45); outline-offset: -6px; box-shadow: var(--shadow); }
 .cb-note .cb-word { margin: 2px 0 0; }
+.pin-goal { font-size: 15px; opacity: .35; filter: grayscale(1); } .pin-goal.on { opacity: 1; filter: none; }
 .cb-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
 .cb-tile { text-align: center; min-height: 44px; padding: 5px 4px; font: inherit; color: inherit; cursor: pointer; border: 0; border-radius: 12px; background: linear-gradient(180deg, #fdf9f0, #f3ead7); box-shadow: inset 0 1px 0 #fff, 0 2px 0 rgba(80,60,30,.18); } .cb-tile b { display: block; font-size: 17px; font-family: var(--fh); line-height: 1.15; } .cb-tile small { font-size: 11px; color: var(--muted); line-height: 1.2; display: block; } .cb-tile:active { transform: translateY(1px); box-shadow: inset 0 1px 0 #fff, 0 1px 0 rgba(80,60,30,.18); }
 .flash { animation: flash 1.2s ease-out; } @keyframes flash { 0% { box-shadow: 0 0 0 3px rgba(201,162,39,.9); } 100% { box-shadow: 0 0 0 0 rgba(201,162,39,0); } } .cb-tile.go b { color: #2e7d32; }
@@ -1937,7 +1938,13 @@ function coachBanner(se) {
     h('div', { class: 'cb-tiles' },
       tile(wk.standard ? '✦' : wk.active + '/' + wk.need, wk.standard ? 'Standard met' + (wk.hol ? ' 🎄' : '') : 'days this week' + (wk.hol ? ' 🎄' : ''), wk.standard ? 'go' : '', () => jumpTo('progress', '.my-week'), 'My week: open it on Progress'),
       tile(lead.length === 1 && lead[0] === id ? '♛' : ordinal(pl), lead.length === 1 && lead[0] === id ? 'leading Primus' : 'Primus race', '', () => { weekTab = 'primus'; jumpTo('today', '.week-tabs'); }, 'Primus race: open the Primus tab'),
-      tile(sc.rank.next ? (sc.rank.next.min - sc.year).toLocaleString() : '✦', sc.rank.next ? 'to ' + sc.rank.next.icon + ' ' + sc.rank.next.name : 'Peerless Scarred', '', () => { openCards[id] = true; jumpTo('today', '.player-card.me'); }, 'My rank: open my card')));
+      goalTile(id, tile)));
+}
+function goalTile(id, tile) {
+  const bg = bannerGoal(id);
+  if (!bg) return tile('🎯', 'Set a goal', '', () => jumpTo('goals', '.card'), 'Set a goal on the Goals tab');
+  const T = GOAL_TYPES[bg.g.type], v = T.step === 0.5 ? bg.st.v.toFixed(1) : bg.st.v;
+  return tile(bg.st.done ? '✓' : v + '/' + bg.g.target, T.icon + ' ' + GOAL_SHORT[bg.g.type] + (bg.scope === 'season' ? ' · season' : ''), bg.st.done ? 'go' : '', () => jumpTo('goals', '.goal-' + bg.scope + '-' + bg.g.type), 'My goal: ' + T.label(bg.g.target));
 }
 // Tiles are shortcuts: switch tab if needed, then bring the target into view (below the sticky header)
 function jumpTo(tab, sel) {
@@ -2435,9 +2442,19 @@ function pupBadges(id) {
 // ───────────────────────── Goals
 function goalRow(id, g, scope) {
   const T = GOAL_TYPES[g.type]; if (!T) return null; const st = goalStatus(id, g, scope), r = R(id);
-  return h('div', { class: 'goal' + (st.done ? ' done' : '') }, h('div', { class: 'goal-top' }, h('span', { class: 'gi' }, T.icon),
+  const pin = Local.get('banner_goal', null), pinned = id === me() && pin && pin.scope === scope && pin.type === g.type;
+  return h('div', { class: 'goal goal-' + scope + '-' + g.type + (st.done ? ' done' : '') }, h('div', { class: 'goal-top' }, h('span', { class: 'gi' }, T.icon),
     h('span', { class: 'gl' }, T.label(g.target), h('small', null, (st.done ? '✓ Done! +' : '+') + r[scope === 'month' ? 'goalMonth' : 'goalSeason'] + ' Merit' + (st.done ? '' : st.onPace ? ' · on pace' : ' · a little behind pace') + (T.private ? ' · 🔒 only you see this' : ''))),
-    h('span', { class: 'gv' }, (T.step === 0.5 ? st.v.toFixed(1) : st.v) + '/' + g.target)), h('div', { class: 'bar' }, h('i', { style: 'width:' + Math.round(st.pct * 100) + '%' })));
+    h('span', { class: 'gv' }, (T.step === 0.5 ? st.v.toFixed(1) : st.v) + '/' + g.target),
+    id === me() ? h('button', { class: 'icon-btn pin-goal' + (pinned ? ' on' : ''), type: 'button', 'aria-pressed': pinned ? 'true' : 'false', 'aria-label': pinned ? 'Shown on my banner' : 'Show this goal on my banner', onclick: () => { Local.set('banner_goal', { scope, type: g.type }); render(); toast('📌 On your banner now'); } }, '📌') : null),
+    h('div', { class: 'bar' }, h('i', { style: 'width:' + Math.round(st.pct * 100) + '%' })));
+}
+// The goal on the banner's third tile: the one you pinned, else your first unfinished monthly goal, else a season goal
+const GOAL_SHORT = { activeDays: 'Active Days', standards: 'Standards', minutes: 'minutes', tkd: 'Taekwondo', dogs: 'dog walks', outside: 'outside', peloton: 'Peloton', weight: '% trend' };
+function bannerGoal(id) {
+  const all_ = []; ['month', 'season'].forEach(scope => (goalsOf(id, scope) || []).forEach(g => { if (GOAL_TYPES[g.type] && !(isPup(id) && GOAL_TYPES[g.type].who === 'proctor')) all_.push({ scope, g, st: goalStatus(id, g, scope) }); }));
+  if (!all_.length) return null; const pin = Local.get('banner_goal', null);
+  return all_.find(x => pin && x.scope === pin.scope && x.g.type === pin.type) || all_.find(x => x.scope === 'month' && !x.st.done) || all_.find(x => !x.st.done) || all_[0];
 }
 function saveGoals(id, scope, list) { const day = goalDay(); put({ id: 'goals_' + id + '_' + scope + '_' + periodOf(scope, day), type: 'goals', member: id, scope, period: periodOf(scope, day), list }); }
 function openGoalEditor(scope, startList) {
