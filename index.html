@@ -134,7 +134,7 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .ex-tip { font-size: 13px; margin: 6px 0 0; min-height: 18px; } .ex-say { font-weight: 600; margin: 8px 0; } .ex-table { width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 6px; } .ex-table td, .ex-table th { padding: 4px; border-bottom: 1px solid var(--line); text-align: right; } .ex-table td:first-child, .ex-table th:first-child { text-align: left; }
 .ex-fav { margin-top: 10px; } .pt-row { display: grid; grid-template-columns: 1.2fr 2fr auto; gap: 8px; align-items: center; margin: 6px 0; font-size: 14px; } .pt-bar { height: 12px; background: var(--panel2); border-radius: 6px; overflow: hidden; } .pt-bar i { display: block; height: 100%; border-radius: 6px; }
 .needs-more, .ex-more { display: block; width: 100%; min-height: 44px; margin-top: 8px; border: 0; background: transparent; color: var(--accent, #9a1010); font: inherit; font-size: 14px; text-align: left; }
-.tools-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .tools-row .ai-btn { margin: 0; font-size: 14px; padding: 8px 10px; display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1.2; } .tools-row .tb-ic { font-size: 17px; line-height: 1; flex: 0 0 auto; }
+.tools-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; } .tools-row .ai-btn { min-height: 50px; } .tools-row .ai-btn { margin: 0; font-size: 14px; padding: 8px 10px; display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1.2; } .tools-row .tb-ic { font-size: 17px; line-height: 1; flex: 0 0 auto; }
 .needs .need + .need { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; } .needs .need > .card { box-shadow: none; border: 0; margin: 0; padding: 0; background: transparent; }
 .week-tabs .tab-panel > .card { box-shadow: none; border: 0; margin: 0; padding: 0; background: transparent; } .week-tabs .tab-panel > .card > .card-t:first-child { font-size: 12px; opacity: .8; }
 .seg { display: flex; gap: 4px; background: var(--panel2); border-radius: 12px; padding: 4px; margin: 4px 0 12px; } .seg-b { flex: 1; min-height: 44px; border: 0; border-radius: 9px; background: transparent; font: inherit; font-size: 14px; color: inherit; } .seg-b.on { background: var(--panel); box-shadow: 0 1px 4px rgba(0,0,0,.12); font-weight: 700; }
@@ -143,14 +143,20 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .coach-tile.rec { outline: 3px solid var(--coach); } .coach-tile p { margin: 6px 0 4px; font-size: 14px; } .ct-head { display: flex; align-items: center; gap: 8px; } .ct-head b { color: var(--coach); font-size: 17px; } .ct-head small { opacity: .75; } .ct-focus { opacity: .7; font-size: 12px; }
 .idea-row { padding: 8px 0 10px; border-bottom: 1px solid var(--line); } .idea-row p { margin: 0 0 8px; }
 .three { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 8px; } .three button { min-height: 44px; }
-.coach-banner { align-items: stretch; } .cb-main { flex: 1; min-width: 0; }
+.coach-banner { margin-top: 6px; } .coach-banner.season-banner { display: block; }
+.cb-season { display: flex; justify-content: space-between; font-family: var(--fh); font-weight: 700; letter-spacing: .12em; font-size: 12px; color: #7a5a1c; margin: 8px 2px 8px; text-transform: uppercase; }
+.cb-note { display: flex; gap: 10px; align-items: flex-start; padding: 14px; border-radius: 4px 14px 6px 12px / 12px 5px 14px 6px; background: linear-gradient(180deg, #fffaf0, #f8eed6); border: 1px solid rgba(140,100,30,.35); outline: 1px solid rgba(201,162,39,.45); outline-offset: -6px; box-shadow: var(--shadow); }
+.cb-note .cb-word { margin: 2px 0 0; }
+.cb-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+.cb-tile { text-align: center; padding: 10px 4px; border-radius: 12px; background: linear-gradient(180deg, #fdf9f0, #f3ead7); box-shadow: inset 0 1px 0 #fff, 0 2px 0 rgba(80,60,30,.18); } .cb-tile b { display: block; font-size: 22px; font-family: var(--fh); line-height: 1.2; } .cb-tile small { font-size: 12px; color: var(--muted); } .cb-tile.go b { color: #2e7d32; }
+.coach-notes .cb-word { font-style: italic; font-size: 17px; line-height: 1.45; margin-bottom: 8px; } .cn-row { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line); } .cn-row span { font-size: 20px; } .cn-row p { margin: 0; } .cb-main { flex: 1; min-width: 0; }
 .cb-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .cb-head b { color: var(--coach); } .cb-head small { width: 100%; opacity: .7; }
 .cb-av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--panel); border: 2px solid var(--coach); font-size: 17px; }
 .cb-word { font-style: italic; font-size: 16px; line-height: 1.4; margin: 8px 0; }
 .cb-ins { display: flex; align-items: center; gap: 8px; background: var(--panel); border-radius: 12px; padding: 4px 4px 4px 10px; min-height: 48px; }
 .cb-ins .ii { font-size: 18px; } .cb-ins .it { flex: 1; font-size: 14px; line-height: 1.3; } .cb-ins .in { font-size: 11px; opacity: .6; }
 .ins-next { min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); font-size: 22px; font-weight: 700; color: var(--coach); }
-.cb-ask { margin-top: 8px; min-height: 44px; padding: 0 12px; border-radius: 22px; border: 1px solid var(--coach); background: transparent; color: var(--coach); font: inherit; font-size: 14px; }
+.cb-ask { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--coach); background: #fffdf7; font-size: 18px; box-shadow: 0 2px 0 rgba(80,60,30,.15); }
 .quest-row { padding: 10px 0; border-bottom: 1px solid var(--line); } .quest-row:last-of-type { border-bottom: 0; } .quest-row .qt { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; } .quest-row .qt small { opacity: .75; white-space: nowrap; }
 .quest-row.done .qt b { color: #2e7d32; } .qwho { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .qchip { padding: 4px 10px; border-radius: 14px; font-size: 13px; border: 1px solid var(--house); color: var(--house); } .qchip.on { background: var(--house); color: #fff; }
@@ -1913,17 +1919,30 @@ async function refreshCoachWord(id, force) {
   const s = Local.get('coach_day', {}); if (!getKey() || PREVIEW || (!force && s.date === AZ.today() && s.id === id) || refreshCoachWord.busy) return;
   refreshCoachWord.busy = true; try { const text = await askCoach(id); Local.set('coach_day', { date: AZ.today(), id, text }); render(); } catch (e) { if (force) toast(aiErr(e)); } finally { refreshCoachWord.busy = false; }
 }
+// The banner, split (Chris, Nov 26, 2026): a slim season line, the coach's note on its own paper card (💬 opens every insight),
+// and three tiles that never move: days this week, Primus place, Merit to the next rank
 function coachBanner(se) {
-  const id = me(), c = coachOf(id), ins = bannerInsights(id), t = AZ.today(), i = bannerIdx % Math.max(1, ins.length), cur = ins[i];
-  const nxt = h('button', { class: 'ins-next', type: 'button', 'aria-label': 'Next insight', onclick: () => { bannerIdx++; render(); } }, '›');
+  const id = me(), c = coachOf(id), t = AZ.today(), sc = score(id), wk = sc.cur, pl = primusPlace(weekKey(t), id), lead = primusLeaders(weekKey(t));
   refreshCoachWord(id, false);
-  return h('div', { class: 'season-banner coach-banner', style: '--coach:' + c.color },
-    h('div', { class: 'cb-main' },
-      h('div', { class: 'cb-head' }, h('span', { class: 'cb-av' }, c.icon), h('b', null, c.name + ' · ' + fmtDow(t)), h('small', null, se.name + ' · ' + se.sub)),
-      h('p', { class: 'cb-word' }, coachWord(id)),
-      cur ? h('div', { class: 'cb-ins' }, h('span', { class: 'ii' }, cur[0]), h('span', { class: 'it' }, cur[1]), h('span', { class: 'in' }, (i + 1) + '/' + ins.length), nxt) : null,
-      getKey() ? h('button', { class: 'cb-ask', type: 'button', onclick: e => { e.target.textContent = c.name + ' is thinking…'; refreshCoachWord(id, true); } }, '💬 Ask ' + c.name + ' again') : h('button', { class: 'cb-ask', type: 'button', onclick: () => toast('Live coaching needs a Claude key: Settings ⚙️') }, '💬 Ask ' + c.name)),
-    h('div', { class: 'left' }, daysBetween(t, se.end), h('small', null, 'days left')));
+  const tile = (big, small, cls) => h('div', { class: 'cb-tile' + (cls ? ' ' + cls : '') }, h('b', null, big), h('small', null, small));
+  return h('div', { class: 'coach-banner', style: '--coach:' + c.color },
+    h('div', { class: 'cb-season' }, h('span', null, se.name + ' · ' + se.sub), h('span', null, daysBetween(t, se.end) + ' days left')),
+    h('div', { class: 'cb-note' }, h('span', { class: 'cb-av' }, c.icon),
+      h('div', { class: 'cb-main' }, h('div', { class: 'cb-head' }, h('b', null, c.name + ' · ' + fmtDow(t))), h('p', { class: 'cb-word' }, coachWord(id))),
+      h('button', { class: 'cb-ask', type: 'button', 'aria-label': c.name + '\'s notes and insights', onclick: () => openCoachNotes(id) }, '💬')),
+    h('div', { class: 'cb-tiles' },
+      tile(wk.standard ? '✦' : wk.active + '/' + wk.need, wk.standard ? 'Standard met' + (wk.hol ? ' 🎄' : '') : 'days this week' + (wk.hol ? ' 🎄' : ''), wk.standard ? 'go' : ''),
+      tile(lead.length === 1 && lead[0] === id ? '♛' : ordinal(pl), lead.length === 1 && lead[0] === id ? 'leading Primus' : 'Primus race'),
+      tile(sc.rank.next ? (sc.rank.next.min - sc.year).toLocaleString() : '✦', sc.rank.next ? 'to ' + sc.rank.next.icon + ' ' + sc.rank.next.name : 'Peerless Scarred')));
+}
+// 💬: the coach's note, every insight, and (with a key) a fresh message
+function openCoachNotes(id) {
+  const c = coachOf(id), body = h('div', { class: 'log-body coach-notes' });
+  body.appendChild(h('p', { class: 'cb-word' }, coachWord(id)));
+  bannerInsights(id).forEach(x => body.appendChild(h('div', { class: 'cn-row' }, h('span', null, x[0]), h('p', null, x[1]))));
+  body.appendChild(getKey() ? h('button', { class: 'btn-primary', type: 'button', style: 'margin-top:12px', onclick: e => { e.target.textContent = c.name + ' is thinking…'; e.target.disabled = true; close(); refreshCoachWord(id, true); } }, '💬 Ask ' + c.name + ' for a fresh note')
+    : h('p', { class: 'hint', style: 'margin-top:12px' }, 'Live coaching needs a Claude key: Settings ⚙️. Until then ' + c.name + ' uses built-in notes.'));
+  const close = openModal(c.icon + ' ' + c.name, body);
 }
 function seasonBanner() {
   const se = currentSeason(), t = AZ.today();
