@@ -121,6 +121,15 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - **Ties are never broken alphabetically.** A tie at the top (`primusLeaders`) shows no crown and an "anyone can take it" note. If the week ends tied, each tied person gets a shared crown (`aw_primus_<week>_<id>`, "(shared)") and the +25.
 - **Coaches:** `COACHES` (Dancer, Mickey, Matteo, as in the original Howlers). The model is `claude-opus-5-5` with effort `low`, browser-direct, with server-side fallbacks.
 
+## Colors (Chris, Nov 26, 2026)
+
+- **Everyone picks their own Color** from `COLORS` (12 Colors from the books, each with a kid-language meaning). Stored as `member.house`, with `colorPicked`.
+  - Picked in the welcome tour, from a Today prompt until chosen (`colorPrompt`), or in Settings → My Color.
+  - Brown is left out on purpose.
+- **Gold can't be picked; it's earned.** Reaching the Gold rank makes you Gold (`goldEarned` / `colorOf` / `colorLabel`), shown as "GOLD · BORN VIOLET", with a gold card. Peerless shows "Peerless Scarred".
+  - Chris may adjust when Gold is earned at each quarterly status review.
+- **Gold shimmer:** the weekly Primus leader's row and the Primus card shimmer (`.gold-shimmer`, still under reduced motion).
+
 ## Weekly recap and challenges
 
 - **Week in review** (`recapCard` / `recapBody`): on Today from Sunday 5pm, and through Monday and Tuesday for the week just ended, until dismissed (`pack_recap_seen`).

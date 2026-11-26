@@ -127,6 +127,14 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .newfor-list { background: rgba(46,125,50,.07); border-color: rgba(46,125,50,.3); } .newfor-list .card-t .chip-btn { min-height: 44px; font-size: 13px; }
 .newfor-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid rgba(46,125,50,.2); font-size: 14px; } .newfor-row .ll { flex: 1; } .newfor-row small { display: block; color: var(--muted); font-size: 12px; }
 .chip-btn.same { border-style: dashed; }
+.color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: left; }
+.color-tile { min-height: 64px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--line); border-left: 6px solid var(--cc); background: var(--panel2); display: flex; flex-direction: column; gap: 2px; font: inherit; color: inherit; text-align: left; }
+.color-tile b { color: var(--cc); font-size: 15px; } .color-tile small { font-size: 12px; opacity: .8; line-height: 1.3; } .color-tile.on { outline: 3px solid var(--cc); }
+.color-tile.locked { opacity: .7; border-style: dashed; grid-column: 1 / -1; }
+.player-card.gold-card { border-left-color: #c9a227; background-image: linear-gradient(135deg, rgba(201,162,39,.10), transparent 40%); }
+.prow.gold-shimmer { border-radius: 8px; padding: 2px 6px; }
+.player-card.primus::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: 12px; background: linear-gradient(100deg, transparent 30%, rgba(255,236,170,.35) 50%, transparent 70%); background-size: 250% 100%; animation: shimmer 4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .player-card.primus::after { animation: none; opacity: 0; } }
 .recap-crown { text-align: center; font-weight: 700; font-size: 17px; padding: 10px; border-radius: 12px; margin-bottom: 8px; background: var(--panel2); }
 .recap-row { display: grid; grid-template-columns: 1fr auto auto 54px; gap: 10px; align-items: center; padding: 8px 2px; border-bottom: 1px solid var(--line); font-size: 15px; } .recap-row b { text-align: right; } .recap-row .rd, .recap-row .rm { font-size: 13px; opacity: .8; }
 .recap-ch { margin: 8px 0 0; font-weight: 600; } .ch-row { margin: 6px 0 10px; } .ch-row p { margin: 0 0 8px; font-weight: 600; }
@@ -517,7 +525,16 @@ function syncError(e) {
 }
 
 // ───────────────────────── The pack (roster lives in synced records so it can be edited)
-const HOUSES = { Red: '#9a1010', Obsidian: '#1e3858', Violet: '#4a1878', Copper: '#8b4513', Gold: '#8a7000', Green: '#1a4818', Pink: '#9c2d6e', Blue: '#1a4a7a', Silver: '#4a5568' };
+const HOUSES = { Red: '#9a1010', Orange: '#b4530f', Yellow: '#8a6d00', Green: '#1a4818', Blue: '#1a4a7a', Violet: '#4a1878', Pink: '#9c2d6e', Gray: '#4b5058', Obsidian: '#1e3858', Copper: '#8b4513', Silver: '#4a5568', White: '#6b6f76', Gold: '#8a7000' };
+// The Colors of Red Rising, in kid language. Everyone picks their own; Gold can't be picked: it's earned at the Gold rank.
+const COLORS = [
+  { id: 'Red', icon: '🔴', means: 'Tough miners who never quit' }, { id: 'Orange', icon: '🟠', means: 'Builders and mechanics' },
+  { id: 'Yellow', icon: '🟡', means: 'Doctors and scientists' }, { id: 'Green', icon: '🟢', means: 'Coders and tech wizards' },
+  { id: 'Blue', icon: '🔵', means: 'Pilots and navigators' }, { id: 'Violet', icon: '🟣', means: 'Artists and creators' },
+  { id: 'Pink', icon: '🌸', means: 'Grace and caring for others' }, { id: 'Gray', icon: '🩶', means: 'Disciplined soldiers' },
+  { id: 'Obsidian', icon: '⚫', means: 'Fierce, loyal warriors' }, { id: 'Copper', icon: '🟤', means: 'Organizers who keep things running' },
+  { id: 'Silver', icon: '⚪', means: 'Money and business smarts' }, { id: 'White', icon: '⬜', means: 'Fair judges' },
+];
 const DEFAULT_ROSTER = [
   { id: 'chris', name: 'Chris', role: 'proctor', house: 'Red', coach: 'dancer', pronouns: '', goalPct: 10, share: false, order: 1,
     usuals: [{ act: 'tread', min: 30 }, { act: 'bike', min: 45 }, { act: 'strength', min: 20 }, { act: 'dogwalk', min: 30, together: true }, { act: 'walk', min: 30, together: true }] },
@@ -530,7 +547,23 @@ const DEFAULT_CFG = { id: 'cfg', type: 'cfg', tkdDays: [0, 3], dogs: [{ id: 'coo
 function members() { return all('member').sort((a, b) => (a.order || 9) - (b.order || 9)); }
 function M(id) { return rec('member_' + id) || { id, name: '?', role: 'pup', house: 'Silver', coach: 'dancer', usuals: [] }; }
 function isPup(id) { return M(id).role === 'pup'; }
-function houseColor(id) { return HOUSES[M(id).house] || '#6e5f46'; }
+// Reaching the Gold rank makes you Gold, like Darrow: a Red who became Gold. Your chosen Color is kept as "born …".
+function goldEarned(id) { const g = RANKS.find(r => r.name === 'Gold'); try { return !!g && !practice() && score(id).year >= g.min; } catch (e) { return false; } }
+function colorOf(id) { return goldEarned(id) ? 'Gold' : (M(id).house || 'Red'); }
+function colorLabel(id) { const born = M(id).house; return goldEarned(id) ? (score(id).year >= RANKS[RANKS.length - 1].min ? 'Peerless Scarred' : 'Gold') + (born && born !== 'Gold' ? ' · born ' + born : '') : born || ''; }
+function houseColor(id) { return HOUSES[colorOf(id)] || '#6e5f46'; }
+function openColorPicker(id, onDone) {
+  const body = h('div', { class: 'log-body' }), m = M(id);
+  const draw = () => { clear(body).appendChild(colorGrid(id, () => { draw(); render(); })); body.appendChild(h('button', { class: 'btn-primary', type: 'button', style: 'margin-top:10px', onclick: () => { close(); if (onDone) onDone(); } }, 'Done')); };
+  const close = openModal(id === me() ? '🎨 Choose your Color' : '🎨 ' + m.name + '\'s Color', body); draw();
+}
+function colorGrid(id, after) {
+  const cur = M(id).house, g = h('div', { class: 'color-grid' });
+  COLORS.forEach(c => g.appendChild(h('button', { class: 'color-tile' + (cur === c.id ? ' on' : ''), type: 'button', style: '--cc:' + HOUSES[c.id], 'aria-pressed': cur === c.id ? 'true' : 'false',
+    onclick: () => { put(Object.assign({}, M(id), { house: c.id, colorPicked: true })); after && after(); } }, h('b', null, c.icon + ' ' + c.id), h('small', null, c.means))));
+  g.appendChild(h('div', { class: 'color-tile locked', style: '--cc:' + HOUSES.Gold }, h('b', null, '🔒 Gold'), h('small', null, 'Can\'t be picked: it\'s earned when you reach the Gold rank')));
+  return g;
+}
 function cfg() { return Object.assign({}, DEFAULT_CFG, rec('cfg') || {}); }
 function dogs() { return cfg().dogs; }
 function dogName(id) { const d = dogs().find(x => x.id === id); return d ? d.name : id; }
@@ -1522,9 +1555,9 @@ function swordBar(sc) {
 function playerCard(sc, isPrimus, place, stand) {
   const id = sc.id, m = M(id), mine = id === me(), last = lastActive(id), quiet = last ? daysBetween(last, AZ.today()) : 99, color = houseColor(id);
   stand = stand || { place: 1, tied: false, pct: standingPct(sc) };
-  const crowns = primusCount(id), cardEl = h('div', { class: 'player-card' + (isPrimus ? ' primus' : '') + (mine ? ' me' : '') + (openCards[id] ? ' card-open' : ''), style: '--house-color:' + color });
+  const crowns = primusCount(id), cardEl = h('div', { class: 'player-card' + (isPrimus ? ' primus' : '') + (goldEarned(id) ? ' gold-card' : '') + (mine ? ' me' : '') + (openCards[id] ? ' card-open' : ''), style: '--house-color:' + color });
   cardEl.appendChild(h('div', { class: 'card-rank-row' },
-    h('div', { class: 'card-rank-left' }, h('div', { class: 'card-house-dot' }), h('div', { class: 'card-house-label' }, (m.house || '').toUpperCase() + ' · ' + (m.role === 'pup' ? 'PUP' : 'PRAETORIAN'))),
+    h('div', { class: 'card-rank-left' }, h('div', { class: 'card-house-dot' }), h('div', { class: 'card-house-label' }, colorLabel(id).toUpperCase() + ' · ' + (m.role === 'pup' ? 'PUP' : 'PRAETORIAN'))),
     h('div', { class: 'card-rank-right' },
       all('cheer').some(c => c.to === id && c.date === AZ.today()) ? h('span', { title: 'Cheered today' }, '🐺') : null,
       quiet >= 3 && quiet < 99 ? h('span', { class: 'card-quiet' }, '🌙 ' + quiet + 'd quiet') : null,
@@ -1631,7 +1664,7 @@ function primusCard() {
   const lastAws = all('award').filter(a => a.kind === 'primus' && a.week === lastWk), top = primusLeaders(wk), tied = top.length > 1;
   const c = card("THIS WEEK'S PRIMUS", 'crowned Sunday night · +' + RULES.primus);
   if (tied) c.appendChild(h('p', { class: 'crew-note' }, '⚖️ Tied at the top: ' + top.map(i => M(i).name).join(', ') + '. Anyone can take the crown.'));
-  ps.forEach(x => { const pl = primusPlace(wk, x.id), same = ps.filter(y => primusPlace(wk, y.id) === pl).length > 1; c.appendChild(h('div', { class: 'prow' }, h('span', { class: 'pp' }, x.id === leader ? '♛' : (same ? '=' : '') + pl), h('span', { class: 'pn', style: 'color:' + houseColor(x.id) }, M(x.id).name),
+  ps.forEach(x => { const pl = primusPlace(wk, x.id), same = ps.filter(y => primusPlace(wk, y.id) === pl).length > 1; c.appendChild(h('div', { class: 'prow' + (x.id === leader ? ' gold-shimmer' : '') }, h('span', { class: 'pp' }, x.id === leader ? '♛' : (same ? '=' : '') + pl), h('span', { class: 'pn', style: 'color:' + houseColor(x.id) }, M(x.id).name),
     h('div', { class: 'bar' }, h('i', { style: 'width:' + Math.min(100, x.score / 1.75 * 100) + '%;background:' + houseColor(x.id) })), h('span', { class: 'pv' }, x.active + '/' + x.std))); });
   c.appendChild(h('p', { class: 'hint' }, 'Primus goes to whoever beats their own weekly target by the most: days moved against your Standard, plus minutes against your own usual. Kids and parents compete fairly. A tie at the end of the week is shared.' + (lastAws.length ? ' Last week: ♛ ' + lastAws.map(a => M(a.member).name).join(' & ') + (lastAws.length > 1 ? ' (shared)' : '') + '.' : '')));
   return c;
@@ -1775,7 +1808,7 @@ function renderToday(main) {
     lc.appendChild(weighRow());
   }
   main.appendChild(lc);
-  [recapCard(), newForYou(), tkdPrompt(), ...classPrompts(), goalNudge()].forEach(x => { if (x) main.appendChild(x); });
+  [colorPrompt(), recapCard(), newForYou(), tkdPrompt(), ...classPrompts(), goalNudge()].forEach(x => { if (x) main.appendChild(x); });
   main.appendChild(raceCard(false));
   if (!preseason()) main.appendChild(primusCard());
   main.appendChild(challengeCard());
@@ -1811,6 +1844,12 @@ function recapBody(wk, opts) {
   const tog = new Set(all('workout').filter(w => w.group && weekKey(w.date) === wk).map(w => w.group)).size;
   if (tog) box.appendChild(h('p', { class: 'hint' }, '🤝 ' + tog + ' workout' + (tog > 1 ? 's' : '') + ' done together this week.'));
   return box;
+}
+function colorPrompt() {
+  const m = M(me()); if (m.colorPicked || PREVIEW) return null;
+  return h('div', { class: 'card prompt color-prompt' }, h('p', null, '🎨 Pick your Color! In Red Rising, everyone has one. You\'re ' + (m.house || 'Red') + ' for now.'),
+    h('div', { class: 'row' }, h('button', { class: 'yes', type: 'button', onclick: () => openColorPicker(me()) }, 'Choose my Color'),
+      h('button', { type: 'button', onclick: () => { put(Object.assign({}, m, { colorPicked: true })); render(); } }, 'Keep ' + (m.house || 'Red'))));
 }
 function recapCard() {
   const wk = recapWeek(), seen = Local.get('recap_seen', {}); if (!wk || seen[wk] || !all('workout').some(w => weekKey(w.date) === wk)) return null;
@@ -2067,12 +2106,15 @@ function tourCards(id, mode) {
     h('p', null, 'Together we race to New Year\'s Eve: every Active Day moves the pack one step (75 to go, with a Christmas Eve checkpoint at 55). Season 1, Iron Rain, starts January 1.'),
     h('p', null, '🎄 Dec 21 – Jan 3 are holiday weeks: the Standard is just 3 days, and missing it won\'t break your chain.'));
   if (mode === 'passage') return [passage];
+  const pickG = () => { const g = document.querySelector('.tour .color-grid'); if (g) g.replaceWith(colorGrid(id, pickG)); };
+  const colorCard = () => tourCard('🎨', 'Choose your Color', h('p', null, 'In Red Rising everyone has a Color. Which one fits you? Gold is earned, not picked. (Change it anytime in Settings.)'), colorGrid(id, pickG));
   const practiceNote = practice() ? h('p', { class: 'hint' }, 'This week is Practice Week: try everything out. Points restart at 0 on December 1.') : null;
   const cards = pup ? [
     tourCard('🐺', 'Welcome to the Howler Pack, ' + m.name + '!', h('p', null, 'Your pack: ' + pack + (dg.length ? ', plus ' + dg.join(' & ') : '') + '.'), h('p', null, 'In Red Rising, Darrow\'s Howlers look out for each other. That\'s us. Swipe through to see how it works.'), practiceNote),
     tourCard('⏱', 'Every minute counts', h('p', null, 'Move for 2 minutes = 1 Merit (our points). Taekwondo, dog walks, bike rides, playing outside: it all counts the same.'), h('p', null, 'Move 20+ minutes in a day and it\'s an ', h('b', null, 'Active Day: +' + R(id).activeDay), '.')),
     tourCard('📅', 'The Standard: ' + R(id).standardDays + ' days a week', h('p', null, 'Get ' + R(id).standardDays + ' Active Days in a week (Monday to Sunday) and earn ', h('b', null, '+' + R(id).standard), '. It\'s the same Standard as Mom and Dad.'), h('p', null, 'Do it again the next week and your chain grows: everything earns 10% more for each week in a row, up to ×1.5.'), weekBar),
-    tourCard('🎨', 'Climb the colors', h('p', null, 'Your Merit adds up all year and never resets. You\'re ' + sc.rank.rank.name + ' right now. How far can you climb?'), ladder),
+    colorCard(),
+    tourCard('📈', 'Climb the ranks', h('p', null, 'Your Merit adds up all year and never resets. You\'re ' + sc.rank.rank.name + ' right now. How far can you climb?'), ladder),
     tourCard('♛', 'Yes, you can beat Mom and Dad', h('p', null, 'Every week the Primus crown (+' + RULES.primus + ') goes to whoever beats their own goal by the most.'), h('p', null, 'Everyone plays by the same rules, so the crown can absolutely be yours.')),
     tourCard('✨', 'More ways to earn', h('ul', { class: 'tour-list' },
       h('li', null, '🥋 Taekwondo stripe +' + RULES.growth.stripe + ', new belt +' + RULES.growth.belt), h('li', null, '⚡ Personal best +' + RULES.growth.pb), h('li', null, '📈 Your best week yet +' + RULES.growth.bestWeek),
@@ -2080,6 +2122,7 @@ function tourCards(id, mode) {
     tourCard('🐾', 'How to log', h('p', null, 'Tap ', h('b', null, 'I moved!'), ', pick what you did, then ', h('b', null, 'Log it'), '. Mom or Dad can add things for you too.'), h('p', null, 'Want every rule? Tap "How points work ›" on the Pack tab anytime.')),
   ] : [
     tourCard('🐺', 'Welcome, ' + m.name, h('p', null, 'You\'re a Praetorian of the Howler Pack. Everyone, the girls included, earns Merit on one scale and climbs one ladder all year.'), practiceNote),
+    colorCard(),
     tourCard('🔥', 'Harder pays more', h('p', null, 'Effort is intensity × minutes (up to ' + RULES.proctor.effortCap + ' a day): a 60-minute run earns about twice a 60-minute walk. Add speed, incline or watts for exact points.'),
       h('p', null, 'Hit ' + RULES.proctor.standardDays + ' Active Days a week for +' + RULES.proctor.standard + ', keep the chain going, and beat your best effort week for +' + RULES.growth.bestWeek + '.')),
     tourCard('🧭', 'Handy tools', h('ul', { class: 'tour-list' }, h('li', null, '⏱ "Got a few minutes?" shows what earns the most today'), h('li', null, '⭐ Your usuals learn what you do most'),
@@ -2228,6 +2271,8 @@ function openSettings() {
       }
     }
     // Claude key
+    const mc = sec('MY COLOR', 'Your Color from Red Rising. Gold can\'t be picked: reach the Gold rank and you become Gold.');
+    mc.appendChild(h('div', { class: 'edit-row' }, h('span', { class: 'gl' }, (COLORS.find(c => c.id === m.house) || { icon: '' }).icon + ' ' + colorLabel(m.mid)), h('button', { class: 'btn-ghost', type: 'button', onclick: () => openColorPicker(m.mid, draw) }, 'Change')));
     const wk = sec('MY WEEKLY CLASS', 'Something you do most weeks (pickleball, a swim lesson…). The app checks in that day so it\'s one tap to log.'), weekly = (m.weekly || []).slice();
     weekly.forEach((c, i) => ACT[c.act] && wk.appendChild(h('div', { class: 'edit-row' }, h('span', { class: 'gi' }, ACT[c.act].icon), h('span', { class: 'gl' }, ACT[c.act].name + ' · ' + c.days.map(x => DOWS[x]).join(', ') + ' · ' + classMin(m.mid, c) + (learnedMin(m.mid, c.act) ? ' min (your usual)' : ' min')),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove', onclick: () => { weekly.splice(i, 1); saveMember({ weekly }); draw(); render(); } }, '✕'))));
