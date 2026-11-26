@@ -1802,6 +1802,23 @@ function tkdPrompt() {
   }
   return null;
 }
+// After a taekwondo class is logged, ask once per kid: any stripe or belt? (growth points that are easy to forget)
+function stripePrompt() {
+  const seen = Local.get('seen', {}), out = [];
+  for (let back = 0; back < 3 && !out.length; back++) {
+    const d = addDays(AZ.today(), -back); if (!cfg().tkdDays.includes(dow(d))) continue;
+    const kids = memberIds().filter(isPup).filter(k => !isPup(me()) || k === me())
+      .filter(k => !seen['tkdms_' + k + '_' + d] && all('workout').some(w => w.member === k && w.date === d && w.act === 'tkd') && !all('milestone').some(x => x.member === k && x.date === d && (x.kind === 'stripe' || x.kind === 'belt')));
+    kids.forEach(k => { const done = (kind) => { const s2 = Local.get('seen', {}); s2['tkdms_' + k + '_' + d] = 1; Local.set('seen', s2);
+        if (kind) { const mid = rid('m'); let g; g = gainFor([k], () => put({ id: mid, type: 'milestone', member: k, kind, label: null, date: d, by: me(), createdAt: Date.now() })); render(); toast(MILESTONE_KINDS[kind].icon + ' ' + M(k).name + ': ' + MILESTONE_KINDS[kind].label + ' · +' + g[k] + ' Merit', 'Undo', () => { del(mid); render(); }); }
+        else render(); };
+      out.push(h('div', { class: 'card prompt stripe-prompt' }, h('p', null, '🥋 ' + (k === me() ? 'Did you earn a stripe or belt ' : 'Did ' + M(k).name + ' earn a stripe or belt ') + (back === 0 ? 'tonight' : back === 1 ? 'yesterday' : 'on ' + DOWS[dow(d)]) + '?'),
+        h('div', { class: 'row' }, h('button', { class: 'yes', type: 'button', onclick: () => done('stripe') }, 'A stripe! +' + RULES.growth.stripe),
+          h('button', { class: 'yes', type: 'button', onclick: () => done('belt') }, 'New belt! +' + RULES.growth.belt),
+          h('button', { type: 'button', onclick: () => done(null) }, 'Not this time')))); });
+  }
+  return out;
+}
 function cheersForMe() {
   const mine = all('cheer').filter(x => x.to === me() && x.date >= addDays(AZ.today(), -3)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   if (!mine.length) return null;
@@ -1902,7 +1919,7 @@ function renderToday(main) {
   }
   main.appendChild(lc);
   syncQuestAwards();
-  [colorPrompt(), coachPrompt(), ideaPrompt(), questCard(), recapCard(), newForYou(), tkdPrompt(), ...classPrompts(), goalNudge()].forEach(x => { if (x) main.appendChild(x); });
+  [colorPrompt(), coachPrompt(), ideaPrompt(), questCard(), recapCard(), newForYou(), tkdPrompt(), ...stripePrompt(), ...classPrompts(), goalNudge()].forEach(x => { if (x) main.appendChild(x); });
   main.appendChild(raceCard(false));
   if (!preseason()) main.appendChild(primusCard());
   main.appendChild(challengeCard());
