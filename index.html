@@ -892,7 +892,7 @@ function score(id, se) {
     }
     // cheers given
     const cheerDays = {};
-    all('cheer').filter(c => c.from === id && c.date >= se.start && c.date <= end).forEach(c => { cheerDays[c.date] = (cheerDays[c.date] || 0) + 1; if (cheerDays[c.date] <= RULES.cheerDailyMax) add(c.date, 'together', 'Cheered ' + M(c.to).name + ' ' + c.emoji, RULES.cheer); });
+    all('cheer').filter(c => c.from === id && !c.reply && c.date >= se.start && c.date <= end).forEach(c => { cheerDays[c.date] = (cheerDays[c.date] || 0) + 1; if (cheerDays[c.date] <= RULES.cheerDailyMax) add(c.date, 'together', 'Cheered ' + M(c.to).name + ' ' + c.emoji, RULES.cheer); });
     // synced awards: progress (from private weigh-ins), goals, Primus
     all('award').filter(a => a.member === id && a.date >= se.start && a.date <= se.end).forEach(a => add(a.date, a.cat, a.label, a.pts));
     // race rewards are shared by everyone
@@ -1177,7 +1177,9 @@ async function askCoach(id) {
 // ───────────────────────── Cheers (support, never trash talk)
 const CHEER_EMOJI = ['🔥', '👏', '💪', '🐺', '❤️'];
 const CHEER_PRESETS = ['Way to show up!', 'Proud of you!', 'That streak though!', 'You made it look easy.', 'Thanks for walking the dogs!'];
-function cheer(to, emoji, text) { const id = rid('c'); put({ id, type: 'cheer', from: me(), to, date: AZ.today(), emoji, text: (text || '').slice(0, 140), createdAt: Date.now() }); return id; }
+function cheer(to, emoji, text, reply) { const id = rid('c'); put({ id, type: 'cheer', from: me(), to, date: AZ.today(), emoji, text: (text || '').slice(0, 140), createdAt: Date.now(), reply: reply ? true : null }); return id; }
+// ❤️ back: a thank-you to a cheer. It sends and shows like any cheer but earns nothing; only cheers you start earn Merit (Chris, Nov 27, 2026)
+function heartBack(to) { const cid = cheer(to, '❤️', '', true); render(); toast('❤️ sent back to ' + M(to).name, 'Undo', () => { del(cid); render(); }); }
 // Every cheer gets 5 seconds of Undo; your own cheers can also be removed later from the Cheer Wall
 function sendCheer(to, emoji, text, msg) { const cid = cheer(to, emoji, text); render(); toast(msg || (emoji + ' sent to ' + M(to).name + ' · +' + RULES.cheer + ' Merit'), 'Undo', () => { del(cid); render(); toast('Cheer taken back'); }); }
 
@@ -1886,7 +1888,7 @@ function markCheersSeen() { Local.set('cheers_seen_at', Date.now()); updateBadge
 function updateBadge() { try { const n = PREVIEW || !me() ? 0 : unseenCheers().length; if (navigator.setAppBadge) { if (n) navigator.setAppBadge(n); else navigator.clearAppBadge(); } } catch (e) { /* badges unsupported */ } }
 function cheerRow(x, back) {
   return h('div', { class: 'cheer-row' }, h('span', { class: 'ce' }, x.emoji), h('span', { class: 'ct' }, M(x.from).name + (x.text ? ': "' + x.text + '"' : ' cheered you on'), h('small', null, fmtDow(x.date))),
-    back ? h('button', { class: 'chip-btn', type: 'button', onclick: () => sendCheer(x.from, '❤️', '') }, '❤️ back') : null);
+    back ? h('button', { class: 'chip-btn', type: 'button', onclick: () => heartBack(x.from) }, '❤️ back') : null);
 }
 function newCheersCard() {
   const list = unseenCheers(); if (!list.length) return null;
@@ -1910,7 +1912,7 @@ function cheersForMe() {
   if (!mine.length) return null;
   const c = card('CHEERS FOR YOU', mine.length + ' lately');
   mine.slice(0, 3).forEach(x => c.appendChild(h('div', { class: 'cheer-row' }, h('span', { class: 'ce' }, x.emoji), h('span', { class: 'ct' }, M(x.from).name + (x.text ? ': "' + x.text + '"' : ' cheered you on'), h('small', null, fmtDow(x.date))),
-    h('button', { class: 'chip-btn', type: 'button', onclick: () => sendCheer(x.from, '❤️', '') }, '❤️ back'))));
+    h('button', { class: 'chip-btn', type: 'button', onclick: () => heartBack(x.from) }, '❤️ back'))));
   return c;
 }
 function myWeekCard() {
@@ -2666,7 +2668,7 @@ function openCodex() {
     ['Together: 2+ of you log the same activity', '+' + RULES.together + ' (2/day)'],
     ['🏔 Family quest, special outing: everyone listed does it together by the date (only some of you: +' + QUEST.eventSome + ' each)', '+' + QUEST.eventAll + ' each'],
     ['🏔 Family quest, team total: the family\'s minutes reach the target by the date', '+' + QUEST.total + ' each'],
-    ['Cheering someone', '+' + RULES.cheer + ' (' + RULES.cheerDailyMax + '/day)'],
+    ['Cheering someone (cheers you start; a ❤️ back to say thanks earns nothing)', '+' + RULES.cheer + ' (' + RULES.cheerDailyMax + '/day)'],
     ['Weekly Primus', '+' + RULES.primus],
     ['Monthly goal · Season goal', '+' + P.goalMonth + ' · +' + P.goalSeason],
     ['Race checkpoint on time · Reaching the destination (everyone)', '+' + RULES.raceCheckpoint + ' · +' + RULES.raceFinish]]);
@@ -2947,7 +2949,7 @@ function cheerToast(fresh) {
     h('div', { class: 'ct-emoji', 'aria-hidden': 'true' }, c.emoji),
     h('div', { class: 'ct-body' }, h('b', null, M(c.from).name + ' cheered you!'), h('p', null, c.text ? '"' + c.text + '"' : 'Keep going, ' + M(me()).name + '!'),
       fresh.length > 1 ? h('small', null, '+ ' + (fresh.length - 1) + ' more cheer' + (fresh.length > 2 ? 's' : '') + ' waiting') : null,
-      h('div', { class: 'ct-row' }, h('button', { class: 'btn-ghost', type: 'button', onclick: () => { sendCheer(c.from, '❤️', ''); close(); } }, '❤️ back'),
+      h('div', { class: 'ct-row' }, h('button', { class: 'btn-ghost', type: 'button', onclick: () => { heartBack(c.from); close(); } }, '❤️ back'),
         h('button', { class: 'btn-primary', type: 'button', onclick: () => { close(); openCheersFor(me()); } }, fresh.length > 1 ? 'See all ' + fresh.length : 'See it'))));
   const tt = document.getElementById('toast'); if (tt) tt.classList.remove('show');   // the cheer gets the spotlight
   document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('show')); setTimeout(close, 10000);
