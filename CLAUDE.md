@@ -131,7 +131,11 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
     - This matters most for outdoor workouts, whose GPS numbers often need fixing.
   - Re-importing adds nothing and never undoes an override.
 - **Redraws from a field's `change` event go through `redraw()`** (setTimeout 0). `change` fires on blur, and rebuilding the sheet mid-blur throws `removeChild` errors.
-- **Weekly Primus:** `primusScores`. It goes to whoever beats their own target by the most, so kids and parents compete fairly.
+- **Weekly Primus:** `primusScores` / `primusPoints`. **It goes to whoever earns the most Primus points that week** (Chris, Nov 27, 2026: "it needs to be based on points… clear to understand").
+  - Primus points are plain workout Merit: Active Day / showing-up points, the Standard bonus and effort. Cheers, goals, quests, chain bonuses, stripes and weight points don't count.
+  - The Primus card and the Pack card show "N pts". The old "beat your own target" rule was dropped because nobody could read it.
+  - In the Dec–Mar simulation the crowns still spread (realistic family 5 · 3 · 5 · 4), and the harder trainers win more often.
+  - On the same easy walk the kids out-earn the parents slightly (kids' effort counts minutes), which is the agreed scale.
   - **Ties are never broken alphabetically.** A tie at the top (`primusLeaders`) shows no crown and an "anyone can take it" note. If the week ends tied, each tied person gets a shared crown (`aw_primus_<week>_<id>`, "(shared)") and the +25.
 - **Coaches:** `COACHES`. Dancer, Mickey and Matteo come from the original Howlers; **Sevro** (loud, funny, loyal, loves a rivalry; never swears) was added Nov 26, 2026 to fill the "hype and fun" style the girls may want.
   - **Everyone picks their coach by how they like to be encouraged** (`openCoachQuiz`): 4 questions, each answer pointing to one coach's style (`COACH_QUIZ`). The majority wins, ties go to the "after a great workout" answer. The result shows the match first plus all coaches (`COACH_FOCUS`: style, blurb, focus), and any of them can be picked.

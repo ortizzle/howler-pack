@@ -958,17 +958,21 @@ function raceRewards(se) {
   return out;
 }
 
-// ───────────────────────── Weekly Primus: who beat their OWN target by the most (fair across kids and adults)
+// ───────────────────────── Weekly Primus: most Primus points (workout Merit) this week
+// Primus points (Chris, Nov 27, 2026): plain workout Merit for the week, so anyone can read who's ahead.
+// Counts Active Day / showing-up points, the Standard bonus and effort. Not cheers, goals, quests, chain bonuses, stripes or weight points.
+function primusPoints(id, wk) {
+  const end = addDays(wk, 6); let v = 0;
+  [PRACTICE].concat(SEASONS).filter(se => se.start <= end && se.end >= wk && se.start <= AZ.today()).forEach(se => score(id, se).ledger.forEach(e => {
+    if (e.date >= wk && e.date <= end && e.date >= se.start && e.date <= se.end && (e.cat === 'effort' || (e.cat === 'consistency' && !/^Chain bonus/.test(e.label)))) v += e.pts; }));
+  return Math.round(v);
+}
 function primusScores(wk, se) {
-  se = se || seasonFor(wk) || seasonFor(addDays(wk, 6)) || currentSeason();
   return memo('primus:' + wk, () => memberIds().map(id => {
-    const r = R(id), dEnd = addDays(wk, 6), lim = dEnd < AZ.today() ? dEnd : AZ.today();
+    const dEnd = addDays(wk, 6), lim = dEnd < AZ.today() ? dEnd : AZ.today();
     let active = 0; range(wk, lim).forEach(d => { const s2 = seasonFor(d); if (s2 && isActive(id, d, s2)) active++; });
-    const mins = weekMinutes(id, wk), prev = [1, 2, 3, 4].map(n => weekMinutes(id, addDays(wk, -7 * n))).filter(x => x > 0);
-    const avg = prev.length ? prev.reduce((a, b) => a + b, 0) / prev.length : 0, vsSelf = avg ? Math.min(mins / avg, 2) : (mins ? 1 : 0);
-    const together = new Set(all('workout').filter(w => w.member === id && w.group && weekKey(w.date) === wk).map(w => w.group)).size;
-    const need = stdDays(id, wk);
-    return { id, active, std: need, mins, avg, score: Math.min(active / need, 1.5) + 0.25 * vsSelf + 0.01 * together };
+    const pts = primusPoints(id, wk);
+    return { id, active, std: stdDays(id, wk), mins: weekMinutes(id, wk), pts, score: pts };
   }).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)));
 }
 // A tie at the top means no crown yet; if the week ends tied, everyone tied shares it. Never broken alphabetically.
@@ -1708,8 +1712,8 @@ function playerCard(sc, isPrimus, place, stand) {
       inner.appendChild(h('div', { class: 'mini-badges' }, bs.length ? bs.map(b => h('span', null, b.icon + ' ' + b.name + ' ' + '★'.repeat(b.tier))) : h('span', null, 'First badge coming soon')));
     }
     const ps = primusScores(sc.cur.key).find(x => x.id === id);
-    if (ps) inner.appendChild(h('div', { class: 'ghost' }, h('div', { class: 'lbl' }, h('span', null, '♛ PRIMUS RACE · ' + (primusScores(sc.cur.key).filter(x => primusPlace(sc.cur.key, x.id) === place).length > 1 ? '=' : '#') + place), h('span', { style: 'color:var(--muted)' }, ps.active + '/' + ps.std + ' days')),
-      h('div', { class: 'track' }, h('i', { style: 'width:' + Math.min(100, ps.score / 1.75 * 100) + '%' })), h('small', null, ps.mins + ' min this week' + (ps.avg ? ' · usual ' + Math.round(ps.avg) : ''))));
+    if (ps) inner.appendChild(h('div', { class: 'ghost' }, h('div', { class: 'lbl' }, h('span', null, '♛ PRIMUS RACE · ' + (primusScores(sc.cur.key).filter(x => primusPlace(sc.cur.key, x.id) === place).length > 1 ? '=' : '#') + place), h('span', { style: 'color:var(--muted)' }, ps.pts + ' Primus pts')),
+      h('div', { class: 'track' }, h('i', { style: 'width:' + Math.round(ps.score / Math.max(1, primusScores(sc.cur.key)[0].score) * 100) + '%' })), h('small', null, ps.active + '/' + ps.std + ' days · ' + ps.mins + ' min this week')));
     inner.appendChild(h('div', { class: 'card-actions' }, mine
       ? h('button', { class: 'primary', type: 'button', onclick: () => go('progress') }, '📈 My full progress')
       : [h('button', { class: 'primary', type: 'button', onclick: () => openCheerNote(id) }, '🔥 Cheer ' + m.name),
@@ -1779,8 +1783,8 @@ function primusCard() {
   const c = card("THIS WEEK'S PRIMUS", 'crowned Sunday night · +' + RULES.primus);
   if (tied) c.appendChild(h('p', { class: 'crew-note' }, '⚖️ Tied at the top: ' + top.map(i => M(i).name).join(', ') + '. Anyone can take the crown.'));
   ps.forEach(x => { const pl = primusPlace(wk, x.id), same = ps.filter(y => primusPlace(wk, y.id) === pl).length > 1; c.appendChild(h('div', { class: 'prow' + (x.id === leader ? ' gold-shimmer' : '') }, h('span', { class: 'pp' }, x.id === leader ? '♛' : (same ? '=' : '') + pl), h('span', { class: 'pn', style: 'color:' + houseColor(x.id) }, M(x.id).name),
-    h('div', { class: 'bar' }, h('i', { style: 'width:' + Math.min(100, x.score / 1.75 * 100) + '%;background:' + houseColor(x.id) })), h('span', { class: 'pv' }, x.active + '/' + x.std))); });
-  c.appendChild(h('p', { class: 'hint' }, 'Primus goes to whoever beats their own weekly target by the most: days moved against your Standard, plus minutes against your own usual. Kids and parents compete fairly. A tie at the end of the week is shared.' + (lastAws.length ? ' Last week: ♛ ' + lastAws.map(a => M(a.member).name).join(' & ') + (lastAws.length > 1 ? ' (shared)' : '') + '.' : '')));
+    h('div', { class: 'bar' }, h('i', { style: 'width:' + Math.round(x.score / Math.max(1, ps[0].score) * 100) + '%;background:' + houseColor(x.id) })), h('span', { class: 'pv' }, x.pts + ' pts'))); });
+  c.appendChild(h('p', { class: 'hint' }, 'Primus points are this week\'s workout Merit: Active Days, the Standard bonus and effort points. Most points by Sunday night wins the crown (+' + RULES.primus + '). Cheers, goals and bonuses don\'t count. A tie at the end of the week is shared.' + (lastAws.length ? ' Last week: ♛ ' + lastAws.map(a => M(a.member).name).join(' & ') + (lastAws.length > 1 ? ' (shared)' : '') + '.' : '')));
   return c;
 }
 function coachCard(id) {
@@ -2603,7 +2607,7 @@ function renderPack(main) {
 }
 const GLOSSARY = [
   ['🐺', 'The Howlers', 'Darrow\'s loyal crew in House Mars. They wear wolf cloaks and never leave anyone behind. Our app is named after them.'],
-  ['♛', 'Primus', 'The leader of a House at the Institute. Here, each week\'s Primus is whoever beat their own target by the most.'],
+  ['♛', 'Primus', 'The leader of a House at the Institute. Here, each week\'s Primus is whoever earns the most Primus points (workout Merit) that week.'],
   ['🛡', 'Praetorians', 'The Sovereign\'s elite guard in Red Rising, sworn to protect. In our pack, the parents are Praetorians: they guard the pack and keep everyone moving.'],
   ['🐾', 'Pups', 'Young wolves still learning the pack\'s ways. The kids are Pups, with their own ladder.'],
   ['🎖', 'Merit', 'Our points. Earned by showing up, effort, time together, cheering, and hitting goals.'],
@@ -2632,7 +2636,7 @@ function tourCards(id, mode) {
     tourCard('📅', 'The Standard: ' + R(id).standardDays + ' days a week', h('p', null, 'Get ' + R(id).standardDays + ' Active Days in a week (Monday to Sunday) and earn ', h('b', null, '+' + R(id).standard), '. It\'s the same Standard as Mom and Dad.'), h('p', null, 'Do it again the next week and your chain grows: everything earns 10% more for each week in a row, up to ×1.5.'), weekBar),
     colorCard(),
     tourCard('📈', 'Climb the ranks', h('p', null, 'Your Merit adds up all year and never resets, and your rank climbs with it. You\'re ' + sc.rank.rank.icon + ' ' + sc.rank.rank.name + ' right now. Reach Gold and your Color turns Gold!'), ladder),
-    tourCard('♛', 'Yes, you can beat Mom and Dad', h('p', null, 'Every week the Primus crown (+' + RULES.primus + ') goes to whoever beats their own goal by the most.'), h('p', null, 'Everyone plays by the same rules, so the crown can absolutely be yours.')),
+    tourCard('♛', 'Yes, you can beat Mom and Dad', h('p', null, 'Every week the Primus crown (+' + RULES.primus + ') goes to whoever earns the most Primus points: the Merit from that week\'s workouts.'), h('p', null, 'Everyone plays by the same rules, so the crown can absolutely be yours.')),
     tourCard('✨', 'More ways to earn', h('ul', { class: 'tour-list' },
       h('li', null, '🥋 Taekwondo stripe +' + RULES.growth.stripe + ', new belt +' + RULES.growth.belt), h('li', null, '⚡ Personal best +' + RULES.growth.pb), h('li', null, '📈 Your best week yet +' + RULES.growth.bestWeek),
       h('li', null, '🤝 Doing it together +' + RULES.together), h('li', null, '📣 Cheering someone on +' + RULES.cheer), h('li', null, '🏁 Our family race to the next holiday'))),
@@ -2700,7 +2704,7 @@ function openCodex() {
   sec('Ranks: built all year', 'Your rank grows from Dec 1 through the whole year and never resets. Each rank takes more than the last; reaching Gold turns your Color Gold, and Peerless Scarred takes beating your Standard week after week.');
   table(RANKS.map(r => [h('span', null, h('b', { style: 'color:' + r.color }, r.icon + ' ' + r.name), ' · ', h('i', null, r.motto)), r.min.toLocaleString()]));
   sec('Seasons keep it fresh', 'Each quarter brings a new race toward a holiday, new season goals and lore to unlock; goals also reset every month. Your color at the end of each season goes in the Hall of Honors.');
-  sec('Weekly Primus', 'The crown goes to whoever beats their own target by the most: days moved against your Standard, plus minutes against your own usual. A tie means no crown yet; if the week ends tied, everyone tied shares it.');
+  sec('Weekly Primus', 'Primus points are your workout Merit for the week: Active Day and showing-up points, the Standard bonus and effort points. Cheers, goals, quests, chain bonuses, stripes and weight-trend points don\'t count, so the number is exactly what your workouts earned. Most points by Sunday night wins. A tie means no crown yet; if the week ends tied, everyone tied shares it.');
   sec('The race', 'Every Active Day moves the pack one step; every activity done together adds one more. Hit a holiday checkpoint on time and everyone earns a bonus.');
   sec('Practice Week (Nov 23–30)', 'Points count for practice, then everything resets on Dec 1 when The Passage begins.');
   const closeCx = openModal('📜 The Codex: how the Pack works', body);
