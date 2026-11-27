@@ -91,6 +91,8 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .cx-one p { margin: 4px 0 0; font-size: 14px; line-height: 1.45; } .cx-one > div > b { font-family: var(--fh); font-size: 17px; }
 .cx-ic { font-size: 26px; text-align: center; line-height: 1.2; } .cx-like { font-style: italic; color: var(--muted); }
 .cx-sum { font-size: 14px; line-height: 1.5; margin: 6px 0 4px; }
+.cheer-for { display: block; color: var(--accent); font-style: italic; font-size: 12px; }
+.cheer-what { margin-bottom: 10px; } .lbl-sm { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 2px 0 6px; }
 .stand-note { font-size: 12px; color: var(--muted); font-style: italic; margin: -4px 2px 10px; }
 .card-chevron { font-size: 11px; color: var(--muted); transition: transform .25s; }
 .player-card.card-open .card-chevron { transform: rotate(180deg); }
@@ -1213,11 +1215,18 @@ async function askCoach(id) {
 // ───────────────────────── Cheers (support, never trash talk)
 const CHEER_EMOJI = ['🔥', '👏', '💪', '🐺', '❤️'];
 const CHEER_PRESETS = ['Way to show up!', 'Proud of you!', 'That streak though!', 'You made it look easy.', 'Thanks for walking the dogs!'];
-function cheer(to, emoji, text, reply) { const id = rid('c'); put({ id, type: 'cheer', from: me(), to, date: AZ.today(), emoji, text: (text || '').slice(0, 140), createdAt: Date.now(), reply: reply ? true : null }); return id; }
+// A cheer can point at one of their workouts (Chris, Nov 27, 2026: "clear what is being praised"): workout = that person's own copy, about = a short label kept even if the workout is later removed.
+function workoutAbout(w) { return (ACT[w.act] ? ACT[w.act].icon + ' ' : '') + actLabel(w) + ' · ' + w.min + ' min'; }
+function cheer(to, emoji, text, reply, w) { const id = rid('c'); put({ id, type: 'cheer', from: me(), to, date: AZ.today(), emoji, text: (text || '').slice(0, 140), createdAt: Date.now(), reply: reply ? true : null,
+  workout: w ? w.id : null, about: w ? workoutAbout(w) : null, aboutDate: w ? w.date : null }); return id; }
+function cheerFor(c) { if (!c.about) return null; const w = c.workout && rec(c.workout); return 'for ' + (c.to === me() ? 'your ' : M(c.to).name + '\'s ') + (w && !w.deleted ? workoutAbout(w) : c.about) + (c.aboutDate ? ' (' + (c.aboutDate === AZ.today() ? 'today' : DOWS[dow(c.aboutDate)]) + ')' : ''); }
+function cheersOn(w) { return all('cheer').filter(c => c.workout === w.id && !c.reply); }
+// Their workouts from the last 3 days, newest first, for the "What are you cheering?" picker
+function recentFor(id) { return all('workout').filter(w => w.member === id && moveMin(w) > 0 && w.date >= addDays(AZ.today(), -2) && w.date <= AZ.today()).sort((a, b) => (b.date + (b.createdAt || 0)) > (a.date + (a.createdAt || 0)) ? 1 : -1).slice(0, 4); }
 // ❤️ back: a thank-you to a cheer. It sends and shows like any cheer but earns nothing; only cheers you start earn Merit (Chris, Nov 27, 2026)
 function heartBack(to) { const cid = cheer(to, '❤️', '', true); render(); toast('❤️ sent back to ' + M(to).name, 'Undo', () => { del(cid); render(); }); }
 // Every cheer gets 5 seconds of Undo; your own cheers can also be removed later from the Cheer Wall
-function sendCheer(to, emoji, text, msg) { const cid = cheer(to, emoji, text); render(); toast(msg || (emoji + ' sent to ' + M(to).name + ' · +' + RULES.cheer + ' Merit'), 'Undo', () => { del(cid); render(); toast('Cheer taken back'); }); }
+function sendCheer(to, emoji, text, msg, w) { const cid = cheer(to, emoji, text, false, w); render(); toast(msg || (emoji + ' sent to ' + M(to).name + ' · +' + RULES.cheer + ' Merit'), 'Undo', () => { del(cid); render(); toast('Cheer taken back'); }); }
 
 // ───────────────────────── Fuel (ortizzle.github.io/fuel): read-only, same site, this phone only
 const FUEL_URL = 'https://ortizzle.github.io/fuel/';
@@ -1757,7 +1766,7 @@ function playerCard(sc, isPrimus, place, stand) {
     if (ws.length && canEdit) inner.appendChild(h('p', { class: 'hint', style: 'margin:0 0 4px' }, 'Tap an entry to edit it or add stats.'));
     ws.forEach(w => { const txt = [(ACT[w.act] ? ACT[w.act].icon : '') + ' ' + (w.title || actLabel(w)) + ' · ' + w.min + ' min',
         h('small', null, (w.group ? 'with ' + all('workout').filter(x => x.group === w.group && x.member !== id).map(x => M(x.member).name).join(' & ') : 'solo') + (w.by && w.by !== id ? ' · added by ' + M(w.by).name : '') + (w.pelotonId || w.source === 'peloton' ? ' · Peloton ✓' + ((w.overrides || []).length ? ' · ' + w.overrides.length + ' edited' : '') : '')),
-        statsLine(w) ? h('small', null, statsLine(w)) : null, w.note ? h('small', { class: 'note-line' }, '“' + w.note + '”') : null];
+        statsLine(w) ? h('small', null, statsLine(w)) : null, cheersOn(w).length ? h('small', { class: 'cheer-for' }, '📣 ' + cheersOn(w).map(c => c.emoji + ' ' + M(c.from).name).join(' · ')) : null, w.note ? h('small', { class: 'note-line' }, '“' + w.note + '”') : null];
       inner.appendChild(h('div', { class: 'annal' }, h('span', { class: 'ad' }, fmtShort(w.date)),
       canEdit ? h('button', { class: 'll annal-edit', type: 'button', 'aria-label': 'Edit ' + actLabel(w) + ' on ' + fmtDow(w.date), onclick: () => openLog({ edit: w }) }, txt) : h('span', { class: 'll' }, txt),
       canEdit ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Delete this workout', onclick: () => confirmModal('Delete workout?', actLabel(w) + ' on ' + fmtDow(w.date) + ' will be removed for everyone.', 'Delete', () => { del(w.id); render(); toast('Deleted', 'Undo', () => { put(Object.assign({}, w, { deleted: false })); render(); }); }) }, '✕') : null)); });
@@ -1917,7 +1926,7 @@ function unseenCheers() { const at = Local.get('cheers_seen_at', 0), since = add
 function markCheersSeen() { Local.set('cheers_seen_at', Date.now()); updateBadge(); }
 function updateBadge() { try { const n = PREVIEW || !me() ? 0 : unseenCheers().length; if (navigator.setAppBadge) { if (n) navigator.setAppBadge(n); else navigator.clearAppBadge(); } } catch (e) { /* badges unsupported */ } }
 function cheerRow(x, back) {
-  return h('div', { class: 'cheer-row' }, h('span', { class: 'ce' }, x.emoji), h('span', { class: 'ct' }, M(x.from).name + (x.text ? ': "' + x.text + '"' : ' cheered you on'), h('small', null, fmtDow(x.date))),
+  return h('div', { class: 'cheer-row' }, h('span', { class: 'ce' }, x.emoji), h('span', { class: 'ct' }, M(x.from).name + (x.text ? ': "' + x.text + '"' : x.reply ? ' sent a ❤️ back' : ' cheered you on'), cheerFor(x) ? h('small', { class: 'cheer-for' }, cheerFor(x)) : null, h('small', null, fmtDow(x.date))),
     back ? h('button', { class: 'chip-btn', type: 'button', onclick: () => heartBack(x.from) }, '❤️ back') : null);
 }
 function newCheersCard() {
@@ -1941,7 +1950,7 @@ function cheersForMe() {
   const mine = all('cheer').filter(x => x.to === me() && x.date >= addDays(AZ.today(), -3)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   if (!mine.length) return null;
   const c = card('CHEERS FOR YOU', mine.length + ' lately');
-  mine.slice(0, 3).forEach(x => c.appendChild(h('div', { class: 'cheer-row' }, h('span', { class: 'ce' }, x.emoji), h('span', { class: 'ct' }, M(x.from).name + (x.text ? ': "' + x.text + '"' : ' cheered you on'), h('small', null, fmtDow(x.date))),
+  mine.slice(0, 3).forEach(x => c.appendChild(h('div', { class: 'cheer-row' }, h('span', { class: 'ce' }, x.emoji), h('span', { class: 'ct' }, M(x.from).name + (x.text ? ': "' + x.text + '"' : ' cheered you on'), cheerFor(x) ? h('small', { class: 'cheer-for' }, cheerFor(x)) : null, h('small', null, fmtDow(x.date))),
     h('button', { class: 'chip-btn', type: 'button', onclick: () => heartBack(x.from) }, '❤️ back'))));
   return c;
 }
@@ -2572,19 +2581,25 @@ function cheerFeed() {
   const items = all('workout').filter(w => w.member !== me() && w.date >= addDays(AZ.today(), -2) && w.date <= AZ.today()).sort((a, b) => (b.date + (b.createdAt || 0)) > (a.date + (a.createdAt || 0)) ? 1 : -1)
     .filter(w => { const k = (w.group || w.id) + w.member; if (seen[k]) return false; seen[k] = 1; return true; }).slice(0, 8);
   if (!items.length) c.appendChild(h('p', { class: 'hint' }, 'Nobody else has logged in the last couple of days. Maybe send some encouragement?'));
-  items.forEach(w => { const m = M(w.member), sent = all('cheer').find(x => x.from === me() && x.to === w.member && x.date === AZ.today());
+  items.forEach(w => { const m = M(w.member), sent = all('cheer').find(x => x.from === me() && !x.reply && (x.workout ? x.workout === w.id : x.to === w.member && x.date === AZ.today()));
     c.appendChild(h('div', { class: 'act-feed' }, h('div', { class: 'who' }, h('div', { class: 'fav', style: 'background:' + houseColor(w.member) }, m.role === 'pup' ? '🐾' : m.name[0]),
       h('div', null, m.name + ' · ' + (ACT[w.act] ? ACT[w.act].icon : '') + ' ' + actLabel(w) + ' ' + w.min + 'm', h('small', null, fmtDow(w.date)))),
-      h('div', { class: 'emoji-row' }, CHEER_EMOJI.map(e => h('button', { class: sent && sent.emoji === e ? 'done' : '', type: 'button', 'aria-label': 'Cheer ' + e, onclick: () => sendCheer(w.member, e, '') }, e)),
-        h('button', { class: 'note', type: 'button', onclick: () => openCheerNote(w.member) }, '✍️ note')))); });
+      h('div', { class: 'emoji-row' }, CHEER_EMOJI.map(e => h('button', { class: sent && sent.emoji === e ? 'done' : '', type: 'button', 'aria-label': 'Cheer ' + e, onclick: () => sendCheer(w.member, e, '', e + ' sent to ' + m.name + ' for their ' + actLabel(w) + ' · +' + RULES.cheer + ' Merit', w) }, e)),
+        h('button', { class: 'note', type: 'button', onclick: () => openCheerNote(w.member, w) }, '✍️ note')))); });
   return c;
 }
-function openCheerNote(to) {
-  const body = h('div', { class: 'log-body' }), inp = h('input', { class: 'txt', type: 'text', maxlength: '140', placeholder: 'Say something kind…' }); let emoji = '👏';
+function openCheerNote(to, pick) {
+  const opts = recentFor(to); let about = pick !== undefined ? pick : (opts[0] || null);
+  if (about && !opts.some(w => w.id === about.id)) opts.unshift(about);
+  const body = h('div', { class: 'log-body' }), wsel = h('div', { class: 'chips cheer-what' });
+  const drawW = () => { clear(wsel); opts.forEach(w => wsel.appendChild(h('button', { class: 'chip-btn' + (about && about.id === w.id ? ' on' : ''), type: 'button', 'aria-pressed': String(!!(about && about.id === w.id)), onclick: () => { about = w; drawW(); } }, workoutAbout(w) + ' · ' + (w.date === AZ.today() ? 'today' : DOWS[dow(w.date)]))));
+    wsel.appendChild(h('button', { class: 'chip-btn' + (!about ? ' on' : ''), type: 'button', 'aria-pressed': String(!about), onclick: () => { about = null; drawW(); } }, '🐺 Just cheering ' + M(to).name + ' on')); };
+  if (opts.length) { body.appendChild(h('div', { class: 'lbl-sm' }, 'What are you cheering?')); drawW(); body.appendChild(wsel); }
+  const inp = h('input', { class: 'txt', type: 'text', maxlength: '140', placeholder: 'Say something kind…' }); let emoji = '👏';
   const emo = h('div', { class: 'chips' }); const drawE = () => { clear(emo); CHEER_EMOJI.forEach(e => emo.appendChild(h('button', { class: 'chip-btn' + (e === emoji ? ' on' : ''), type: 'button', onclick: () => { emoji = e; drawE(); } }, e))); }; drawE();
   body.appendChild(emo); body.appendChild(h('div', { class: 'chips', style: 'margin-top:10px' }, CHEER_PRESETS.map(t => h('button', { class: 'chip-btn', type: 'button', onclick: () => { inp.value = t; } }, t))));
   body.appendChild(h('div', { style: 'margin-top:10px' }, inp));
-  body.appendChild(h('button', { class: 'btn-primary', type: 'button', style: 'margin-top:12px', onclick: () => { close(); sendCheer(to, emoji, inp.value.trim(), emoji + ' Cheer sent to ' + M(to).name) } }, 'Send cheer'));
+  body.appendChild(h('button', { class: 'btn-primary', type: 'button', style: 'margin-top:12px', onclick: () => { close(); sendCheer(to, emoji, inp.value.trim(), emoji + ' Cheer sent to ' + M(to).name + (about ? ' for their ' + actLabel(about) : ''), about) } }, 'Send cheer'));
   const close = openModal('Cheer ' + M(to).name, body);
 }
 // Top of the Pack tab: the same banner style as Today. New cheers lead it (that's where the Pack-tab badge points), otherwise the family's week.
@@ -3011,7 +3026,7 @@ function cheerToast(fresh) {
   const el = h('div', { class: 'cheer-toast', role: 'alert' },
     h('button', { class: 'ct-x', type: 'button', 'aria-label': 'Dismiss', onclick: close }, '✕'),
     h('div', { class: 'ct-emoji', 'aria-hidden': 'true' }, c.emoji),
-    h('div', { class: 'ct-body' }, h('b', null, M(c.from).name + ' cheered you!'), h('p', null, c.text ? '"' + c.text + '"' : 'Keep going, ' + M(me()).name + '!'),
+    h('div', { class: 'ct-body' }, h('b', null, M(c.from).name + ' cheered you!'), cheerFor(c) ? h('small', { class: 'cheer-for' }, cheerFor(c)) : null, h('p', null, c.text ? '"' + c.text + '"' : 'Keep going, ' + M(me()).name + '!'),
       fresh.length > 1 ? h('small', null, '+ ' + (fresh.length - 1) + ' more cheer' + (fresh.length > 2 ? 's' : '') + ' waiting') : null,
       h('div', { class: 'ct-row' }, h('button', { class: 'btn-ghost', type: 'button', onclick: () => { heartBack(c.from); close(); } }, '❤️ back'),
         h('button', { class: 'btn-primary', type: 'button', onclick: () => { close(); openCheersFor(me()); } }, fresh.length > 1 ? 'See all ' + fresh.length : 'See it'))));

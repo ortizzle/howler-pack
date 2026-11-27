@@ -61,7 +61,7 @@ async function check() {
   cheers.forEach(c => { next.ids[c.id] = 1; });
   if (!first) {
     const fresh = cheers.filter(c => !seen.ids[c.id]).slice(-3);
-    for (const c of fresh) await self.registration.showNotification((names[c.from] || 'Family') + ' cheered you ' + c.emoji, { body: c.text || 'Keep going!', icon: './icon-192.png', badge: './icon-192.png', tag: 'cheer-' + c.id });
+    for (const c of fresh) await self.registration.showNotification((names[c.from] || 'Family') + ' cheered you ' + c.emoji, { body: (c.about ? 'For your ' + c.about + '. ' : '') + (c.text || 'Keep going!'), icon: './icon-192.png', badge: './icon-192.png', tag: 'cheer-' + c.id });
   }
   // Workouts someone else logged for you (a family walk, taekwondo): a heads-up so you can say "I wasn't there"
   const forMe = recs.filter(r => r.type === 'workout' && r.member === cfg.me && r.by && r.by !== cfg.me);
