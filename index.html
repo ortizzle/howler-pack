@@ -1221,7 +1221,11 @@ function workoutAbout(w) { return (ACT[w.act] ? ACT[w.act].icon + ' ' : '') + ac
 function cheer(to, emoji, text, reply, w, orig) { const id = rid('c'); put({ id, type: 'cheer', from: me(), to, date: AZ.today(), emoji, text: (text || '').slice(0, 140), createdAt: Date.now(), reply: reply ? true : null,
   workout: w ? w.id : null, about: w ? workoutAbout(w) : null, aboutDate: w ? w.date : null, replyTo: orig ? orig.id : null }); return id; }
 // A ❤️ back points at the cheer it answers (replyTo), so the sender sees which cheer was loved
-function heartFor(c) { return all('cheer').find(x => x.reply && x.replyTo === c.id); }
+function heartFor(c) { return all('cheer').find(x => x.reply && (x.replyTo ? x.replyTo === c.id : x.from === c.to && x.to === c.from && (x.createdAt || 0) >= (c.createdAt || 0))); }
+// Before Nov 27, 2026 a ❤️ back could be sent many times. Once, on the sender's phone: keep one heart per person per day and remove the extras (they never earned Merit).
+function migrateHearts() { if (Local.get('hearts_fixed', 0) || !me()) return; const seen = {}, extra = [];
+  all('cheer').filter(x => x.reply && !x.replyTo && x.from === me()).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).forEach(x => { const k = x.to + x.date; if (seen[k]) extra.push(x.id); else seen[k] = 1; });
+  extra.forEach(id => del(id)); Local.set('hearts_fixed', 1); }
 function cheerFor(c) {
   if (c.reply) { const o = c.replyTo && rec(c.replyTo); return o ? 'for your ' + o.emoji + ' cheer' + (o.about ? ' on ' + (o.to === me() ? 'your' : M(o.to).name + '\'s') + ' ' + o.about.replace(/^\S+ /, '') : '') : null; }
   if (!c.about) return null; const w = c.workout && rec(c.workout); return 'for ' + (c.to === me() ? 'your ' : M(c.to).name + '\'s ') + (w && !w.deleted ? workoutAbout(w) : c.about) + (c.aboutDate ? ' (' + (c.aboutDate === AZ.today() ? 'today' : DOWS[dow(c.aboutDate)]) + ')' : ''); }
@@ -1229,7 +1233,8 @@ function cheersOn(w) { return all('cheer').filter(c => c.workout === w.id && !c.
 // Their workouts from the last 3 days, newest first, for the "What are you cheering?" picker
 function recentFor(id) { return all('workout').filter(w => w.member === id && moveMin(w) > 0 && w.date >= addDays(AZ.today(), -2) && w.date <= AZ.today()).sort((a, b) => (b.date + (b.createdAt || 0)) > (a.date + (a.createdAt || 0)) ? 1 : -1).slice(0, 4); }
 // ❤️ back: a thank-you to a cheer. It sends and shows like any cheer but earns nothing; only cheers you start earn Merit (Chris, Nov 27, 2026)
-function heartBack(x) { const to = x.from, cid = cheer(to, '❤️', '', true, null, x); render(); toast('❤️ sent back to ' + M(to).name, 'Undo', () => { del(cid); render(); }); }
+function heartBack(x, btn) { if (heartFor(x)) { if (btn) btn.replaceWith(h('span', { class: 'hb-sent' }, '❤️ sent')); return; }
+  const to = x.from, cid = cheer(to, '❤️', '', true, null, x); if (btn) btn.replaceWith(h('span', { class: 'hb-sent' }, '❤️ sent')); render(); toast('❤️ sent back to ' + M(to).name, 'Undo', () => { del(cid); render(); }); }
 // Every cheer gets 5 seconds of Undo; your own cheers can also be removed later from the Cheer Wall
 function sendCheer(to, emoji, text, msg, w) { const cid = cheer(to, emoji, text, false, w); render(); toast(msg || (emoji + ' sent to ' + M(to).name + ' · +' + RULES.cheer + ' Merit'), 'Undo', () => { del(cid); render(); toast('Cheer taken back'); }); }
 
@@ -1932,7 +1937,7 @@ function markCheersSeen() { Local.set('cheers_seen_at', Date.now()); updateBadge
 function updateBadge() { try { const n = PREVIEW || !me() ? 0 : unseenCheers().length; if (navigator.setAppBadge) { if (n) navigator.setAppBadge(n); else navigator.clearAppBadge(); } } catch (e) { /* badges unsupported */ } }
 function cheerRow(x, back) {
   return h('div', { class: 'cheer-row' }, h('span', { class: 'ce' }, x.emoji), h('span', { class: 'ct' }, M(x.from).name + (x.text ? ': "' + x.text + '"' : x.reply ? ' sent a ❤️ back' : ' cheered you on'), cheerFor(x) ? h('small', { class: 'cheer-for' }, cheerFor(x)) : null, h('small', null, fmtDow(x.date))),
-    back && !x.reply ? (heartFor(x) ? h('span', { class: 'hb-sent' }, '❤️ sent') : h('button', { class: 'chip-btn', type: 'button', onclick: () => heartBack(x) }, '❤️ back'))
+    back && !x.reply ? (heartFor(x) ? h('span', { class: 'hb-sent' }, '❤️ sent') : h('button', { class: 'chip-btn', type: 'button', onclick: e => heartBack(x, e.currentTarget) }, '❤️ back'))
       : !x.reply && x.from === me() && heartFor(x) ? h('span', { class: 'hb-sent' }, '❤️ from ' + M(x.to).name) : null);
 }
 function newCheersCard() {
@@ -1957,7 +1962,7 @@ function cheersForMe() {
   if (!mine.length) return null;
   const c = card('CHEERS FOR YOU', mine.length + ' lately');
   mine.slice(0, 3).forEach(x => c.appendChild(h('div', { class: 'cheer-row' }, h('span', { class: 'ce' }, x.emoji), h('span', { class: 'ct' }, M(x.from).name + (x.text ? ': "' + x.text + '"' : ' cheered you on'), cheerFor(x) ? h('small', { class: 'cheer-for' }, cheerFor(x)) : null, h('small', null, fmtDow(x.date))),
-    x.reply ? null : heartFor(x) ? h('span', { class: 'hb-sent' }, '❤️ sent') : h('button', { class: 'chip-btn', type: 'button', onclick: () => heartBack(x) }, '❤️ back'))));
+    x.reply ? null : heartFor(x) ? h('span', { class: 'hb-sent' }, '❤️ sent') : h('button', { class: 'chip-btn', type: 'button', onclick: e => heartBack(x, e.currentTarget) }, '❤️ back'))));
   return c;
 }
 function myWeekCard() {
@@ -3034,12 +3039,12 @@ function cheerToast(fresh) {
     h('div', { class: 'ct-emoji', 'aria-hidden': 'true' }, c.emoji),
     h('div', { class: 'ct-body' }, h('b', null, M(c.from).name + (c.reply ? ' sent you a ❤️ back!' : ' cheered you!')), cheerFor(c) ? h('small', { class: 'cheer-for' }, cheerFor(c)) : null, c.reply ? null : h('p', null, c.text ? '"' + c.text + '"' : 'Keep going, ' + M(me()).name + '!'),
       fresh.length > 1 ? h('small', null, '+ ' + (fresh.length - 1) + ' more cheer' + (fresh.length > 2 ? 's' : '') + ' waiting') : null,
-      h('div', { class: 'ct-row' }, c.reply ? null : h('button', { class: 'btn-ghost', type: 'button', onclick: () => { heartBack(c); close(); } }, '❤️ back'),
+      h('div', { class: 'ct-row' }, c.reply || heartFor(c) ? null : h('button', { class: 'btn-ghost', type: 'button', onclick: () => { heartBack(c); close(); } }, '❤️ back'),
         h('button', { class: 'btn-primary', type: 'button', onclick: () => { close(); openCheersFor(me()); } }, fresh.length > 1 ? 'See all ' + fresh.length : 'See it'))));
   const tt = document.getElementById('toast'); if (tt) tt.classList.remove('show');   // the cheer gets the spotlight
   document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('show')); setTimeout(close, 10000);
 }
-function afterSync() { if (PREVIEW || !me()) return; setTimeout(toastNewCheers, 300); migrateUsuals(); migrateWeekly(); syncProgressAwards(); syncGoalAndPrimusAwards(); if (!document.querySelector('.modal-back')) render(); swConfig(); if (window.OrtizDrive) try { OrtizDrive.check(); } catch (e) { /* optional */ } }
+function afterSync() { if (PREVIEW || !me()) return; setTimeout(toastNewCheers, 300); migrateHearts(); migrateUsuals(); migrateWeekly(); syncProgressAwards(); syncGoalAndPrimusAwards(); if (!document.querySelector('.modal-back')) render(); swConfig(); if (window.OrtizDrive) try { OrtizDrive.check(); } catch (e) { /* optional */ } }
 const APP_VERSION = 'v1.0 · Nov 2026';
 boot();
 
