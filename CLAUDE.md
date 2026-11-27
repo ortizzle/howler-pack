@@ -66,6 +66,10 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - Seasons keep things fresh with races, monthly and season goals, and the Hall of Honors (the color at each season's end).
 - **Pack cards** are sorted by year Merit and show it with the place ("Merit · =1st" on ties), plus progress to the next rank (`nextRankStat`, e.g. "18 to Howler" with a bar in that rank's color). The % to Peerless is inside the expanded card.
 - **Cheers** go through `sendCheer` (5 s Undo). Your own cheers can be taken back from the Cheer Wall; the +2 goes with them.
+  - **New cheers must be impossible to miss** (Chris, Nov 27, 2026; he got none of his on an iPhone).
+    - `unseenCheers()` (since `pack_cheers_seen_at`, last 7 days) feed four places: the top of Needs you ("📣 2 NEW CHEERS!" with ❤️ back), a red count on the Pack tab, the app-icon badge (`navigator.setAppBadge`, while the app is open), and a toast when a cheer syncs in (`toastNewCheers`).
+    - The **Cheers** tile on a Pack card opens `openCheersFor(id)`: your cheers (opening them marks them seen), or someone else's plus "📣 Cheer them".
+  - **Background notifications only exist on Android Chrome** (Periodic Background Sync in `sw.js`; Chrome picks the cadence). iOS has no periodic sync, and real push would need a small push server, which the app doesn't have. `enableNotifications` says so on iPhone.
 - **Practice Week:** `PRACTICE` (Nov 23–30, 2026).
   - It's deliberately not in `SEASONS`. `seasonFor` / `currentSeason` return it for those dates.
   - Points, ranks, Primus and a 15-step warm-up race work, then everything restarts Dec 1 with The Passage.
