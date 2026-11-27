@@ -30,14 +30,14 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 - **Sync:**
   - One private Gist file, `howler-pack.json`: `{ records: { id: {...} } }`.
   - Every record has `type` and `updatedAt`. Change records only through `put` / `putMany` / `del`; they stamp `updatedAt` monotonically.
-  - Deletes are tombstones. Sync is fetch → merge (newest wins) → write.
+  - Deletes are tombstones. Sync is fetch → merge (newest wins) → write. **If the fetch fails, nothing is written** (retry later rather than overwrite other phones). A `pack_dirty` flag marks unsent changes; the next successful pull sends them.
 - **Weigh-ins never leave the phone** (`pack_weighins` in localStorage):
   - Only the derived Merit `award` records sync, plus a `pct` record when that parent turns sharing on.
   - **Goal weight** (Chris, Nov 26, 2026): set in pounds in Settings → My weight goal and stored only on the phone (`pack_goal_lb`, `goalLb()`).
     - The member record syncs just the % from the season's starting weight (`goalPctFor` / `syncGoalPct`). The % stepper stays as a fallback when no pounds goal is set.
     - The Pack is the one place to set it: Fuel reads `pack_goal_lb` for its protein target and shows its own box as "set in the Howler Pack".
   - Never put pounds in a synced record, a label or an AI prompt about someone else.
-- **Kids:** no weight, food or body talk anywhere on a Pup's screen, card or coach prompt.
+- **Kids:** no weight, food or body talk anywhere on a Pup's screen, card or coach prompt. That includes a parent's Pack card viewed by a Pup (the progress block is skipped) and the Codex (Pups see "Growth points" only). `fixes-test` sweeps both.
 - **Secrets:** the Gist token (`pack_gist_token`) and Claude key (`pack_anthropic_key`, falling back to Fuel's `fuel_anthropic_key`) live only in localStorage. Never commit a key or token.
 - **The join link** (`#join=` + base64 of the gist id and token) carries the token; it is only shared within the family.
 - **Fuel** (https://ortizzle.github.io/fuel/, repo `ortizzle/fuel`) reads this app's data read-only through the shared origin's `pack_gist_id` / `pack_gist_token` / `pack_me` keys. Don't rename those keys without updating Fuel.
@@ -88,6 +88,8 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - Practice Primus crowns don't count in `primusCount`.
   - Practice workouts stay in the Annals.
 - **Seasons, races, lore:** `SEASONS`.
+  - **The Passage runs Dec 1 – Sun Jan 3; Season 1 starts Mon Jan 4** (Chris, Nov 28, 2026), so the New Year holiday week isn't split. Each season scores its own weeks, so a Mon–Sun week split by a season boundary checks the Standard in two halves; the Nov 30 week (Monday is Practice Week) is accepted as is. Later quarters (Apr 1, Jul 1, Oct 1) still split a week and the chain restarts each season; raise it with Chris before those dates.
+  - Monthly goals can span two seasons (January): `seasonsIn(a, b)` sums across them.
   - Seasons 2–4 have `loreDraft: true`. The family is still shaping that lore, so adding or rewriting stations is welcome.
   - Keep lore kid-friendly, accurate to the books, and short. "Real Mars/Moon fact" stations must be true.
   - Race goals assume about 2.5 Pack Steps a day when everyone meets their Standard. Holiday checkpoints (`by`) sit at or just under that pace.
@@ -106,6 +108,7 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - **Peloton** (Tread, Bike, Strength, Yoga, Stretch, Meditation, Bootcamp) is solo: no who question (`isSolo`).
   - **Outside & Classes** (everything else) asks **"With anyone?"**: starts as Just me; tap names to add people, or one-tap **↻ Same as last time** (`lastCrew`, from your last group entry of that activity). Nothing is pre-selected.
   - One entry becomes one `workout` per person, sharing a `group` id. Non-Peloton quick usuals open the sheet instead of logging in one tap.
+  - **Already logged?** (Chris, Nov 28, 2026): logging a non-Peloton activity for someone who already has that activity that day asks first ("Same one · log for Sedona only" / "A new one · log it"), so a family walk logged by two parents isn't counted twice. Peloton classes skip the check.
   - People something was logged for see "📬 Added for you" with **I wasn't there** (removes only their copy). The service worker also notifies them.
   - **Park was folded into Active Play** (Chris's call). `park` stays in `ACTIVITIES` with `hidden: true` so old entries still read; don't show it in pickers.
   - **Meditation** (`mind: true`) earns 1 point per 10 min and is never movement: `moveMin()` returns 0 for it, so it doesn't count toward Active Days, week minutes, minutes goals or growth. **Stretch** is MET 2.3 (2024 Compendium). **Pickleball** is 4.1–6.5.
@@ -144,6 +147,7 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - **Watch the kids in December** (Chris, Nov 27, 2026). He expects the adults to get competitive and out-train the kids, so the Primus may later need extra points for the kids. Don't change it until he has seen December's results.
   - In the Dec–Mar simulation the crowns still spread (realistic family 5 · 3 · 5 · 4), and the harder trainers win more often.
   - On the same easy walk the kids out-earn the parents slightly (kids' effort counts minutes), which is the agreed scale.
+  - **The crown is re-decided on every sync Monday and Tuesday** (`syncGoalAndPrimusAwards`), so a Sunday workout logged Monday morning still counts; from Wednesday it's final. One award per winner, always `aw_primus_<week>_<id>`, so phones can't double-crown; older single-id awards are replaced while the window is open.
   - **Ties are never broken alphabetically.** A tie at the top (`primusLeaders`) shows no crown and an "anyone can take it" note. If the week ends tied, each tied person gets a shared crown (`aw_primus_<week>_<id>`, "(shared)") and the +25.
   - **Expect the girls to tie often** (Nov 27, 2026). Kids' Primus points come only from minutes, so shared workouts give them identical totals. In the simulation they tied 14 of 17 weeks when they did nearly everything together, and 0 with some solo workouts each. Chris chose to **keep shared crowns through December and watch**. If shared crowns feel flat, the next step is tie-breakers: more Active Days, then more minutes, then shared. Don't add them before he's seen December.
 - **Coaches:** `COACHES`. Dancer, Mickey and Matteo come from the original Howlers; **Sevro** (loud, funny, loyal, loves a rivalry; never swears) was added Nov 26, 2026 to fill the "hype and fun" style the girls may want.
