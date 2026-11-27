@@ -55,7 +55,7 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 /* pack cards (from the original main page) */
 .pack-head { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 2px 10px; }
 .pack-head b { font-family: var(--fh); font-size: 22px; }
-.pack-head span { font-size: 13px; color: var(--muted); font-style: italic; }
+.pack-head span { font-size: 13px; color: var(--muted); font-style: italic; } .pack-head { align-items: center; } .pack-head .linklike { font-size: 14px; }
 .pack-sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
 .player-grid { display: flex; flex-direction: column; gap: 14px; }
 .pcard-wrap { position: relative; }
@@ -1763,8 +1763,8 @@ function playerCard(sc, isPrimus, place, stand) {
 function packSection(full) {
   const se = currentSeason(), list = memberIds().map(id => score(id, se)), wk = weekKey(AZ.today()), ps = primusScores(wk), leader = preseason() ? null : primusOf(wk);
   const box = h('div', { class: 'pack-section' });
-  box.appendChild(h('div', { class: 'pack-head' }, h('b', null, 'The Pack'), h('span', null, 'ranked by Merit · tap to open')));
-  box.appendChild(h('p', { class: 'stand-note' }, 'Everyone earns Merit on the same scale and climbs one ladder all year. ♛ Primus is this week\'s crown. ', h('button', { class: 'linklike', type: 'button', onclick: openCodex }, 'How points work ›')));
+  // Chris, Nov 27, 2026: the two-line explainer took too much room; the heading carries the link instead.
+  box.appendChild(h('div', { class: 'pack-head' }, h('b', null, 'The Pack'), h('button', { class: 'linklike', type: 'button', onclick: openCodex }, 'How points work ›')));
   const grid = h('div', { class: 'player-grid' });
   const pcts = {}; list.forEach(sc => pcts[sc.id] = standingPct(sc));
   const standOf = id => { const mine = pcts[id], place = 1 + list.filter(x => pcts[x.id] > mine + 1e-9).length; return { place, pct: mine, tied: list.filter(x => Math.abs(pcts[x.id] - mine) < 1e-9).length > 1 }; };

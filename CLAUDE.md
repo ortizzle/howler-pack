@@ -64,6 +64,7 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
     - They replaced the old color names, which clashed with everyone's chosen Color, and the original Howlers' Latin ranks (Tiro, Decurion…), which meant little to non-readers. Keep `Gold` as a rank name: `goldEarned` looks for it.
   - It's progressively harder, like the original Howlers: 0 / 600 / 2,000 / 4,500 / 8,000 / 12,500 / 18,000. Peerless by year's end takes beating the Standard (~300 Merit a week).
   - Seasons keep things fresh with races, monthly and season goals, and the Hall of Honors (the color at each season's end).
+- **The Pack heading** is just "The Pack" with **How points work ›** on the right (Chris, Nov 27, 2026: the two-line explainer under it took too much room). Don't add an intro paragraph back.
 - **Pack cards** are sorted by year Merit and show it with the place ("Merit · =1st" on ties), plus progress to the next rank (`nextRankStat`, e.g. "18 to Howler" with a bar in that rank's color). The % to Peerless is inside the expanded card.
 - **Cheers** go through `sendCheer` (5 s Undo). Your own cheers can be taken back from the Cheer Wall; the +2 goes with them.
   - **Only cheers you start earn the +2** (Chris, Nov 27, 2026). Every **❤️ back** button goes through `heartBack`, which saves a cheer with `reply: true`. It still shows and notifies, but scoring skips it and it doesn't use up the daily cheer limit.
