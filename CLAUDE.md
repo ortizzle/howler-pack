@@ -69,6 +69,10 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - **Only cheers you start earn the +2** (Chris, Nov 27, 2026). Every **❤️ back** button goes through `heartBack`, which saves a cheer with `reply: true`. It still shows and notifies, but scoring skips it and it doesn't use up the daily cheer limit.
   - **New cheers must be impossible to miss** (Chris, Nov 27, 2026; he got none of his on an iPhone).
     - `unseenCheers()` (since `pack_cheers_seen_at`, last 7 days) feed four places: the top of Needs you ("📣 2 NEW CHEERS!" with ❤️ back), a red count on the Pack tab, the app-icon badge (`navigator.setAppBadge`, while the app is open), and and **a big cheer card** (`cheerToast`: slides down from the top with the emoji, who, their message, ❤️ back and See all; ✕ or 10 s to dismiss; it sits above small toasts) shown once per new cheer, when the app opens or a sync brings one in (`toastNewCheers`). Chris asked for it big, Nov 27, 2026.
+    - **The Pack tab opens with a banner** (`packBanner`, same style as Today's; Chris said the top looked empty, Nov 27, 2026).
+      - New cheers lead it. That's where the Pack-tab badge points, so visiting marks them seen and the badge disappears right away. They stay listed for that visit.
+      - Otherwise it shows the family's week ("N Active Days between you, M of 4 met the Standard, K together") with the count of cheers this week.
+      - Below it are three small tiles: active days → Explore (Active Days, everyone), met the Standard → this week's recap, together → Explore (Together, everyone). They replaced the old wrapping "ACTIVE DAYS THIS WK" tiles.
     - The **Cheers** tile on a Pack card opens `openCheersFor(id)`: your cheers (opening them marks them seen), or someone else's plus "📣 Cheer them".
   - **Background notifications only exist on Android Chrome** (Periodic Background Sync in `sw.js`; Chrome picks the cadence). iOS has no periodic sync, and real push would need a small push server, which the app doesn't have. `enableNotifications` says so on iPhone.
 - **Practice Week:** `PRACTICE` (Nov 23–30, 2026).

@@ -160,6 +160,7 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .ct-body p { margin: 4px 0 2px; font-size: 16px; font-style: italic; } .ct-body small { color: var(--muted); } .ct-row { display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px; margin-top: 10px; } .ct-row button { min-height: 44px; margin: 0; }
 .ct-x { position: absolute; top: 4px; right: 4px; width: 44px; height: 44px; border: 0; background: transparent; font-size: 16px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .cheer-toast { transition: none; } }
+.pack-top { margin-top: 10px; } .pack-cheers { align-items: flex-start; } .pack-cheers .cheer-row { margin-top: 6px; }
 .cb-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
 .cb-tile { text-align: center; min-height: 44px; padding: 5px 4px; font: inherit; color: inherit; cursor: pointer; border: 0; border-radius: 12px; background: linear-gradient(180deg, #fdf9f0, #f3ead7); box-shadow: inset 0 1px 0 #fff, 0 2px 0 rgba(80,60,30,.18); } .cb-tile b { display: block; font-size: 17px; font-family: var(--fh); line-height: 1.15; } .cb-tile small { font-size: 11px; color: var(--muted); line-height: 1.2; display: block; } .cb-tile:active { transform: translateY(1px); box-shadow: inset 0 1px 0 #fff, 0 1px 0 rgba(80,60,30,.18); }
 .flash { animation: flash 1.2s ease-out; } @keyframes flash { 0% { box-shadow: 0 0 0 3px rgba(201,162,39,.9); } 100% { box-shadow: 0 0 0 0 rgba(201,162,39,0); } } .cb-tile.go b { color: #2e7d32; }
@@ -1734,12 +1735,6 @@ function packSection(full) {
   const box = h('div', { class: 'pack-section' });
   box.appendChild(h('div', { class: 'pack-head' }, h('b', null, 'The Pack'), h('span', null, 'ranked by Merit · tap to open')));
   box.appendChild(h('p', { class: 'stand-note' }, 'Everyone earns Merit on the same scale and climbs one ladder all year. ♛ Primus is this week\'s crown. ', h('button', { class: 'linklike', type: 'button', onclick: openCodex }, 'How points work ›')));
-  if (full) {
-    const met = list.filter(x => x.cur.standard).length, dd = list.reduce((a, x) => a + x.cur.active, 0);
-    const tog = new Set(all('workout').filter(w => w.group && weekKey(w.date) === wk).map(w => w.group)).size;
-    box.appendChild(h('div', { class: 'pack-sum' }, h('div', { class: 'metric' }, h('b', null, dd), h('span', null, 'ACTIVE DAYS THIS WK')),
-      h('div', { class: 'metric go' }, h('b', null, met + '/' + list.length), h('span', null, 'MET THE STANDARD')), h('div', { class: 'metric' }, h('b', null, tog), h('span', null, 'TIMES TOGETHER'))));
-  }
   const grid = h('div', { class: 'player-grid' });
   const pcts = {}; list.forEach(sc => pcts[sc.id] = standingPct(sc));
   const standOf = id => { const mine = pcts[id], place = 1 + list.filter(x => pcts[x.id] > mine + 1e-9).length; return { place, pct: mine, tied: list.filter(x => Math.abs(pcts[x.id] - mine) < 1e-9).length > 1 }; };
@@ -2557,7 +2552,31 @@ function openCheerNote(to) {
   body.appendChild(h('button', { class: 'btn-primary', type: 'button', style: 'margin-top:12px', onclick: () => { close(); sendCheer(to, emoji, inp.value.trim(), emoji + ' Cheer sent to ' + M(to).name) } }, 'Send cheer'));
   const close = openModal('Cheer ' + M(to).name, body);
 }
+// Top of the Pack tab: the same banner style as Today. New cheers lead it (that's where the Pack-tab badge points), otherwise the family's week.
+let packShown = null;
+function packBanner() {
+  const fresh = unseenCheers(); if (fresh.length) { packShown = { ids: fresh.map(c => c.id), at: Date.now() }; markCheersSeen(); setTimeout(() => document.querySelectorAll('.tab-badge').forEach(b => b.remove()), 0); }
+  const showing = packShown && Date.now() - packShown.at < 10 * 60 * 1000 ? all('cheer').filter(c => packShown.ids.includes(c.id)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : [];
+  const se = currentSeason(), list = memberIds().map(id => score(id, se)), wk = weekKey(AZ.today());
+  const met = list.filter(x => x.cur.standard).length, dd = list.reduce((a, x) => a + x.cur.active, 0), tog = new Set(all('workout').filter(w => w.group && weekKey(w.date) === wk).map(w => w.group)).size;
+  const weekCheers = all('cheer').filter(c => c.date >= wk && !c.reply).length, box = h('div', { class: 'pack-top' });
+  if (showing.length) {
+    const b = h('div', { class: 'season-banner pack-cheers' }, h('div', { style: 'flex:1;min-width:0' }, h('b', null, '📣 ' + (showing.length === 1 ? 'A new cheer for you!' : showing.length + ' new cheers for you!'))), h('div', { class: 'left' }, showing.length, h('small', null, 'new')));
+    showing.slice(0, 4).forEach(x => b.firstChild.appendChild(cheerRow(x, true)));
+    box.appendChild(b);
+  } else box.appendChild(h('div', { class: 'season-banner' }, h('div', null, h('b', null, 'The Pack · this week'),
+      h('small', null, dd + ' Active Day' + (dd === 1 ? '' : 's') + ' between you, ' + met + ' of ' + list.length + ' met the Standard, ' + tog + ' workout' + (tog === 1 ? '' : 's') + ' together. Keep howling!')),
+    h('div', { class: 'left' }, weekCheers, h('small', null, 'cheers this week'))));
+  const tile = (big, small, go_, label) => h('button', { class: 'cb-tile', type: 'button', 'aria-label': label, onclick: go_ }, h('b', null, big), h('small', null, small));
+  const ex = (m, who) => { exState = Object.assign(exState || {}, { m, who, by: 'week', sel: null }); jumpTo('progress', '.explore'); };
+  box.appendChild(h('div', { class: 'cb-tiles' },
+    tile(dd, 'active days', () => ex('days', 'all'), 'Active days this week: compare everyone'),
+    tile(met + '/' + list.length, 'met the Standard', () => openRecap(wk), 'Who met the Standard this week'),
+    tile(tog, 'together', () => ex('together', 'all'), 'Together workouts: compare everyone')));
+  return box;
+}
 function renderPack(main) {
+  main.appendChild(packBanner());
   main.appendChild(packSection(true));
   main.appendChild(raceCard(true));
   main.appendChild(questPackCard());
