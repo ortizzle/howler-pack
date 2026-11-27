@@ -56,7 +56,7 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - **Praetorians' best effort week yet** (+25, `RULES.growth.bestWeek`) rewards beating your own weekly effort (MET × min ÷ 10, uncapped), from your 3rd week on. A harder week counts as a better week.
   - **Pups' growth points** (`RULES.growth`) balance the parents' weight-progress points: best week yet (by minutes), longest outing yet, taekwondo stripe/belt and personal bests. `milestone` records are added via `openMilestone`.
   - Kid bonus points may come later; Chris expects the kids to push harder instead.
-- **The Codex** (`openCodex`) shows every rule and number. It's generated from `RULES` / `RANKS`, so it can't drift. Linked from the Pack tab, Settings, and "How points work ›" under The Pack.
+- **The Codex** (`openCodex`) shows every rule and number. **It opens with "Two things to know first"** (Chris, Nov 27, 2026): Merit (the whole year, never resets, climbs your rank; "like a piggy bank") vs the Primus (this week's crown, everyone starts at 0 Primus points each Monday; "like a race every week"), in kid words, before any numbers. Keep it first and keep it kid-readable. It's generated from `RULES` / `RANKS`, so it can't drift. Linked from the Pack tab, Settings, and "How points work ›" under The Pack.
 - **Activities and MET values:** `ACTIVITIES`.
 - **Taekwondo is about 35 minutes of actual training** (`TKD_MIN`), used by the kids' big button, the TKD check-in and sample data.
 - **Ranks:** `RANKS`, **one ladder for everyone, built all year** from Dec 1 and never reset (`score().year` = this season plus earlier seasons; Practice Week stands alone).

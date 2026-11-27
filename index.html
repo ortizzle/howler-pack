@@ -86,6 +86,11 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .codex table { width: 100%; border-collapse: collapse; font-size: 14px; } .codex td { padding: 7px 4px; border-top: 1px solid var(--line); vertical-align: top; } .codex td:last-child { text-align: right; font-weight: 600; white-space: nowrap; padding-left: 10px; }
 .linklike { color: var(--accent); font-style: normal; font-size: 13px; min-height: 44px; padding: 0 2px; text-decoration: underline; }
 .milestone-tile { border-color: var(--gold); }
+.cx-big { display: grid; gap: 10px; margin: 4px 0 8px; }
+.cx-one { display: grid; grid-template-columns: 36px 1fr; gap: 10px; padding: 12px; border-radius: 12px; background: rgba(0,0,0,.045); border: 1px solid rgba(160,120,40,.25); }
+.cx-one p { margin: 4px 0 0; font-size: 14px; line-height: 1.45; } .cx-one > div > b { font-family: var(--fh); font-size: 17px; }
+.cx-ic { font-size: 26px; text-align: center; line-height: 1.2; } .cx-like { font-style: italic; color: var(--muted); }
+.cx-sum { font-size: 14px; line-height: 1.5; margin: 6px 0 4px; }
 .stand-note { font-size: 12px; color: var(--muted); font-style: italic; margin: -4px 2px 10px; }
 .card-chevron { font-size: 11px; color: var(--muted); transition: transform .25s; }
 .player-card.card-open .card-chevron { transform: rotate(180deg); }
@@ -2704,6 +2709,16 @@ function openCodex() {
   const sec = (title, intro) => { body.appendChild(h('h3', null, title)); if (intro) body.appendChild(h('p', null, intro)); };
   const table = rows => { const tb = h('table', null); rows.forEach(r => tb.appendChild(h('tr', null, h('td', null, r[0]), h('td', null, r[1])))); body.appendChild(tb); };
   body.appendChild(h('button', { class: 'btn-ghost', type: 'button', style: 'margin-bottom:8px', onclick: () => { closeCx(); openTour(me(), 'welcome'); } }, '▶ Replay the welcome tour'));
+  // Chris, Nov 27, 2026: say first, in kid words, why Merit and the Primus both matter, before any numbers.
+  sec('Two things to know first');
+  body.appendChild(h('div', { class: 'cx-big' },
+    h('div', { class: 'cx-one' }, h('div', { class: 'cx-ic' }, '🏛'), h('div', null, h('b', null, 'Merit: your points for the whole year'),
+      h('p', null, 'Every workout, cheer, goal and quest adds Merit. It ', h('b', null, 'never goes back to zero'), ' (it starts Dec 1 and keeps growing all year), and it climbs your rank, from 🔗 Lowborn up to ✦ Peerless Scarred.'),
+      h('p', { class: 'cx-like' }, 'Like a piggy bank: it only fills up.'))),
+    h('div', { class: 'cx-one' }, h('div', { class: 'cx-ic' }, '♛'), h('div', null, h('b', null, 'Primus: this week\'s crown'),
+      h('p', null, 'Every Monday everyone starts at ', h('b', null, '0 Primus points'), '. Only moving counts: Active Days, meeting the Standard and effort. Whoever has the most by Sunday night wins the crown and +' + RULES.primus + ' Merit.'),
+      h('p', { class: 'cx-like' }, 'Like a race every week: anyone can win, even if they\'re behind on Merit.')))),
+    h('p', { class: 'cx-sum' }, h('b', null, 'Merit is the long game. Primus is this week\'s game.'), ' Every workout counts for both at once: a 30-minute bike ride earns about 30 points that go into your Merit and your Primus points. Cheers, goals and quests add Merit but not Primus points.'));
   sec('Merit: one scale for everyone', 'Everyone earns the same for showing up and has the same weekly Standard. Only how effort is measured differs, so kids and parents compete fairly on one total.');
   table([['Active Day: ' + P.activeMin + '+ minutes of movement (parents: or a hard shorter workout). Shorter days earn part of it, about ¾ point a minute. Stretching tops up other movement (up to as many minutes as you moved) but never makes one alone; meditation does not count toward it', '+' + P.activeDay],
     ['Weekly Standard: ' + P.standardDays + ' Active Days (Mon–Sun), the same for everyone', '+' + P.standard],
@@ -2718,7 +2733,7 @@ function openCodex() {
     ['🏔 Family quest, special outing: everyone listed does it together by the date (only some of you: +' + QUEST.eventSome + ' each)', '+' + QUEST.eventAll + ' each'],
     ['🏔 Family quest, team total: the family\'s minutes reach the target by the date', '+' + QUEST.total + ' each'],
     ['Cheering someone (cheers you start; a ❤️ back to say thanks earns nothing)', '+' + RULES.cheer + ' (' + RULES.cheerDailyMax + '/day)'],
-    ['Weekly Primus', '+' + RULES.primus],
+    ['♛ Weekly Primus: most Primus points this week (see the top)', '+' + RULES.primus],
     ['Monthly goal · Season goal', '+' + P.goalMonth + ' · +' + P.goalSeason],
     ['Race checkpoint on time · Reaching the destination (everyone)', '+' + RULES.raceCheckpoint + ' · +' + RULES.raceFinish]]);
   sec('Progress points', 'Praetorians earn progress from their private weight trend (pounds never leave their phone) and from their best effort week; Pups earn growth points for beating their own bests.');
