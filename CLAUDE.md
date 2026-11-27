@@ -88,7 +88,9 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
   - Practice Primus crowns don't count in `primusCount`.
   - Practice workouts stay in the Annals.
 - **Seasons, races, lore:** `SEASONS`.
-  - **The Passage runs Dec 1 – Sun Jan 3; Season 1 starts Mon Jan 4** (Chris, Nov 28, 2026), so the New Year holiday week isn't split. Each season scores its own weeks, so a Mon–Sun week split by a season boundary checks the Standard in two halves; the Nov 30 week (Monday is Practice Week) is accepted as is. Later quarters (Apr 1, Jul 1, Oct 1) still split a week and the chain restarts each season; raise it with Chris before those dates.
+  - **Seasons run whole Mon–Sun weeks** (Chris, Nov 28, 2026). The Passage is Dec 1 – Sun Jan 3. After that, the week holding the 1st of a new quarter starts the new season: Season 1 Jan 4 – Mar 28, Season 2 Mar 29 – Jun 27, Season 3 Jun 28 – Sep 26, Season 4 Sep 27 – Sun Jan 2, 2028 (the New Year week stays with December, like this year). Each season scores its own weeks, so keep boundaries on Mon/Sun; `weeks-test` checks it. Only the Nov 30 week is split (Monday is Practice Week), accepted as is. The Codex lists the dates from `SEASONS`.
+  - **Reporting is by calendar month** (Chris, Nov 28, 2026: "month based regardless of weekly goals"): monthly goals, the explorer's "by month" and any monthly summary use the 1st to the last day of the month, whatever the season weeks do.
+  - The chain still restarts each season; Chris hasn't asked to carry it over.
   - Monthly goals can span two seasons (January): `seasonsIn(a, b)` sums across them.
   - Seasons 2–4 have `loreDraft: true`. The family is still shaping that lore, so adding or rewriting stations is welcome.
   - Keep lore kid-friendly, accurate to the books, and short. "Real Mars/Moon fact" stations must be true.

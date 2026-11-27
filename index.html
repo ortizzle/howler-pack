@@ -803,7 +803,8 @@ const SEASONS = [
       { at: 65, icon: '🐺', name: 'The Howlers', lore: 'In House Mars, Darrow gathers a loyal crew called the Howlers. They wear wolf cloaks, look out for each other, and never leave anyone behind. Their best fighter, Sevro, is also the smallest. That is us: a pack.' },
       { at: 75, icon: '🎆', name: "New Year's Eve · Welcome to the Pack", by: '2026-12-31', lore: 'A Primus is the leader of a House. Darrow earns it by lifting the people around him, not by being the strongest. In our pack, a new Primus is crowned every week. Happy New Year, Howlers!' },
     ] } },
-  { id: 's1', name: 'Season 1', sub: 'Iron Rain', start: '2027-01-04', end: '2027-03-31',
+  // Seasons run whole Mon–Sun weeks (Chris, Nov 28, 2026): the week holding the 1st of a new quarter starts the new season; the New Year week stays with December.
+  { id: 's1', name: 'Season 1', sub: 'Iron Rain', start: '2027-01-04', end: '2027-03-28',
     race: { name: 'Race to Spring', unit: 'Pack Steps', goal: 200, stations: [
       { at: 25, icon: '🌈', name: 'The Colors', lore: 'Everyone in the Society is born into a Color with a job: Golds rule, Silvers handle money, Coppers run offices, Blues fly ships, Greens build computers, Grays keep order, Obsidians fight, Reds mine, and more. Darrow believes your Color should not decide who you can become.' },
       { at: 55, icon: '🧊', name: 'The Obsidians', lore: 'Obsidians are giant warriors raised at the frozen poles. Ragnar, an Obsidian, becomes one of Darrow\'s truest friends. He is enormous, gentle with friends, and wiser than people expect.' },
@@ -814,7 +815,7 @@ const SEASONS = [
       { at: 200, icon: '🌱', name: 'First Day of Spring · Iron Rain', by: '2027-03-20', lore: 'The Iron Rain is a giant mission where everyone drops in together. It only works if the whole team lands. We just did that, together. Welcome to spring, Howlers.' },
     ] } },
   // Seasons 2–4: first drafts. loreDraft = the family is still shaping these; add or rewrite stations freely.
-  { id: 's2', name: 'Season 2', sub: 'The Institute', start: '2027-04-01', end: '2027-06-30', loreDraft: true,
+  { id: 's2', name: 'Season 2', sub: 'The Institute', start: '2027-03-29', end: '2027-06-27', loreDraft: true,
     race: { name: 'Race to Summer', unit: 'Pack Steps', goal: 200, stations: [
       { at: 25, icon: '🏛', name: 'The Twelve Houses', lore: 'At the Institute, students are split into twelve Houses, each named after a Roman god: Mars, Minerva, Apollo, Ceres, Jupiter and more. Your House becomes your team, and a team only wins if it learns to work together.' },
       { at: 55, icon: '🦉', name: 'Minerva, the Wise', lore: 'Minerva was the Roman goddess of wisdom and strategy. Her House is known for thinking before it acts. Planning your week (which days you will move) is a little bit of Minerva.' },
@@ -823,7 +824,7 @@ const SEASONS = [
       { at: 160, icon: '⛰️', name: 'Olympus and the Proctors', lore: 'The Proctors watch the Institute from a mountain fortress called Olympus, named after the home of the gods. They are supposed to keep the game fair. Our parents have a different job: they are the pack\'s Praetorians, its protectors.' },
       { at: 200, icon: '☀️', name: "Father's Day · First Day of Summer", by: '2027-06-20', lore: 'Halfway through the year, together. Darrow\'s father taught him that real strength is quiet and patient. Happy Father\'s Day, and welcome to summer, Howlers.' },
     ] } },
-  { id: 's3', name: 'Season 3', sub: 'Mars Rising', start: '2027-07-01', end: '2027-09-30', loreDraft: true,
+  { id: 's3', name: 'Season 3', sub: 'Mars Rising', start: '2027-06-28', end: '2027-09-26', loreDraft: true,
     race: { name: 'Race to Fall', unit: 'Pack Steps', goal: 200, stations: [
       { at: 25, icon: '🔴', name: 'The Red Planet', lore: 'Real Mars fact: Mars is about half as wide as Earth, and a day there lasts 24 hours and 37 minutes. It is red because its dust is full of iron that has rusted. In Red Rising, people have learned to live there.' },
       { at: 60, icon: '🌋', name: 'Olympus Mons', lore: 'Real Mars fact: Olympus Mons is the tallest volcano in the whole solar system, about two and a half times taller than Mount Everest. Some climbs take more than one day. So do some goals.' },
@@ -832,7 +833,7 @@ const SEASONS = [
       { at: 165, icon: '⛏️', name: 'Labor Day · The Reds', by: '2027-09-06', lore: 'Reds do the hardest work in the Society, deep in the mines, and they take pride in it. Labor Day honors everyone who works hard, especially the work nobody sees.' },
       { at: 200, icon: '🍂', name: 'First Day of Fall · Mars Rising', by: '2027-09-23', lore: 'Mars rises when its people stand up together. Three seasons of showing up, side by side. Welcome to fall, Howlers.' },
     ] } },
-  { id: 's4', name: 'Season 4', sub: 'Siege of Luna', start: '2027-10-01', end: '2027-12-31', loreDraft: true,
+  { id: 's4', name: 'Season 4', sub: 'Siege of Luna', start: '2027-09-27', end: '2028-01-02', loreDraft: true,
     race: { name: 'Race to the New Year', unit: 'Pack Steps', goal: 200, stations: [
       { at: 25, icon: '🌕', name: 'Luna', lore: 'Real Moon fact: our Moon is about a quarter as wide as Earth, and its gravity is one sixth of ours. In Red Rising, Luna is the capital of the whole Society, where the most powerful Golds live.' },
       { at: 70, icon: '🎃', name: 'Halloween · Masks', by: '2027-10-31', lore: 'Darrow spends years in disguise, living as a Gold while remembering he is a Red. Costumes are fun, but the best part is taking off the mask and being who you really are.' },
@@ -2796,7 +2797,8 @@ function openCodex() {
     ['Pups: taekwondo stripe · belt test passed', '+' + G.stripe + ' · +' + G.belt], ['Pups: personal best (up to ' + G.pbWeeklyMax + ' a week)', '+' + G.pb]]); }
   sec('Ranks: built all year', 'Your rank grows from Dec 1 through the whole year and never resets. Each rank takes more than the last; reaching Gold turns your Color Gold, and Peerless Scarred takes beating your Standard week after week.');
   table(RANKS.map(r => [h('span', null, h('b', { style: 'color:' + r.color }, r.icon + ' ' + r.name), ' · ', h('i', null, r.motto)), r.min.toLocaleString()]));
-  sec('Seasons keep it fresh', 'Each quarter brings a new race toward a holiday, new season goals and lore to unlock; goals also reset every month. Your color at the end of each season goes in the Hall of Honors.');
+  sec('Seasons keep it fresh', 'Each quarter brings a new race toward a holiday, new season goals and lore to unlock; goals also reset every month. Seasons run whole weeks (Monday to Sunday), so no week is ever split. Your color at the end of each season goes in the Hall of Honors.');
+  table(SEASONS.map(x => [x.name + (x.sub ? ' · ' + x.sub : ''), fmtShort(x.start) + ' – ' + fmtShort(x.end)]));
   sec('Weekly Primus', 'Primus points are your workout Merit for the week: Active Day and showing-up points, the Standard bonus and effort points. Cheers, goals, quests, chain bonuses, stripes and ' + (isPup(me()) ? 'other bonus' : 'weight-trend') + ' points don\'t count, so the number is exactly what your workouts earned. Most points by Sunday night wins. A tie means no crown yet; if the week ends tied, everyone tied shares it.');
   sec('The race', 'Every Active Day moves the pack one step; every activity done together adds one more. Hit a holiday checkpoint on time and everyone earns a bonus.');
   sec('Practice Week (Nov 23–30)', 'Points count for practice, then everything resets on Dec 1 when The Passage begins.');
