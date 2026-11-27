@@ -154,6 +154,12 @@ header.topbar { display: flex; justify-content: space-between; align-items: cent
 .tab-badge { position: absolute; top: 4px; left: calc(50% + 8px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #b31c1e; color: #fff; font-size: 11px; font-style: normal; font-weight: 700; line-height: 18px; box-shadow: 0 0 0 2px #efe7d6; }
 .tabbar button { position: relative; } .card-stat-cell.tappable { font: inherit; color: inherit; border: 0; background: transparent; cursor: pointer; min-height: 44px; } .card-stat-cell.tappable .card-stat-lbl { color: var(--accent); }
 .new-cheers .card-t { color: #9a1010; }
+.cheer-toast { position: fixed; left: 12px; right: 12px; top: calc(10px + env(safe-area-inset-top)); z-index: 2000; display: flex; gap: 12px; align-items: flex-start; padding: 16px 16px 14px;
+  border-radius: 18px; background: linear-gradient(180deg, #fffaf0, #f6e7c4); border: 2px solid #c9a227; box-shadow: 0 14px 40px rgba(60,30,5,.35); transform: translateY(-140%); transition: transform .35s cubic-bezier(.2,.9,.3,1.2); max-width: 520px; margin: 0 auto; }
+.cheer-toast.show { transform: translateY(0); } body:has(.cheer-toast.show) #toast { opacity: 0; pointer-events: none; } .ct-emoji { font-size: 46px; line-height: 1; } .ct-body { flex: 1; min-width: 0; } .ct-body b { font-family: var(--fh); font-size: 21px; color: #9a1010; display: block; }
+.ct-body p { margin: 4px 0 2px; font-size: 16px; font-style: italic; } .ct-body small { color: var(--muted); } .ct-row { display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px; margin-top: 10px; } .ct-row button { min-height: 44px; margin: 0; }
+.ct-x { position: absolute; top: 4px; right: 4px; width: 44px; height: 44px; border: 0; background: transparent; font-size: 16px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .cheer-toast { transition: none; } }
 .cb-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
 .cb-tile { text-align: center; min-height: 44px; padding: 5px 4px; font: inherit; color: inherit; cursor: pointer; border: 0; border-radius: 12px; background: linear-gradient(180deg, #fdf9f0, #f3ead7); box-shadow: inset 0 1px 0 #fff, 0 2px 0 rgba(80,60,30,.18); } .cb-tile b { display: block; font-size: 17px; font-family: var(--fh); line-height: 1.15; } .cb-tile small { font-size: 11px; color: var(--muted); line-height: 1.2; display: block; } .cb-tile:active { transform: translateY(1px); box-shadow: inset 0 1px 0 #fff, 0 1px 0 rgba(80,60,30,.18); }
 .flash { animation: flash 1.2s ease-out; } @keyframes flash { 0% { box-shadow: 0 0 0 3px rgba(201,162,39,.9); } 100% { box-shadow: 0 0 0 0 rgba(201,162,39,0); } } .cb-tile.go b { color: #2e7d32; }
@@ -2884,6 +2890,7 @@ function render() {
   const nCheer = unseenCheers().length;
   [['today', '🏠', 'Today'], ['progress', '📈', 'Progress'], ['goals', '🎯', 'Goals'], ['pack', '🐺', 'Pack']].forEach(t => tb.appendChild(h('button', { class: TAB === t[0] ? 'on' : '', type: 'button', 'aria-current': TAB === t[0] ? 'page' : null, onclick: () => go(t[0]) }, h('span', { 'aria-hidden': 'true' }, t[1]), t[2], t[0] === 'pack' && nCheer ? h('i', { class: 'tab-badge', 'aria-label': nCheer + ' new cheers' }, String(nCheer)) : null)));
   updateBadge();
+  if (!PREVIEW && !toastNewCheers.done) { toastNewCheers.done = true; setTimeout(toastNewCheers, 900); }
   const fab = document.getElementById('fab'); fab.hidden = TAB === 'today'; fab.className = 'fab icon-fab'; fab.setAttribute('aria-label', isPup(id) ? 'I moved! Log something' : 'Log a workout');
   clear(fab).appendChild(h('img', { src: 'icon-192.png', alt: '' })); fab.appendChild(h('span', { class: 'plus', 'aria-hidden': 'true' }));
   try {
@@ -2929,7 +2936,21 @@ function migrateUsuals() {
 function toastNewCheers() {
   const told = Local.get('cheers_told', {}), fresh = unseenCheers().filter(c => !told[c.id]); if (!fresh.length) return;
   fresh.forEach(c => told[c.id] = 1); Local.set('cheers_told', told);
-  const c = fresh[0]; toast('📣 ' + M(c.from).name + ' cheered you ' + c.emoji + (fresh.length > 1 ? ' (+' + (fresh.length - 1) + ' more)' : ''), 'See', () => openCheersFor(me()));
+  cheerToast(fresh);
+}
+// A big card that slides down from the top for new cheers: hard to miss, easy to answer, tap ✕ (or wait 10 s) to dismiss
+function cheerToast(fresh) {
+  const old = document.querySelector('.cheer-toast'); if (old) old.remove();
+  const c = fresh[0], close = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); };
+  const el = h('div', { class: 'cheer-toast', role: 'alert' },
+    h('button', { class: 'ct-x', type: 'button', 'aria-label': 'Dismiss', onclick: close }, '✕'),
+    h('div', { class: 'ct-emoji', 'aria-hidden': 'true' }, c.emoji),
+    h('div', { class: 'ct-body' }, h('b', null, M(c.from).name + ' cheered you!'), h('p', null, c.text ? '"' + c.text + '"' : 'Keep going, ' + M(me()).name + '!'),
+      fresh.length > 1 ? h('small', null, '+ ' + (fresh.length - 1) + ' more cheer' + (fresh.length > 2 ? 's' : '') + ' waiting') : null,
+      h('div', { class: 'ct-row' }, h('button', { class: 'btn-ghost', type: 'button', onclick: () => { sendCheer(c.from, '❤️', ''); close(); } }, '❤️ back'),
+        h('button', { class: 'btn-primary', type: 'button', onclick: () => { close(); openCheersFor(me()); } }, fresh.length > 1 ? 'See all ' + fresh.length : 'See it'))));
+  const tt = document.getElementById('toast'); if (tt) tt.classList.remove('show');   // the cheer gets the spotlight
+  document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('show')); setTimeout(close, 10000);
 }
 function afterSync() { if (PREVIEW || !me()) return; setTimeout(toastNewCheers, 300); migrateUsuals(); migrateWeekly(); syncProgressAwards(); syncGoalAndPrimusAwards(); if (!document.querySelector('.modal-back')) render(); swConfig(); if (window.OrtizDrive) try { OrtizDrive.check(); } catch (e) { /* optional */ } }
 const APP_VERSION = 'v1.0 · Nov 2026';
