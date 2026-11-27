@@ -541,7 +541,7 @@ function putMany(list) { list.forEach(r => { r.updatedAt = stamp(r.id); DB.recor
 function del(id) { const r = DB.records[id]; if (!r) return; DB.records[id] = Object.assign({}, r, { deleted: true, updatedAt: stamp(id) }); changed(); }
 function all(type) { const out = []; for (const id in DB.records) { const r = DB.records[id]; if (r.type === type && !r.deleted) out.push(r); } return out; }
 function rec(id) { const r = DB.records[id]; return r && !r.deleted ? r : null; }
-function changed() { _ver++; if (!PREVIEW) { Store.set('data', DB); Sync.soon(); } }
+function changed() { _ver++; if (!PREVIEW) { Store.set('data', DB); Store.set('dirty', 1); Sync.soon(); } }
 
 // ───────────────────────── Sync: private Gist, fetch-merge-write, newest updatedAt wins, tombstones purged after 60 days
 const Sync = {
@@ -574,14 +574,14 @@ const Sync = {
     if (this.busy) { this.again = true; return; }
     this.busy = true; this.set('busy');
     try {
-      let merged = DB;
-      try { merged = this.merge(DB, await this.pullRemote()); } catch (e) { if (/HTTP_40[13]/.test(e.message)) throw e; }
+      const merged = this.merge(DB, await this.pullRemote());   // if the read fails, don't write: retry later rather than overwrite other phones' entries
       const res = await fetch('https://api.github.com/gists/' + this.id(), { method: 'PATCH', cache: 'no-store',
         headers: Object.assign({ 'Content-Type': 'application/json' }, this.headers()),
         body: JSON.stringify({ files: { [this.filename]: { content: JSON.stringify(merged) } } }) });
       if (!res.ok) throw new Error('HTTP_' + res.status);
       // keep anything typed while we were saving
       DB = this.merge(DB, merged); Store.set('data', DB); _ver++;
+      if (!this.again) Store.set('dirty', 0);
       this.lastAt = Date.now(); this.set('ok');
     } catch (e) { this.set('error'); syncError(e); }
     finally { this.busy = false; if (this.again) { this.again = false; this.save(); } }
@@ -593,6 +593,7 @@ const Sync = {
       const before = JSON.stringify(DB.records).length;
       DB = this.merge(DB, await this.pullRemote()); Store.set('data', DB); _ver++;
       this.lastAt = Date.now(); this.set('ok');
+      if (Store.get('dirty', 0)) setTimeout(() => this.soon(), 0);   // something saved offline earlier: send it now
       return JSON.stringify(DB.records).length !== before;
     } catch (e) { this.set('error'); syncError(e); return false; }
     finally { this.busy = false; }
@@ -791,7 +792,8 @@ function rankOf(pts) { let i = 0; RANKS.forEach((r, j) => { if (pts >= r.min) i 
 
 // ───────────────────────── Seasons, races and lore. December is the trial run; then quarterly.
 const SEASONS = [
-  { id: 's0', name: 'The Passage', sub: 'Trial run', start: '2026-12-01', end: '2026-12-31', trial: true,
+  // The Passage ends Sun Jan 3 so the New Year week stays whole; Season 1 starts Mon Jan 4 (Chris, Nov 28, 2026)
+  { id: 's0', name: 'The Passage', sub: 'Trial run', start: '2026-12-01', end: '2027-01-03', trial: true,
     race: { name: 'Race to the New Year', unit: 'Pack Steps', goal: 75, stations: [
       { at: 8, icon: '⛏️', name: 'The Mines of Lykos', lore: 'Darrow grows up in Lykos, a mining town deep under the surface of Mars. Reds like him dig for helium-3, the fuel that lets people live on other planets. Reds are the lowest Color in their world, but they are tough, loyal, and they love to sing and dance.' },
       { at: 18, icon: '⚒', name: 'The Sons of Ares', lore: 'The Sons of Ares are a secret group working for a fairer world, where your Color does not decide your life. Dancer, one of their leaders, recruits Darrow. Ares was the Greek god of war; the Romans called him Mars, which is also the name of the planet.' },
@@ -801,7 +803,7 @@ const SEASONS = [
       { at: 65, icon: '🐺', name: 'The Howlers', lore: 'In House Mars, Darrow gathers a loyal crew called the Howlers. They wear wolf cloaks, look out for each other, and never leave anyone behind. Their best fighter, Sevro, is also the smallest. That is us: a pack.' },
       { at: 75, icon: '🎆', name: "New Year's Eve · Welcome to the Pack", by: '2026-12-31', lore: 'A Primus is the leader of a House. Darrow earns it by lifting the people around him, not by being the strongest. In our pack, a new Primus is crowned every week. Happy New Year, Howlers!' },
     ] } },
-  { id: 's1', name: 'Season 1', sub: 'Iron Rain', start: '2027-01-01', end: '2027-03-31',
+  { id: 's1', name: 'Season 1', sub: 'Iron Rain', start: '2027-01-04', end: '2027-03-31',
     race: { name: 'Race to Spring', unit: 'Pack Steps', goal: 200, stations: [
       { at: 25, icon: '🌈', name: 'The Colors', lore: 'Everyone in the Society is born into a Color with a job: Golds rule, Silvers handle money, Coppers run offices, Blues fly ships, Greens build computers, Grays keep order, Obsidians fight, Reds mine, and more. Darrow believes your Color should not decide who you can become.' },
       { at: 55, icon: '🧊', name: 'The Obsidians', lore: 'Obsidians are giant warriors raised at the frozen poles. Ragnar, an Obsidian, becomes one of Darrow\'s truest friends. He is enormous, gentle with friends, and wiser than people expect.' },
@@ -1017,8 +1019,8 @@ function primusCount(id) { return all('award').filter(a => a.member === id && a.
 
 // ───────────────────────── Goals: monthly + season. December goals are practice for 2027.
 const GOAL_TYPES = {
-  activeDays: { label: n => n + ' Active Days', icon: '📅', who: 'all', val: (id, a, b) => activeDays(id, seasonFor(a) || currentSeason(), a, b) },
-  standards:  { label: n => 'Hit the Standard ' + n + ' weeks', icon: '✦', who: 'all', val: (id, a, b) => score(id, seasonFor(a) || currentSeason()).weeks.filter(w => w.standard && w.end >= a && w.key <= b).length },
+  activeDays: { label: n => n + ' Active Days', icon: '📅', who: 'all', val: (id, a, b) => seasonsIn(a, b).reduce((x, se) => x + activeDays(id, se, a, b), 0) },
+  standards:  { label: n => 'Hit the Standard ' + n + ' weeks', icon: '✦', who: 'all', val: (id, a, b) => seasonsIn(a, b).reduce((x, se) => x + score(id, se).weeks.filter(w => w.standard && w.end >= a && w.key <= b && (w.end <= se.end ? w.end : se.end) >= a).length, 0) },
   minutes:    { label: n => n.toLocaleString() + ' minutes moving', icon: '⏱️', who: 'all', step: 60, val: (id, a, b) => workoutsOf(id, a, b).reduce((x, w) => x + moveMin(w), 0) },
   tkd:        { label: n => n + ' Taekwondo classes', icon: '🥋', who: 'all', val: (id, a, b) => workoutsOf(id, a, b).filter(w => w.act === 'tkd').length },
   dogs:       { label: n => 'Walk the dogs ' + n + ' times', icon: '🐕', who: 'all', val: (id, a, b) => workoutsOf(id, a, b).filter(w => w.act === 'dogwalk').length },
@@ -1026,6 +1028,8 @@ const GOAL_TYPES = {
   peloton:    { label: n => n + ' Peloton classes', icon: '🚴', who: 'all', val: (id, a, b) => workoutsOf(id, a, b).filter(w => ACT[w.act] && ACT[w.act].group === 'Peloton').length },
   weight:     { label: n => 'Trend down ' + n + '%', icon: '⚖️', who: 'proctor', private: true, step: 0.5, val: (id, a, b) => id === me() ? trendPctBetween(a, b) : 0 },
 };
+// Seasons that overlap a date window (January's month goals span The Passage and Season 1)
+function seasonsIn(a, b) { return SEASONS.filter(se => se.start <= b && se.end >= a); }
 function periodOf(scope, day) { const se = seasonFor(day) || currentSeason(); return scope === 'month' ? day.slice(0, 7) : se.id; }
 function windowOf(scope, day) { if (scope === 'month') { const a = day.slice(0, 8) + '01'; return { a, b: monthEnd(a), name: MONTHS_FULL[+day.slice(5, 7) - 1] }; } const se = seasonFor(day) || currentSeason(); return { a: se.start, b: se.end, name: se.name }; }
 function goalsOf(id, scope, day) { const r = rec('goals_' + id + '_' + scope + '_' + periodOf(scope, day || goalDay())); return r ? r.list : null; }
@@ -1102,13 +1106,20 @@ function syncGoalAndPrimusAwards() {
     list.forEach(g => { const key = 'aw_' + id + '_goal_' + scope + '_' + per + '_' + g.type;
       if (goalStatus(id, g, scope, today).done && !rec(key)) writes.push({ id: key, type: 'award', member: id, cat: 'bonus', date: today, label: (scope === 'month' ? 'Monthly' : 'Season') + ' goal: ' + GOAL_TYPES[g.type].label(g.target), pts: R(id)[scope === 'month' ? 'goalMonth' : 'goalSeason'] }); });
   });
-  // crown last week's Primus (any phone may write it; same id everywhere)
-  const se = currentSeason(), lastWk = addDays(weekKey(today), -7);
-  if (addDays(lastWk, 6) >= se.start && !all('award').some(a => a.kind === 'primus' && a.week === lastWk)) {
-    const L = primusLeaders(lastWk), shared = L.length > 1;
-    L.forEach(p => writes.push({ id: 'aw_primus_' + lastWk + (shared ? '_' + p : ''), type: 'award', kind: 'primus', week: lastWk, member: p, cat: 'bonus', date: addDays(lastWk, 6) < se.start ? se.start : addDays(lastWk, 6), label: '♛ Primus of the week of ' + fmtShort(lastWk) + (shared ? ' (shared)' : ''), pts: RULES.primus }));
+  // Crown last week's Primus. Any phone may write it; one award per winner (aw_primus_<week>_<id>), so phones agree.
+  // Monday and Tuesday it's re-decided on every sync, so a Sunday workout logged Monday morning still counts; after that it's final.
+  const lastWk = addDays(weekKey(today), -7), wEnd = addDays(lastWk, 6), stale = [];
+  if (wEnd >= PRACTICE.start) {
+    const have = all('award').filter(a => a.kind === 'primus' && a.week === lastWk), open = today <= addDays(wEnd, 2);
+    if (open || !have.length) {
+      const L = primusLeaders(lastWk), shared = L.length > 1, want = {};
+      L.forEach(p => { want['aw_primus_' + lastWk + '_' + p] = { id: 'aw_primus_' + lastWk + '_' + p, type: 'award', kind: 'primus', week: lastWk, member: p, cat: 'bonus', date: wEnd, label: '♛ Primus of the week of ' + fmtShort(lastWk) + (shared ? ' (shared)' : ''), pts: RULES.primus }; });
+      have.forEach(a => { if (!want[a.id]) stale.push(a.id); });
+      Object.values(want).forEach(w => { const cur = rec(w.id); if (!cur || cur.label !== w.label || cur.member !== w.member || cur.date !== w.date) writes.push(w); });
+    }
   }
   if (writes.length) putMany(writes);
+  stale.forEach(del);
 }
 
 // ───────────────────────── Claude (browser-direct; key lives only on this phone)
@@ -1496,7 +1507,17 @@ function openLog(preset) {
         const before = Object.assign({}, ed), next = Object.assign({}, ed, b); if (next.peloton) next.overrides = pelotonDiffs(next); put(next); close(); render();
         toast('Saved for ' + (others.length + 1) + ' people', 'Undo', () => { putMany([before].concat(beforeOthers)); render(); }); return; } }
     if (ed) { const before = Object.assign({}, ed), next = Object.assign({}, ed, base()); if (next.peloton) next.overrides = pelotonDiffs(next); put(next); close(); render(); toast('Saved ' + ACT[f.act].icon + ' ' + actLabel(Object.assign({}, ed, base())), 'Undo', () => { put(before); render(); }); return; }
-    const crew = f.crew.slice(); let ids; const g = gainFor(crew, () => { ids = logGroup(crew, base()); }); close(); render(); toast(ACT[f.act].icon + ' ' + gainText(g), 'Undo', () => undoLog(ids));
+    const crew = f.crew.slice(), b0 = base(), doLog = who => { if (!who.length) { close(); toast('Nothing new to add'); return; } let ids; const g = gainFor(who, () => { ids = logGroup(who, b0); }); close(); render(); toast(ACT[f.act].icon + ' ' + gainText(g), 'Undo', () => undoLog(ids)); };
+    // Same activity already on someone's day (e.g. Kat logged the family walk for everyone too)? Ask before counting it twice.
+    const already = isSolo(b0.act) ? [] : crew.map(id => ({ id, w: all('workout').find(w => w.member === id && w.date === b0.date && w.act === b0.act) })).filter(x => x.w);   // Peloton classes are solo: two in a day is normal
+    if (!already.length) { doLog(crew); return; }
+    const fresh = crew.filter(id => !already.some(x => x.id === id)), when = b0.date === AZ.today() ? 'today' : fmtDow(b0.date);
+    const lines = already.map(x => h('li', null, (x.id === me() ? 'You' : M(x.id).name) + ': ' + workoutAbout(x.w) + (x.w.by && x.w.by !== x.id ? ' (logged by ' + (x.w.by === me() ? 'you' : M(x.w.by).name) + ')' : '')));
+    const dbody = h('div', { class: 'log-body dupe-check' }, h('p', null, 'Already on the list for ' + when + ':'), h('ul', null, lines),
+      h('p', { class: 'hint' }, 'Same ' + ACT[b0.act].long.toLowerCase() + '? Skip it so it isn\'t counted twice. A second one later in the day? Log it again.'),
+      h('div', { class: 'two' }, h('button', { class: 'btn-ghost', type: 'button', onclick: () => { dclose(); doLog(fresh); } }, fresh.length ? 'Same one · log for ' + fresh.map(id => id === me() ? 'me' : M(id).name).join(' & ') + ' only' : 'Same one · don\'t add'),
+        h('button', { class: 'btn-primary', type: 'button', onclick: () => { dclose(); doLog(crew); } }, 'A new one · log it')));
+    const dclose = openModal('🐾 Already logged?', dbody);
   }
   const close = openModal(ed ? 'Edit workout' : pup ? 'What did you do? 🐾' : 'Log a workout', body);
   draw();
@@ -1751,7 +1772,9 @@ function playerCard(sc, isPrimus, place, stand) {
     const se = sc.se, mins = workoutsOf(id, se.start, AZ.today()).reduce((a, w) => a + moveMin(w), 0), ad = Object.keys(sc.days).filter(d => sc.days[d].active).length;
     inner.appendChild(h('div', { class: 'card-stat-row' }, [[ad, 'Active days'], [mins.toLocaleString(), 'Minutes'], [sc.chain ? '🔥'.repeat(sc.chain) : '0', 'Chain'], [all('cheer').filter(c => c.to === id).length, 'Cheers', () => openCheersFor(id)]]
       .map(x => x[2] ? h('button', { class: 'card-stat-cell tappable', type: 'button', 'aria-label': x[1] + ': ' + x[0] + ' (open)', onclick: x[2] }, h('span', { class: 'card-stat-val' }, x[0]), h('span', { class: 'card-stat-lbl' }, x[1] + ' ›')) : h('div', { class: 'card-stat-cell' }, h('span', { class: 'card-stat-val' }, x[0]), h('span', { class: 'card-stat-lbl' }, x[1])))));
-    if (m.role !== 'pup') {
+    if (m.role !== 'pup' && isPup(me())) {
+      // a Pup looking at a parent's card: no weight talk at all (CLAUDE.md kids rule)
+    } else if (m.role !== 'pup') {
       const shared = pctShared(id), mineT = mine ? trendSeries(se.start, se.end) : null;
       const series = shared ? shared.series : mineT && mineT.series.length > 1 ? pctSeries(weighins().filter(w => w.date >= se.start && w.date <= se.end).sort((a, b) => a.date < b.date ? -1 : 1)) : null;
       inner.appendChild(series && series.length > 1 ? h('div', { class: 'shared-prog' }, h('div', { class: 'lbl' }, h('span', null, '📉 PROGRESS SINCE ' + fmtShort(se.start).toUpperCase()), h('span', { style: 'color:#2e7d32' }, '▼ ' + series[series.length - 1].p.toFixed(1) + '% · goal ' + (m.goalPct || 10) + '%')),
@@ -2507,7 +2530,7 @@ function renderProgress(main) {
       c.appendChild(h('div', { class: 'private' }, '🔒 Pounds stay on this phone. The family sees ' + (M(id).share ? 'your % lost.' : 'nothing; sharing is off in Settings.') + ' Green band = healthy pace, 0.5–1% a week.'));
       c.appendChild(milestoneLadder(id, se, t, goalPct));
       if (se.trial) c.appendChild(h('div', { class: 'hold' }, h('div', { style: 'font-size:30px' }, t.trend <= t.start * 1.005 ? '🛡️' : '⚠️'),
-        h('div', null, h('b', null, t.trend <= t.start * 1.005 ? 'Holding the line' : 'Above the line'), h('div', null, 'The Holiday Hold: finish Dec 31 with your trend no more than 0.5% above where you started for +' + RULES.hold + ' Merit. Holding steady through the holidays counts as winning.'))));
+        h('div', null, h('b', null, t.trend <= t.start * 1.005 ? 'Holding the line' : 'Above the line'), h('div', null, 'The Holiday Hold: finish The Passage (Jan 3) with your trend no more than 0.5% above where you started for +' + RULES.hold + ' Merit. Holding steady through the holidays counts as winning.'))));
     } else c.appendChild(h('p', { class: 'hint', style: 'font-size:14px' }, 'Weigh in on Today to start your trend line. It stays on this phone.'));
     main.appendChild(c);
   }
@@ -2681,7 +2704,7 @@ function tourCards(id, mode) {
   const ladder = h('div', { class: 'tour-ladder' }, RANKS.map(r => h('span', { class: 'tl' + (sc.rank.rank.name === r.name ? ' me' : ''), style: '--rc:' + r.color }, h('span', null, h('b', null, r.icon + ' ' + r.name), h('small', { class: 'tm' }, r.motto)), h('small', null, r.min.toLocaleString()))));
   const weekBar = h('div', { class: 'tour-bar' }, h('span', null, 'You this week: ' + sc.cur.active + ' of ' + sc.cur.need + ' days'), h('i', { style: 'width:' + Math.min(100, Math.round(sc.cur.active / sc.cur.need * 100)) + '%' }));
   const passage = tourCard('🎆', 'The Passage begins!', h('p', null, 'Practice Week is over, so everyone starts at 0 Merit today. From now on, your Merit and your color build all year.'),
-    h('p', null, 'Together we race to New Year\'s Eve: every Active Day moves the pack one step (75 to go, with a Christmas Eve checkpoint at 55). Season 1, Iron Rain, starts January 1.'),
+    h('p', null, 'Together we race to New Year\'s Eve: every Active Day moves the pack one step (75 to go, with a Christmas Eve checkpoint at 55). Season 1, Iron Rain, starts Monday, January 4.'),
     h('p', null, '🎄 Dec 21 – Jan 3 are holiday weeks: the Standard is just 3 days, and missing it won\'t break your chain.'));
   if (mode === 'passage') return [passage];
   const pickG = () => { const g = document.querySelector('.tour .color-grid'); if (g) g.replaceWith(colorGrid(id, pickG)); };
@@ -2762,16 +2785,19 @@ function openCodex() {
     ['♛ Weekly Primus: most Primus points this week (see the top)', '+' + RULES.primus],
     ['Monthly goal · Season goal', '+' + P.goalMonth + ' · +' + P.goalSeason],
     ['Race checkpoint on time · Reaching the destination (everyone)', '+' + RULES.raceCheckpoint + ' · +' + RULES.raceFinish]]);
-  sec('Progress points', 'Praetorians earn progress from their private weight trend (pounds never leave their phone) and from their best effort week; Pups earn growth points for beating their own bests.');
+  if (isPup(me())) { sec('Growth points', 'You earn growth points for beating your own bests. Mom and Dad earn theirs in their own way.');
+    table([['Best week of minutes yet', '+' + G.bestWeek], ['Longest single outing yet (30+ min, once a week)', '+' + G.longest],
+      ['Taekwondo stripe · belt test passed', '+' + G.stripe + ' · +' + G.belt], ['Personal best (up to ' + G.pbWeeklyMax + ' a week)', '+' + G.pb]]); }
+  else { sec('Progress points', 'Praetorians earn progress from their private weight trend (pounds never leave their phone) and from their best effort week; Pups earn growth points for beating their own bests.');
   table([['Praetorians: weekly weigh-in', '+' + RULES.weighIn], ['Praetorians: each new ' + RULES.stepPct + '% low on the trend line (max ' + RULES.weeklyPctCap + '% a week)', '+' + RULES.stepPts],
     ['Praetorians: 5% · 10% · 15% milestones', RULES.milestones.map(m => '+' + m[1]).join(' · ')], ['Praetorians: Holiday Hold (December)', '+' + RULES.hold],
     ['Praetorians: best effort week yet (intensity × minutes, uncapped; from your 3rd week)', '+' + G.bestWeek],
     ['Pups: best week of minutes yet', '+' + G.bestWeek], ['Pups: longest single outing yet (30+ min, once a week)', '+' + G.longest],
-    ['Pups: taekwondo stripe · belt test passed', '+' + G.stripe + ' · +' + G.belt], ['Pups: personal best (up to ' + G.pbWeeklyMax + ' a week)', '+' + G.pb]]);
+    ['Pups: taekwondo stripe · belt test passed', '+' + G.stripe + ' · +' + G.belt], ['Pups: personal best (up to ' + G.pbWeeklyMax + ' a week)', '+' + G.pb]]); }
   sec('Ranks: built all year', 'Your rank grows from Dec 1 through the whole year and never resets. Each rank takes more than the last; reaching Gold turns your Color Gold, and Peerless Scarred takes beating your Standard week after week.');
   table(RANKS.map(r => [h('span', null, h('b', { style: 'color:' + r.color }, r.icon + ' ' + r.name), ' · ', h('i', null, r.motto)), r.min.toLocaleString()]));
   sec('Seasons keep it fresh', 'Each quarter brings a new race toward a holiday, new season goals and lore to unlock; goals also reset every month. Your color at the end of each season goes in the Hall of Honors.');
-  sec('Weekly Primus', 'Primus points are your workout Merit for the week: Active Day and showing-up points, the Standard bonus and effort points. Cheers, goals, quests, chain bonuses, stripes and weight-trend points don\'t count, so the number is exactly what your workouts earned. Most points by Sunday night wins. A tie means no crown yet; if the week ends tied, everyone tied shares it.');
+  sec('Weekly Primus', 'Primus points are your workout Merit for the week: Active Day and showing-up points, the Standard bonus and effort points. Cheers, goals, quests, chain bonuses, stripes and ' + (isPup(me()) ? 'other bonus' : 'weight-trend') + ' points don\'t count, so the number is exactly what your workouts earned. Most points by Sunday night wins. A tie means no crown yet; if the week ends tied, everyone tied shares it.');
   sec('The race', 'Every Active Day moves the pack one step; every activity done together adds one more. Hit a holiday checkpoint on time and everyone earns a bonus.');
   sec('Practice Week (Nov 23–30)', 'Points count for practice, then everything resets on Dec 1 when The Passage begins.');
   const closeCx = openModal('📜 The Codex: how the Pack works', body);
