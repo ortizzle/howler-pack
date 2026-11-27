@@ -134,6 +134,8 @@ GitHub Pages serves `main` at https://ortizzle.github.io/howler-pack/. **Every p
 - **Weekly Primus:** `primusScores` / `primusPoints`. **It goes to whoever earns the most Primus points that week** (Chris, Nov 27, 2026: "it needs to be based on points… clear to understand").
   - Primus points are plain workout Merit: Active Day / showing-up points, the Standard bonus and effort. Cheers, goals, quests, chain bonuses, stripes and weight points don't count.
   - The Primus card and the Pack card show "N pts". The old "beat your own target" rule was dropped because nobody could read it.
+  - **Tap a Primus row for the breakdown** (`openPrimusBreakdown` / `primusBreakdown`; Chris, Nov 27, 2026): the total, three chips (Active Days · The Standard · Effort) and each day's entries. Kids' sheets use minutes wording, never MET.
+  - **Watch the kids in December** (Chris, Nov 27, 2026). He expects the adults to get competitive and out-train the kids, so the Primus may later need extra points for the kids. Don't change it until he has seen December's results.
   - In the Dec–Mar simulation the crowns still spread (realistic family 5 · 3 · 5 · 4), and the harder trainers win more often.
   - On the same easy walk the kids out-earn the parents slightly (kids' effort counts minutes), which is the agreed scale.
   - **Ties are never broken alphabetically.** A tie at the top (`primusLeaders`) shows no crown and an "anyone can take it" note. If the week ends tied, each tied person gets a shared crown (`aw_primus_<week>_<id>`, "(shared)") and the +25.

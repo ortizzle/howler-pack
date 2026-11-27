@@ -318,7 +318,12 @@ body.pup .fab { font-family: var(--fp); font-weight: 800; }
 .gloss { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
 .gloss .gi { font-size: 22px; width: 28px; text-align: center; } .gloss b { font-family: var(--fh); font-size: 18px; } .gloss p { font-size: 14px; color: var(--ink2); }
 /* primus */
-.prow { display: grid; grid-template-columns: 22px 70px 1fr 38px; gap: 8px; align-items: center; min-height: 34px; font-size: 15px; }
+.prow { display: grid; grid-template-columns: 22px 70px 1fr 44px; gap: 8px; align-items: center; min-height: 44px; font-size: 15px; width: 100%; background: none; border: 0; padding: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.pb-total { text-align: center; font-family: var(--fh); margin: 2px 0 10px; } .pb-total b { font-size: 34px; }
+.pb-sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+.pb-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: 10px; background: rgba(0,0,0,.05); font-size: 12px; } .pb-chip b { font-size: 18px; }
+.pb-head { font-family: var(--fh); font-weight: 700; margin: 12px 0 4px; }
+.pb-row { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px; padding: 5px 0; border-top: 1px solid rgba(0,0,0,.06); font-size: 14px; } .pb-d { color: var(--muted); } .pb-row b { color: var(--gold); }
 .prow .pp { font-family: var(--fh); font-weight: 700; color: var(--gold); text-align: center; }
 .prow .pn { font-family: var(--fh); font-weight: 700; } .prow .pv { text-align: right; color: var(--muted); font-size: 13px; }
 /* coach */
@@ -961,11 +966,32 @@ function raceRewards(se) {
 // ───────────────────────── Weekly Primus: most Primus points (workout Merit) this week
 // Primus points (Chris, Nov 27, 2026): plain workout Merit for the week, so anyone can read who's ahead.
 // Counts Active Day / showing-up points, the Standard bonus and effort. Not cheers, goals, quests, chain bonuses, stripes or weight points.
-function primusPoints(id, wk) {
-  const end = addDays(wk, 6); let v = 0;
+// primusBreakdown groups the same entries for the tap-a-row sheet: Active Days, Standard, effort.
+function primusBreakdown(id, wk) {
+  const end = addDays(wk, 6), g = { days: [], std: [], eff: [] };
   [PRACTICE].concat(SEASONS).filter(se => se.start <= end && se.end >= wk && se.start <= AZ.today()).forEach(se => score(id, se).ledger.forEach(e => {
-    if (e.date >= wk && e.date <= end && e.date >= se.start && e.date <= se.end && (e.cat === 'effort' || (e.cat === 'consistency' && !/^Chain bonus/.test(e.label)))) v += e.pts; }));
-  return Math.round(v);
+    if (!(e.date >= wk && e.date <= end && e.date >= se.start && e.date <= se.end) || !e.pts) return;
+    if (e.cat === 'effort') g.eff.push(e);
+    else if (e.cat === 'consistency' && !/^Chain bonus/.test(e.label)) (/Standard/.test(e.label) ? g.std : g.days).push(e); }));
+  const sum = a => a.reduce((s, e) => s + e.pts, 0);
+  return { total: Math.round(sum(g.days) + sum(g.std) + sum(g.eff)), groups: [
+    { key: 'days', name: 'Active Days', icon: '📅', pts: Math.round(sum(g.days)), items: g.days },
+    { key: 'std', name: 'The Standard', icon: '✦', pts: Math.round(sum(g.std)), items: g.std },
+    { key: 'eff', name: 'Effort', icon: '💪', pts: Math.round(sum(g.eff)), items: g.eff }] };
+}
+function primusPoints(id, wk) { return primusBreakdown(id, wk).total; }
+function openPrimusBreakdown(id, wk) {
+  const b = primusBreakdown(id, wk), pup = isPup(id), r = pup ? RULES.pup : RULES.proctor, body = h('div', { class: 'pb-sheet' });
+  body.appendChild(h('div', { class: 'pb-total' }, h('b', { style: 'color:' + houseColor(id) }, b.total), h('span', null, ' Primus pts this week')));
+  body.appendChild(h('div', { class: 'pb-sum' }, ...b.groups.map(gr => h('div', { class: 'pb-chip' }, h('span', null, gr.icon + ' ' + gr.name), h('b', null, gr.pts)))));
+  b.groups.forEach(gr => {
+    body.appendChild(h('div', { class: 'pb-head' }, gr.icon + ' ' + gr.name + ' · ' + gr.pts));
+    if (!gr.items.length) { body.appendChild(h('p', { class: 'hint' }, gr.key === 'std' ? 'Not yet: ' + stdDays(id, wk) + ' Active Days earns +' + r.standard + '.' : 'Nothing yet this week.')); return; }
+    gr.items.slice().sort((x, y) => x.date < y.date ? -1 : x.date > y.date ? 1 : 0).forEach(e => body.appendChild(h('div', { class: 'pb-row' },
+      h('span', { class: 'pb-d' }, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dow(e.date)]), h('span', { class: 'pb-l' }, e.label), h('b', null, '+' + Math.round(e.pts)))));
+  });
+  body.appendChild(h('p', { class: 'hint' }, pup ? 'Effort: 1 point for every 2 minutes, up to ' + r.minCap + ' a day.' : 'Effort: MET × minutes ÷ 10, up to ' + r.effortCap + ' a day, so harder workouts earn more.'));
+  openModal('♛ ' + M(id).name + '\'s Primus points', body);
 }
 function primusScores(wk, se) {
   return memo('primus:' + wk, () => memberIds().map(id => {
@@ -1782,9 +1808,9 @@ function primusCard() {
   const lastAws = all('award').filter(a => a.kind === 'primus' && a.week === lastWk), top = primusLeaders(wk), tied = top.length > 1;
   const c = card("THIS WEEK'S PRIMUS", 'crowned Sunday night · +' + RULES.primus);
   if (tied) c.appendChild(h('p', { class: 'crew-note' }, '⚖️ Tied at the top: ' + top.map(i => M(i).name).join(', ') + '. Anyone can take the crown.'));
-  ps.forEach(x => { const pl = primusPlace(wk, x.id), same = ps.filter(y => primusPlace(wk, y.id) === pl).length > 1; c.appendChild(h('div', { class: 'prow' + (x.id === leader ? ' gold-shimmer' : '') }, h('span', { class: 'pp' }, x.id === leader ? '♛' : (same ? '=' : '') + pl), h('span', { class: 'pn', style: 'color:' + houseColor(x.id) }, M(x.id).name),
+  ps.forEach(x => { const pl = primusPlace(wk, x.id), same = ps.filter(y => primusPlace(wk, y.id) === pl).length > 1; c.appendChild(h('button', { type: 'button', class: 'prow' + (x.id === leader ? ' gold-shimmer' : ''), 'aria-label': M(x.id).name + ': ' + x.pts + ' Primus points. Tap to see where they came from', onclick: () => openPrimusBreakdown(x.id, wk) }, h('span', { class: 'pp' }, x.id === leader ? '♛' : (same ? '=' : '') + pl), h('span', { class: 'pn', style: 'color:' + houseColor(x.id) }, M(x.id).name),
     h('div', { class: 'bar' }, h('i', { style: 'width:' + Math.round(x.score / Math.max(1, ps[0].score) * 100) + '%;background:' + houseColor(x.id) })), h('span', { class: 'pv' }, x.pts + ' pts'))); });
-  c.appendChild(h('p', { class: 'hint' }, 'Primus points are this week\'s workout Merit: Active Days, the Standard bonus and effort points. Most points by Sunday night wins the crown (+' + RULES.primus + '). Cheers, goals and bonuses don\'t count. A tie at the end of the week is shared.' + (lastAws.length ? ' Last week: ♛ ' + lastAws.map(a => M(a.member).name).join(' & ') + (lastAws.length > 1 ? ' (shared)' : '') + '.' : '')));
+  c.appendChild(h('p', { class: 'hint' }, 'Primus points are this week\'s workout Merit: Active Days, the Standard bonus and effort points. Most points by Sunday night wins the crown (+' + RULES.primus + '). Cheers, goals and bonuses don\'t count. A tie at the end of the week is shared. Tap a name to see where the points came from.' + (lastAws.length ? ' Last week: ♛ ' + lastAws.map(a => M(a.member).name).join(' & ') + (lastAws.length > 1 ? ' (shared)' : '') + '.' : '')));
   return c;
 }
 function coachCard(id) {
